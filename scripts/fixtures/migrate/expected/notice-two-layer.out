@@ -1,0 +1,4 @@
+notice: TMP/L/two-layer/home/.claude/comb.config.json is not read; run /megamaid:configure to migrate it
+notice: TMP/L/two-layer/project/.claude/comb.config.json is not read; run /megamaid:configure to migrate it
+notice: PATTERNS manifest at TMP/L/two-layer/project/docs/p/PATTERNS.md is not read; run /megamaid:configure to move or copy it
+exit=0

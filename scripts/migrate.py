@@ -10,6 +10,7 @@ scripts/megamaid.py by file path; not run on its own. Stdlib only.
   translate(old, defaults) -> (new, dropped)    the spec's rule order: agents, effort, models, the rest
   move_manifest(home, project_root, new_patterns, mode) -> "moved|copied <src> -> <dst>"
 """
+import errno
 import json
 import os
 import shutil
@@ -36,10 +37,18 @@ def real_parent(path):
     return os.path.join(real(os.path.dirname(path)), os.path.basename(path))
 
 
+def same_dir(a, b):
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return a == b
+
+
 def layer_dirs(home, project_root):
-    """[home, project] realpaths; one entry when they are the same directory."""
+    """[home, project] realpaths; one entry when they are the same directory (by inode, so two
+    spellings that differ only in case on a case-insensitive disk count as one)."""
     h, r = real(home), real(project_root)
-    return [r] if h == r else [h, r]
+    return [r] if same_dir(h, r) else [h, r]
 
 
 def read_json(path):
@@ -99,7 +108,8 @@ def notices(home, project_root, new_patterns):
     for d in layer_dirs(home, project_root):
         old = os.path.join(d, ".claude", OLD_CONFIG)
         if os.path.exists(old) and not os.path.exists(os.path.join(d, ".claude", NEW_CONFIG)):
-            out.append("notice: %s is not read; run /megamaid:configure to migrate it" % real(old))
+            # The layer directory is resolved, `.claude` is not: a symlinked `.claude` still reads as its layer.
+            out.append("notice: %s is not read; run /megamaid:configure to migrate it" % old)
     src, dst = old_manifest(home, project_root), new_manifest(project_root, new_patterns)
     if src and os.path.isfile(src) and dst and not os.path.exists(dst):
         out.append("notice: PATTERNS manifest at %s is not read; run /megamaid:configure to move or copy it" % src)
@@ -163,14 +173,31 @@ def move_manifest(home, project_root, new_patterns, mode):
         raise MigrateError("paths.patterns is disabled")
     if os.path.exists(dst):
         raise MigrateError("%s exists; not overwritten" % dst)
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    if mode == "move":
+    try:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if mode == "copy":
+            shutil.copy2(src, dst)
+            return "copied %s -> %s" % (src, dst)
         if os.path.islink(src):
             # Copy what the link points to, then drop the link: the shared file stays where it is.
             shutil.copy2(src, dst)
-            os.unlink(src)
+            try:
+                os.unlink(src)
+            except OSError:
+                os.unlink(dst)  # leave one copy, never two
+                raise
         else:
-            shutil.move(src, dst)
+            try:
+                os.rename(src, dst)
+            except OSError as ex:
+                if ex.errno != errno.EXDEV:
+                    raise
+                shutil.copy2(src, dst)
+                try:
+                    os.unlink(src)
+                except OSError:
+                    os.unlink(dst)
+                    raise
         return "moved %s -> %s" % (src, dst)
-    shutil.copy2(src, dst)
-    return "copied %s -> %s" % (src, dst)
+    except OSError as ex:
+        raise MigrateError("%s: %s" % (ex.filename or dst, ex.strerror))

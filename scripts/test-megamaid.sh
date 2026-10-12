@@ -27,6 +27,7 @@ run() { name=$1; shift; python3 -I "$S" "$@" 2>&1 | norm > "$OUT/$name.out"; ech
 # config: three-layer merge, null deletes, schema warning, bad JSON
 run config               config "${C[@]}"
 run config-badjson       config --plugin-root "$P" --home "$H" --project-root "$F/badjson"
+run config-latin1        config --plugin-root "$P" --home "$H" --project-root "$F/latin1"
 # resolve: lane model, role model override, coercion, effort, native rule, errors
 run resolve-review       resolve --role code-reviewer --lane review "${C[@]}"
 run resolve-plan-ours    resolve --role ours --lane plan "${C[@]}"
@@ -122,6 +123,14 @@ lay manifest-oldnull;    runn notice-manifest-oldnull    config "${LAY[@]}"
 lay manifest-newnull;    runn notice-manifest-newnull    config "${LAY[@]}"
 lay kept-path;           runn notice-kept-path           config "${LAY[@]}"
 lay latin1;              runn notice-latin1              config "${LAY[@]}"
+lay dotlink;             runn notice-dotlink             config "${LAY[@]}"
+runn notice-case config --plugin-root "$P" --home "$L/same/Root" --project-root "$L/same/root"
+lay paths-null;          runn notice-paths-null          config "${LAY[@]}"
+lay two-layer;           runn notice-two-layer           config "${LAY[@]}"
+lay manifest-dir;        runn notice-manifest-dir        config "${LAY[@]}"
+ln -s "$L/via-link/project" "$T/projlink"
+runn notice-via-link config --plugin-root "$P" --home "$L/via-link/home" --project-root "$T/projlink"
+lay warn;                runn notice-warn                config "${LAY[@]}"
 mkdir -p lone && cp "$S" lone/
 python3 -I lone/megamaid.py config "${C[@]}" 2>&1 >/dev/null | norm > "$OUT2/lone.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone.out"
 python3 -I lone/megamaid.py migrate config --layer home "${C[@]}" 2>&1 | norm > "$OUT2/lone-migrate.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone-migrate.out"
@@ -131,22 +140,36 @@ lay invalid;             run2 translate-badjson migrate config --layer project "
 lay list;                run2 translate-list    migrate config --layer project "${LAY[@]}"
 lay effort-scalar;       run2 translate-scalar  migrate config --layer project "${LAY[@]}"
 lay latin1;              run2 translate-latin1  migrate config --layer project "${LAY[@]}"
+lay dotlink;             run2 translate-dotlink migrate config --layer project "${LAY[@]}"
 lay home-only;           run2 translate-missing migrate config --layer project "${LAY[@]}"
 lay home-only;           run2 translate-home    migrate config --layer home "${LAY[@]}"
 run2 translate-same migrate config --layer project --plugin-root "$P" --home "$L/same/root" --project-root "$L/same/root"
 lay manifest-default;    run2 manifest-move       migrate manifest --move "${LAY[@]}"
+cat "$L/manifest-default/project/docs/megamaid/PATTERNS.md" > "$OUT2/manifest-move-content.out" 2>&1
                          run2 manifest-move-again migrate manifest --move "${LAY[@]}"
 lay manifest-configured; run2 manifest-copy       migrate manifest --copy "${LAY[@]}"
+cat "$L/manifest-configured/project/docs/megamaid/PATTERNS.md" > "$OUT2/manifest-copy-content.out" 2>&1
                          run2 manifest-copy-again migrate manifest --copy "${LAY[@]}"
 lay kept-path;           run2 manifest-kept       migrate manifest --copy "${LAY[@]}"
 lay project-only;        run2 manifest-missing    migrate manifest --copy "${LAY[@]}"
 lay manifest-newnull;    run2 manifest-disabled   migrate manifest --copy "${LAY[@]}"
+lay manifest-dir;        run2 manifest-dir        migrate manifest --copy "${LAY[@]}"
+lay parent-file;         run2 manifest-parent-file migrate manifest --copy "${LAY[@]}"
+# a move out of a read-only folder fails cleanly and leaves no second copy
+chmod 555 "$L/readonly/project/docs/"*
+lay readonly;            run2 manifest-readonly   migrate manifest --move "${LAY[@]}"
+{ find "$L/readonly/project/docs" -type f | sed 's#.*/docs/##'; [ -e "$L/readonly/project/docs/megamaid/PATTERNS.md" ] && echo "target written" || echo "no target"; } >> "$OUT2/manifest-readonly.out" 2>&1
+chmod 755 "$L/readonly/project/docs/"*
 # a symlinked manifest: --move moves the manifest, never the shared file the link points to
 lay linked;              run2 manifest-linked     migrate manifest --move "${LAY[@]}"
 { ls "$L/linked/shared"; cat "$L/linked/project/docs/megamaid/PATTERNS.md"; } > "$OUT2/manifest-linked-shared.out" 2>&1
 
 fail=0
-check() {  # $1 output dir, $2 expected dir
+check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale
+  for x in "$2"/*; do
+    [ -e "$1/$(basename "$x")" ] && continue
+    if [ "$UPDATE" = 1 ]; then rm -f "$x"; else echo "FAIL: stale expected file $(basename "$x") (no case produces it)"; fail=1; fi
+  done
   for o in "$1"/*; do
     n=$(basename "$o")
     if [ "$UPDATE" = 1 ]; then cp "$o" "$2/$n"; continue; fi

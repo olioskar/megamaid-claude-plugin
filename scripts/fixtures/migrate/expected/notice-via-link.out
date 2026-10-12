@@ -1,0 +1,3 @@
+notice: TMP/L/via-link/project/.claude/comb.config.json is not read; run /megamaid:configure to migrate it
+notice: PATTERNS manifest at TMP/L/via-link/project/docs/combs/PATTERNS.md is not read; run /megamaid:configure to move or copy it
+exit=0

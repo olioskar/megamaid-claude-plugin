@@ -177,6 +177,8 @@ def load_layer(path, required):
             return json.load(f)
     except json.JSONDecodeError as ex:
         die("invalid JSON in %s: %s" % (path, ex.msg))
+    except UnicodeDecodeError:
+        die("invalid JSON in %s: not UTF-8 text" % path)
     except OSError as ex:
         die("%s: %s" % (path, ex.strerror))
 
