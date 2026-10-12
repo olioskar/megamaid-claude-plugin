@@ -16,4 +16,4 @@ Every megamaid skill loads its config this way. Read the layers in this order, d
 - Invalid JSON in any layer: hard error (abort with a clear message naming the bad file)
 - Schema violations (e.g., a role missing `subagent_type`): warn and skip the bad key, continue
 
-`scripts/megamaid.py config` implements these rules and is what every skill runs; its output is the merged JSON, with one `warning:` line on stderr per dropped role. Each skill states which keys it takes from the merged result. `notice:` lines name a file from an earlier install that is not read. Pass them on to the user in your final report and carry on, unless your skill says how to act on them (configure, patterns).
+`scripts/megamaid.py config` implements these rules and is what every skill runs; its output is the merged JSON, with one `warning:` line on stderr per dropped role. Each skill states which keys it takes from the merged result. `notice:` lines name a file from an earlier install that is not read. Pass them on to the user in your final message (never inside a report, plan or other file you write) and carry on, unless your skill says how to act on them (configure, patterns).

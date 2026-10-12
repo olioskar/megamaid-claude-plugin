@@ -33,6 +33,8 @@ Run it — like every `megamaid.py` command line in this skill — from the proj
 
 From it, take:
 - `paths.patterns` — where the manifest is written/read (default `docs/megamaid/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
+
+If `config` printed `notice: PATTERNS manifest at … is not read`, follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md` now, before any recon: a manifest it moved or copied exists at `paths.patterns` from here on, and Step 4 asks whether to regenerate it.
 - `models.patterns` — model for the scanner agents (default `opus`).
 - `agents.pattern-scanner` — the scanner role (`subagent_type`, default `megamaid:pattern-scanner`).
 - `directives` — the loaded directive set. Read each directive's name and its opening purpose line; you map directives to areas at the gate (Step 3) and dispatch each scanner only the directives relevant to its area (Step 5). **Authority is the user's call at the gate, never the scanner's** — every dispatched directive is authoritative unless the user down-weights it. If a directive's name or frontmatter self-marks as draft/WIP/superseded/non-authoritative, note it and pre-flag it at the gate as a *suggested* down-weight (the user confirms); a scanner is never told to disregard a directive on its own judgment.
@@ -88,8 +90,6 @@ change exclusions · down-weight a stale directive · or "go" to accept all.
 Defaults make "go" safe: the proposed areas, the exclusions, the mapping, and "all directives current" all apply as shown unless the user changes them. Apply edits and re-show only if the changes were non-trivial. **Nothing dispatches until the user confirms.**
 
 ## Step 4: Existing-manifest check
-
-If Step 1's `config` run printed `notice: PATTERNS manifest at … is not read`, first follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`; a manifest it moved or copied now exists at `paths.patterns` for the check below.
 
 If `paths.patterns` resolves to an existing file, ask how to proceed **before** dispatching:
 

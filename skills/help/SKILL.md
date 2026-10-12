@@ -59,7 +59,8 @@ Commands
                        trims an existing manifest without changing it.
 
   /megamaid:configure  Edit megamaid.config.json conversationally — paths,
-                       models, enable/disable agents.
+                       models, enable/disable agents. Migrates a config
+                       or PATTERNS manifest named in a notice: line.
 
   /megamaid:help       This message. Pass a command name for details.
 
@@ -294,9 +295,9 @@ Consumed by
 
 Config knobs
   paths.patterns          (default: docs/megamaid/PATTERNS.md)  null disables consumption
-  models.patterns         (default: opus)                    scanner and shaver model
-  effort.patterns         (default: unset)                   scanner and shaver effort
-  agents.pattern-shaver   (default: megamaid:pattern-shaver)     shaver role
+  models.patterns         (default: opus)                       scanner and shaver model
+  effort.patterns         (default: unset)                      scanner and shaver effort
+  agents.pattern-shaver   (default: megamaid:pattern-shaver)    shaver role
 ```
 
 ### configure
@@ -324,6 +325,9 @@ What it does
   - Shows a diff.
   - Writes after you confirm.
   - Verifies the result parses and the schema is sane.
+  - When a notice: line names a config or PATTERNS manifest from an
+    earlier install, offers to migrate it first (the config is
+    translated to megamaid's keys; the manifest is moved or copied).
 ```
 
 ### help

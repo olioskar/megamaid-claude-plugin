@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user wants to configure megamaid, change megamaid settings, disable an agent, change which model megamaid uses, set the base branch, change where reviews are saved, point megamaid at their directives, or otherwise tweak `.claude/megamaid.config.json`, or carry over settings or a PATTERNS manifest from an earlier install.
+description: Use when the user wants to configure megamaid, change megamaid settings, disable an agent, change which model megamaid uses, set the base branch, change where reviews are saved, point megamaid at their directives, or otherwise tweak `.claude/megamaid.config.json`, or migrate settings or a PATTERNS manifest from an earlier install.
 argument-hint: "[scope] [change]"
 allowed-tools:
   - Bash
@@ -20,7 +20,7 @@ You need:
 1. **Scope** — `project` (`<project-root>/.claude/megamaid.config.json`) or `global` (`~/.claude/megamaid.config.json`).
 2. **Change(s)** — what the user wants different from the merged config they have now. The user may pass these in `$ARGUMENTS` or describe them in conversation. One invocation can apply multiple changes.
 
-If either is missing, ask once. When the user gave no change, run Step 2 first: if it prints `notice:` lines, handling them (Step 2a) is the request.
+When the user gave no change, run Step 2 before asking anything: if it prints `notice:` lines, handling them (Step 2a) is the request. Otherwise, if either input is missing, ask once.
 
 ## Step 1: Resolve target file
 
@@ -52,7 +52,7 @@ If Step 2's `config` run printed `notice:` lines, handle them before the user's 
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" migrate config --layer home
   ```
 
-  Use `--layer project` for the project layer. A non-zero exit prints why (missing, invalid JSON, not an object): show it, write nothing for that layer, and go on to the next notice. Otherwise its stdout is the translated config. Each stderr `dropped: <key>` line is a key megamaid has no use for. Show both, and ask whether to write the result as `megamaid.config.json` at that layer. On yes, write it with Step 5's formatting and verify it with Step 6. Never change or delete the file named in the notice.
+  Use `--layer project` for the project layer. A non-zero exit prints why (missing, invalid JSON, not an object): show it, write nothing for that layer, and go on to the next notice. Otherwise its stdout is the translated config. Each stderr `dropped: <key>` line is a key megamaid has no use for. Show both, and ask whether to write the result as `megamaid.config.json` at that layer. On yes, write it with Step 5's formatting and verify it with Step 6. On no, say that writing any change to that layer later also stops this notice, since megamaid then has its own file there. Never change or delete the file named in the notice.
 - **After writing a migrated config,** re-run `config` and use its notices from here on.
 - **`notice: PATTERNS manifest at <path> is not read; …`:** follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`.
 
@@ -115,6 +115,6 @@ Suggest the most relevant smoke test based on what changed:
 
 - Edit the user's config file. Don't touch `${CLAUDE_PLUGIN_ROOT}/config/defaults.json` — it's read-only at runtime.
 - Always show the diff before writing.
-- One scope per invocation. If the user wants both project and global edits, do it as two passes.
+- One scope per invocation. If the user wants both project and global edits, do it as two passes. Step 2a's migrations are the exception: each notice names its own layer.
 - Keep going until the file is written and verified — don't bail halfway.
-- If the user wants to inspect their config without changing it, just do Step 2 and stop.
+- If the user wants to inspect their config without changing it, do Step 2, show any `notice:` lines and offer Step 2a, and stop.
