@@ -31,7 +31,7 @@ This is the 0.8.0 scenario. A directive requires BEM `--` modifiers; five compon
 | control | none | left out of the BEM modifier sets | $0.52 |
 | treatment | none | named in the BEM entry as "a minority across the area" | $0.48 |
 
-**Decision:** the rule stated once is enough for this scenario, so the restatements are removed. The orchestrator's Step 6 backstops in `/comb:patterns`, which drop self-identified minorities and gerrymandered denominators, are a separate tier and stay. Each arm's dispatch prompt named its own `scan-rules.md`, which confirms the treatment text was the one under test.
+**Decision:** the rule stated once is enough for this scenario, so the restatements are removed. The orchestrator's Step 6 backstops in `/megamaid:patterns`, which drop self-identified minorities and gerrymandered denominators, are a separate tier and stay. Each arm's dispatch prompt named its own `scan-rules.md`, which confirms the treatment text was the one under test.
 
 ### E3: effort `medium` vs `high` (`effort-medium`, `effort-high`)
 

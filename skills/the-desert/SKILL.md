@@ -16,7 +16,7 @@ You're running the full comb pipeline as one continuous sweep. No pauses between
 
 ## Inputs
 
-Same as `/comb:review`:
+Same as `/megamaid:review`:
 1. **Scope** — PR number, branch, or file list
 2. **Base branch** — config or `main`
 3. **Focus brief** — `$ARGUMENTS`
@@ -35,14 +35,14 @@ Run it — like every `comb.py` command line in this skill — from the project 
 
 ## Overrides
 
-These apply to every sub-step. Where a sub-skill's text conflicts with them, these win. Everything else in `/comb:review`, `/comb:plan`, and `/comb:fix` applies unchanged — the consolidation gate, the fix reviewer rule and its fallback chain, write-set batching, the 3-failure escalation, the per-sub-step manifest excerpt (cut, recorded, and cleaned by each sub-step from its own touched text), the pre-commit verification and revert-on-FAIL, and the HEAD and tree checks.
+These apply to every sub-step. Where a sub-skill's text conflicts with them, these win. Everything else in `/megamaid:review`, `/megamaid:plan`, and `/megamaid:fix` applies unchanged — the consolidation gate, the fix reviewer rule and its fallback chain, write-set batching, the 3-failure escalation, the per-sub-step manifest excerpt (cut, recorded, and cleaned by each sub-step from its own touched text), the pre-commit verification and revert-on-FAIL, and the HEAD and tree checks.
 
 - **Models and effort.** `models.the_desert` replaces every lane default (`models.review`, `models.plan`, `models.fix.*`), including the trivial implementer; `effort.the_desert`, when set, replaces every `effort.*` lane the same way. Explicit `agents.<role>.model` / `agents.<role>.effort` overrides survive. `models.patterns` and `effort.patterns` are untouched: the scanner is never dispatched in a sweep. Mechanically: every `comb.py resolve` in a sweep carries `--coerce the_desert`, which applies exactly this rule.
 - **Config.** Step 1 runs `comb.py config` once; the sub-skills reuse its JSON and do not run it again.
 - **Directives.** The focus-brief matcher runs here once (Step 2) for the sweep's log; the sub-skills' own `comb.py directives` and `comb.py brief` calls run with the same brief and reproduce the same primaries.
 - **Deferral.** Every finding is planned and fixed, Deferred included. "Deferred" is not a category in this mode.
 - **Not reproduced.** An instruction whose `**Finding status:**` is `not reproduced` is skipped, not queued and not asked about; the final summary lists it under `Not reproduced (skipped)`.
-- **Confirmations.** None between steps. Groupings, ordering, trivial/standard classification, and a focus brief that contradicts shipped behavior (review's edge case) are decided, not asked: follow the shipped behavior and log the conflict. Review's report is logged, not presented. The only questions in a sweep: scope at the start (if ambiguous), fix's dirty-tree pre-flight (only when `git status --porcelain` is non-empty), and "run again?" at the end. Fix's Step 1.6 red-baseline question is logged, not asked; the sweep proceeds. The stop after three FAILs on one item (fix 4f) and a batch stop (fix 4a) are halts, not questions: the sweep prints fix's per-item status list and ends there, as `/comb:fix` does.
+- **Confirmations.** None between steps. Groupings, ordering, trivial/standard classification, and a focus brief that contradicts shipped behavior (review's edge case) are decided, not asked: follow the shipped behavior and log the conflict. Review's report is logged, not presented. The only questions in a sweep: scope at the start (if ambiguous), fix's dirty-tree pre-flight (only when `git status --porcelain` is non-empty), and "run again?" at the end. Fix's Step 1.6 red-baseline question is logged, not asked; the sweep proceeds. The stop after three FAILs on one item (fix 4f) and a batch stop (fix 4a) are halts, not questions: the sweep prints fix's per-item status list and ends there, as `/megamaid:fix` does.
 - **Commits.** Per `fix.commit_per_item`, unchanged.
 - **Focus brief.** `$ARGUMENTS` reaches every dispatch in every step under `## User focus for this run`, without re-asking.
 
@@ -98,7 +98,7 @@ Moving to fix →
 
 ## Step 5: Run fix
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: Critical → High → Medium → Low → Test gaps → Deferred → Discovered. Track progress as `/comb:fix` does; when all items complete, present the full summary.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: Critical → High → Medium → Low → Test gaps → Deferred → Discovered. Track progress as `/megamaid:fix` does; when all items complete, present the full summary.
 
 ## After completion
 

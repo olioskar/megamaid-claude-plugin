@@ -7,4 +7,4 @@ timeout_seconds: 1800
 allowed_tools: [Read, Glob, Grep, Skill, Agent, TodoWrite]
 ---
 
-/comb:plan reviews/pr-1-round1-report.md — plan every finding, no grouping questions.
+/megamaid:plan reviews/pr-1-round1-report.md — plan every finding, no grouping questions.

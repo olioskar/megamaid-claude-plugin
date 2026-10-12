@@ -56,7 +56,7 @@ Print a short summary of the effective config (not the full JSON dump unless the
 - `directives.include_plugin_defaults: false` stops loading the shipped directives; `directives.user_path` is the directory of the user's directive `.md` files.
 - `agents.<role>`: a reviewer or writer entry with required `subagent_type` and `when_to_use` strings; a role missing either is dropped at load with a warning.
 - `models.review`, `models.plan`, `models.patterns` (scanner and shaver), `models.fix.implementer_standard`, `models.fix.implementer_trivial`, `models.fix.reviewer`, `models.the_desert` (replaces every review/plan/fix lane in a sweep; `models.patterns` is untouched).
-- `fix.commit_per_item`: commit each item on reviewer PASS. `fix.model_invocation`: let Claude start the fix workflow from a natural-language request through the model-only `fix-auto` skill (`/comb:fix` itself stays user-only).
+- `fix.commit_per_item`: commit each item on reviewer PASS. `fix.model_invocation`: let Claude start the fix workflow from a natural-language request through the model-only `fix-auto` skill (`/megamaid:fix` itself stays user-only).
 
 **Model values:** `sonnet`, `opus`, `haiku`, or `fable` — the Agent call's `model` parameter is that enum, so a full model id is rejected at dispatch. `best`, `inherit`, and `opusplan` are session or agent-frontmatter aliases, not values the Agent call accepts: refuse them and say so.
 
@@ -64,7 +64,7 @@ Print a short summary of the effective config (not the full JSON dump unless the
 
 - **"Disable agent X"** → set `agents.X = null` in the override file (null-as-delete merge semantics). **"Re-enable"** → remove the `null` entry, or re-supply the full agent object for a custom version.
 - **"Add a custom agent"** → write `agents.<new-role> = {subagent_type: "...", when_to_use: "..."}` and tell the user that a `subagent_type` other than `comb:` + a shipped agent name is foreign per the delivery contract: its run brief carries the authority sentence and a `Your lens:` line taken from `when_to_use`.
-- **"Allow Claude to run fix" / "let the model apply fixes"** → set `fix.model_invocation = true` in the project override (or globally if asked). Say that `/comb:fix` is still user-only; the opt-in routes natural-language requests through the model-only `fix-auto` skill (not a slash command), which runs the same workflow with the same questions and commits.
+- **"Allow Claude to run fix" / "let the model apply fixes"** → set `fix.model_invocation = true` in the project override (or globally if asked). Say that `/megamaid:fix` is still user-only; the opt-in routes natural-language requests through the model-only `fix-auto` skill (not a slash command), which runs the same workflow with the same questions and commits.
 
 Everything else is a direct key write: name the key from `defaults.json` (or the three absent-by-default keys above), set the value, and show the diff. Removing an `effort` key returns that lane to the session default.
 
@@ -89,11 +89,11 @@ Write the new file. Format with 2-space indentation. Pretty-print top-level keys
 
 Suggest the most relevant smoke test based on what changed:
 
-- Changed `agents.*`, `models.*`, or `effort.*` → "Run `/comb:review` against a small dirty branch and confirm the agent palette, model, and effort assignments match what you set."
-- Changed `paths.*` → "Run `/comb:review` and confirm the report lands in the new `paths.reviews` directory."
-- Changed `directives.*` → "Run `/comb:review` with a focus brief that mentions one of your directives and confirm it's flagged primary."
+- Changed `agents.*`, `models.*`, or `effort.*` → "Run `/megamaid:review` against a small dirty branch and confirm the agent palette, model, and effort assignments match what you set."
+- Changed `paths.*` → "Run `/megamaid:review` and confirm the report lands in the new `paths.reviews` directory."
+- Changed `directives.*` → "Run `/megamaid:review` with a focus brief that mentions one of your directives and confirm it's flagged primary."
 - Changed `fix.model_invocation` → "Ask Claude to apply the fixes in your own words and confirm it starts (or refuses, naming the flag) as you set."
-- Changed `paths.patterns` or `models.patterns` → "Run `/comb:patterns` and confirm the manifest lands at the new path (or the scanners use the model you set)."
+- Changed `paths.patterns` or `models.patterns` → "Run `/megamaid:patterns` and confirm the manifest lands at the new path (or the scanners use the model you set)."
 
 ## Ground rules
 

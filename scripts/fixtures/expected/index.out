@@ -1,5 +1,5 @@
 run: RUN
-header 1-7 1040B
+header 1-7 1044B
 global 8-11 220B [1] How to read this
 global 12-16 143B [2] Patterns
 area 17-32 1063B [3] 1. Entity Page edits=TMP/.comb/excerpts/RUN.edits-3.json
@@ -10,5 +10,5 @@ area 68-75 434B [7] 14. Testing conventions edits=TMP/.comb/excerpts/RUN.edits-7
 area 76-79 127B [8] Appendix edits=TMP/.comb/excerpts/RUN.edits-8.json
 global 80-84 133B [9] Cross-reference map
 global 85-91 367B [10] ⚠ Drift register — do not propagate (with tracking)
-global 92-95 134B [11] Maintenance
-total 5612B ~1403 tokens (bytes/4); 6 area, 5 global
+global 92-95 138B [11] Maintenance
+total 5620B ~1405 tokens (bytes/4); 6 area, 5 global

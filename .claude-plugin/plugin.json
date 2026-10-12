@@ -1,14 +1,14 @@
 {
-  "name": "comb",
-  "displayName": "Comb the Desert",
+  "name": "megamaid",
+  "displayName": "Megamaid",
   "version": "0.15.3",
-  "description": "Comb the Desert: a review → plan → fix pipeline for code review with configurable agents and authoritative project directives.",
+  "description": "megamaid: a review → plan → fix pipeline for code review with configurable agents and authoritative project directives.",
   "author": {
     "name": "Olafur O. Egilsson",
     "email": "olioskar@gmail.com"
   },
-  "homepage": "https://github.com/olioskar/comb-the-desert-claude-plugin",
-  "repository": "https://github.com/olioskar/comb-the-desert-claude-plugin",
+  "homepage": "https://github.com/olioskar/megamaid-claude-plugin",
+  "repository": "https://github.com/olioskar/megamaid-claude-plugin",
   "license": "MIT",
   "keywords": [
     "code-review",

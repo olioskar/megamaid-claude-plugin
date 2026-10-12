@@ -1,6 +1,6 @@
 ---
 name: help
-description: Use when the user types `/comb:help`, asks "what is comb", "what does comb do", "comb commands", "how do I use comb", or wants a refresher on the plugin. Pass a command name (e.g., `/comb:help fix`) for a deeper look at one command.
+description: Use when the user types `/megamaid:help`, asks "what is comb", "what does comb do", "comb commands", "how do I use comb", or wants a refresher on the plugin. Pass a command name (e.g., `/megamaid:help fix`) for a deeper look at one command.
 argument-hint: "[command-name]"
 allowed-tools:
   - Read
@@ -23,34 +23,34 @@ Don't paraphrase. The user is asking for the help text — give them the help te
 ## Overview
 
 ```
-comb-the-desert — code-review pipeline for Claude Code
+megamaid — code-review pipeline for Claude Code
 
 A review → plan → fix workflow with configurable reviewer agents and
 authoritative project directives.
 
 Commands
 
-  /comb:review       Dispatch 1–5 reviewer agents over a PR, branch, file
+  /megamaid:review       Dispatch 1–5 reviewer agents over a PR, branch, file
                      list, or a spec/design doc. The orchestrator reads the
                      work first and right-sizes the apparatus: code-shaped
                      diffs get the full report (verdict, severity scale,
                      verification); non-code artifacts get a condensed
                      report (flat findings, no verdict). Read-only.
 
-  /comb:plan         Turn each review finding into a self-contained fix
+  /megamaid:plan         Turn each review finding into a self-contained fix
                      instruction file. Read-only.
 
-  /comb:fix          Execute fix instructions: implementer + reviewer
+  /megamaid:fix          Execute fix instructions: implementer + reviewer
                      per item, parallel batching where safe.
 
-  /comb:the-desert   Run review → plan → fix as one continuous sweep.
+  /megamaid:the-desert   Run review → plan → fix as one continuous sweep.
                      One model (models.the_desert) everywhere. No pauses,
                      nothing skipped but not-reproduced items. On non-code
                      artifacts, stops after
                      review — findings go back into your design
                      conversation, not an autonomous rewrite pass.
 
-  /comb:patterns     Scan the codebase and write a PATTERNS manifest of
+  /megamaid:patterns     Scan the codebase and write a PATTERNS manifest of
                      concrete conventions (structure, naming, closed token
                      sets, abstraction level, reuse points) with real code
                      references. Interactive: confirms scan areas first.
@@ -58,24 +58,24 @@ Commands
                      delivered to agents as a per-run excerpt. --shave
                      trims an existing manifest without changing it.
 
-  /comb:configure    Edit comb.config.json conversationally — paths,
+  /megamaid:configure    Edit comb.config.json conversationally — paths,
                      models, enable/disable agents.
 
-  /comb:help         This message. Pass a command name for details.
+  /megamaid:help         This message. Pass a command name for details.
 
 Focus brief
 
   Every command accepts free text after the slash. The brief biases
   agent picking and finding priority:
 
-    /comb:review look for spec/plan misalignment
-    /comb:the-desert ensure simplicity, scope discipline, TDD coverage
+    /megamaid:review look for spec/plan misalignment
+    /megamaid:the-desert ensure simplicity, scope discipline, TDD coverage
 
 Common workflows
 
-  Iterative:    /comb:review → review the report → /comb:plan →
-                approve groupings → /comb:fix
-  Full sweep:   /comb:the-desert  (review + plan + fix in one pass)
+  Iterative:    /megamaid:review → review the report → /megamaid:plan →
+                approve groupings → /megamaid:fix
+  Full sweep:   /megamaid:the-desert  (review + plan + fix in one pass)
 
 Config
 
@@ -84,10 +84,10 @@ Config
     2. global override  (~/.claude/comb.config.json)
     3. project override (<project-root>/.claude/comb.config.json)
 
-  Edit interactively: /comb:configure
+  Edit interactively: /megamaid:configure
   Or hand-edit the JSON files above.
 
-For more on a command:  /comb:help <command-name>
+For more on a command:  /megamaid:help <command-name>
 ```
 
 ---
@@ -97,7 +97,7 @@ For more on a command:  /comb:help <command-name>
 ### review
 
 ```
-/comb:review [scope] [focus brief]
+/megamaid:review [scope] [focus brief]
 
 Step 1 of the review → plan → fix workflow.
 
@@ -124,22 +124,22 @@ Output
   <paths.reviews>/{pr-N|branch-NAME}-roundN-report.md
 
 Examples
-  /comb:review
-  /comb:review 774
-  /comb:review staging look for spec/plan misalignment
+  /megamaid:review
+  /megamaid:review 774
+  /megamaid:review staging look for spec/plan misalignment
 ```
 
 ### plan
 
 ```
-/comb:plan [report-path] [focus brief]
+/megamaid:plan [report-path] [focus brief]
 
 Step 2 of the review → plan → fix workflow.
 
 Inputs
   report-path   Path to a review report. Defaults to the most recent
                 report in <paths.reviews>.
-  focus brief   Optional free text — passed through from /comb:the-desert.
+  focus brief   Optional free text — passed through from /megamaid:the-desert.
 
 What it does
   - Parses every finding (including Deferred).
@@ -160,12 +160,12 @@ Output
 ### fix
 
 ```
-/comb:fix [plan-folder] [focus brief]
+/megamaid:fix [plan-folder] [focus brief]
 
 Step 3 of the review → plan → fix workflow.
 
 Inputs
-  plan-folder   Path to a plan folder produced by /comb:plan.
+  plan-folder   Path to a plan folder produced by /megamaid:plan.
                 Defaults to the most recent plan folder.
   focus brief   Optional free text.
 
@@ -183,7 +183,7 @@ What it does
   - Per-item commit on PASS, with the finding code + title in the
     message. Opt out via fix.commit_per_item: false.
   - Before each commit, runs the project's typecheck/tests/lint (the
-    same choice /comb:review makes); red means FAIL, nothing commits.
+    same choice /megamaid:review makes); red means FAIL, nothing commits.
   - On FAIL, reverts the attempt, records it under ## Attempts in the
     instruction file, and retries; stops after three.
   - Records a baseline after pre-flight (dirty paths, HEAD, test
@@ -203,20 +203,20 @@ Config knobs
   fix.commit_per_item    (default: true)  per-item commit on PASS
   fix.model_invocation   (default: false) let Claude start fix from a
                          natural-language request ("apply the fixes")
-                         (model-only fix-auto skill; /comb:fix stays user-only)
+                         (model-only fix-auto skill; /megamaid:fix stays user-only)
   agents.implementer     (default: comb:implementer)  the writer agent
 ```
 
 ### the-desert
 
 ```
-/comb:the-desert [scope] [focus brief]
+/megamaid:the-desert [scope] [focus brief]
 
 Run review → plan → fix as one continuous sweep, one model
 (models.the_desert) everywhere, no pauses.
 
 Inputs
-  scope         Same as /comb:review.
+  scope         Same as /megamaid:review.
   focus brief   Optional free text.
 
 When to use
@@ -235,7 +235,7 @@ Config knobs
 ### patterns
 
 ```
-/comb:patterns [--shave] [focus brief]
+/megamaid:patterns [--shave] [focus brief]
 
 Generate or refresh the PATTERNS manifest — comb's record of this
 codebase's concrete conventions, with real file:line references.
@@ -278,7 +278,7 @@ Output
   <paths.patterns>   (default: docs/combs/PATTERNS.md)
 
 Consumed by
-  /comb:review, /comb:plan, /comb:fix — injected as an "observed
+  /megamaid:review, /megamaid:plan, /megamaid:fix — injected as an "observed
   baseline" (a prior, not law). Project directives outrank it.
   Silence falls back to reading code; deliberate improvements and
   new canonical patterns are not flagged as drift.
@@ -302,7 +302,7 @@ Config knobs
 ### configure
 
 ```
-/comb:configure [scope] [change]
+/megamaid:configure [scope] [change]
 
 Edit comb.config.json conversationally.
 
@@ -329,7 +329,7 @@ What it does
 ### help
 
 ```
-/comb:help [command-name]
+/megamaid:help [command-name]
 
 This command. With no argument, prints the overview. With a command
 name, prints the deep-dive for that command.

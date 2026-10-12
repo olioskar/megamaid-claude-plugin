@@ -19,7 +19,7 @@ You're a senior engineer turning review findings into crystal-clear fix instruct
 ## Inputs
 
 1. **Report**: should be in conversation context, or user provides a path. Look in `<paths.plans>` parent directory or `<paths.reviews>` for the most recent report if not specified.
-2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/comb:the-desert`.
+2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/megamaid:the-desert`.
 
 ## Step 1: Load config
 
@@ -277,7 +277,7 @@ High ({count}):
 Medium ({count}):
   - ...
 
-Next: /comb:fix {output_folder}
+Next: /megamaid:fix {output_folder}
 ```
 
 **Non-code report — present the single revise-doc:**
@@ -287,12 +287,12 @@ Revision instructions ready: {output_folder}/revise-{spec-stem}.md
 
 {N} revisions targeting `{spec_path}`: {breakdown by label}
 
-Next: /comb:fix {output_folder}
+Next: /megamaid:fix {output_folder}
 ```
 
-The `Next:` line names `/comb:fix`, the command the user types. Never point the user at the `fix-auto` skill; it is model-only and cannot be typed.
+The `Next:` line names `/megamaid:fix`, the command the user types. Never point the user at the `fix-auto` skill; it is model-only and cannot be typed.
 
-**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /comb:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
+**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 
 ## Ground rules
 
@@ -303,4 +303,4 @@ The `Next:` line names `/comb:fix`, the command the user types. Never point the 
 
 ## Edge case: focus brief contradicts shipped behavior
 
-Per `/comb:review`.
+Per `/megamaid:review`.

@@ -1,6 +1,6 @@
 ---
 name: patterns
-description: Use when the user wants to set up, generate, or refresh comb's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /comb:review, /comb:plan, and /comb:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
+description: Use when the user wants to set up, generate, or refresh comb's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /megamaid:review, /megamaid:plan, and /megamaid:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
 argument-hint: "[--shave] [focus brief]"
 allowed-tools:
   - Bash
@@ -168,7 +168,7 @@ Read the comb version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`
 > (live code wins), treat a silent area as a cue to read the code rather than
 > permission to do anything, and classify divergence (drift vs. deliberate
 > improvement vs. new canonical) before flagging. Project directives outrank
-> this manifest. Refresh with `/comb:patterns`.
+> this manifest. Refresh with `/megamaid:patterns`.
 
 ---
 
@@ -254,9 +254,9 @@ PATTERNS manifest written to {paths.patterns}
 
 Areas: {N} ({labels})   ·   Excluded: {count} non-authoritative regions
 Captured: {one-line summary, e.g. "structural + closed-set conventions for 3 areas, 27 entries"}
-Size: {total bytes}B ~{tokens} tokens; {area} area, {global} global sections{ · Large manifest — consider /comb:patterns --shave}
+Size: {total bytes}B ~{tokens} tokens; {area} area, {global} global sections{ · Large manifest — consider /megamaid:patterns --shave}
 
-Consumed automatically by /comb:review, /comb:plan, /comb:fix when present (as a per-run excerpt).
+Consumed automatically by /megamaid:review, /megamaid:plan, /megamaid:fix when present (as a per-run excerpt).
 ```
 
 Then `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>` for the index run, and remove the draft: `rm -f .comb/excerpts/patterns-draft.md`.
@@ -276,7 +276,7 @@ Drift to fix ({count}) — the manifest keeps the directive's expectation; these
 
 ## Shave mode (`--shave`)
 
-Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /comb:patterns to generate one first.` and stop.
+Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /megamaid:patterns to generate one first.` and stop.
 
 **S1. Index.** Run:
 

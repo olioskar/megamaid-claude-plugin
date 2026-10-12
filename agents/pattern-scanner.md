@@ -1,6 +1,6 @@
 ---
 name: pattern-scanner
-description: Read-only codebase scanner. Maps one assigned area of a codebase and reports its concrete, established conventions with exact file:line references across structural, naming, closed-set, abstraction, reuse, error-handling, and testing lenses. Generation-only — dispatched by /comb:patterns, never part of a review palette.
+description: Read-only codebase scanner. Maps one assigned area of a codebase and reports its concrete, established conventions with exact file:line references across structural, naming, closed-set, abstraction, reuse, error-handling, and testing lenses. Generation-only — dispatched by /megamaid:patterns, never part of a review palette.
 model: opus
 disallowedTools: Write, Edit, NotebookEdit
 ---

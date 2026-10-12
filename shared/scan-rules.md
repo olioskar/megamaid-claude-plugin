@@ -1,6 +1,6 @@
 # Scan rules (scanner and orchestrator)
 
-The scanner follows these rules exactly; `/comb:patterns` synthesizes from output that follows them. Lenses, classification, and output format live here and nowhere else.
+The scanner follows these rules exactly; `/megamaid:patterns` synthesizes from output that follows them. Lenses, classification, and output format live here and nowhere else.
 
 ## Lenses
 

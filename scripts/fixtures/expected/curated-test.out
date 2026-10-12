@@ -66,4 +66,4 @@ Notes with no code references: naming history, retired vocabulary, and the reaso
 
 ## Maintenance
 
-Refresh a section when its canonical pattern changes. Consumed automatically by `/comb:review|plan|fix` when present.
+Refresh a section when its canonical pattern changes. Consumed automatically by `/megamaid:review|plan|fix` when present.

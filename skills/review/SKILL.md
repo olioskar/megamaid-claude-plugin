@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, comb through changes, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/comb:review look for ambiguities and inconsistencies").
+description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, comb through changes, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/megamaid:review look for ambiguities and inconsistencies").
 argument-hint: "[scope] [focus brief]"
 allowed-tools:
   - Bash
@@ -41,7 +41,7 @@ Run it — like every `comb.py` command line in this skill — from the project 
 
 From it, you have:
 - `paths.reviews` — where to write the report
-- `paths.plans` — (used by /comb:plan, not now)
+- `paths.plans` — (used by /megamaid:plan, not now)
 - `directives.include_plugin_defaults` (boolean) and `directives.user_path` (string)
 - `agents.<role>` — palette of available reviewers
 - `models.review` — model for reviewer agents in this step
@@ -126,7 +126,7 @@ Pick 1–5 agents from `config.agents` based on:
 - The focus brief (required-include any agent matching it)
 
 **Hard cap:** 5 agents — never dispatch more than 5 in one run, even if both diff content and focus brief argue for more. If forced to choose, drop lower-priority required-includes by judgment.
-**`pattern-scanner`, `pattern-shaver`, and `implementer` are never eligible.** The first two are generation-only (dispatched by `/comb:patterns`); the third is the writer role, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
+**`pattern-scanner`, `pattern-shaver`, and `implementer` are never eligible.** The first two are generation-only (dispatched by `/megamaid:patterns`); the third is the writer role, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
 **Soft floor:** 1 — the orchestrator always dispatches at least one agent for objectivity (self-review by the session that produced the artifact is biased). The anchor agent shifts with the Step 3.5 classification:
 
 - **code-shaped** → `code-reviewer` is the anchor.
@@ -231,7 +231,7 @@ Monitor agent completion. Don't consolidate until all agents report back. If one
 2. **Quantities.** Recompute every count, every ratio, and every all/none/only claim against the code — yours and the agents' alike.
 3. **Suggested fixes.** A fix shape you have not traced is a proposal, not a recommendation. Trace it, or mark it unverified. Never promote an agent's untraced fix shape into the report's voice.
 4. **Your own syntheses.** A merged description, a cross-agent count, or a combined severity rationale is new content that no agent wrote. It gets the same treatment.
-5. **Directive citations.** For each `file.md §N` or `§N.N` a finding cites, confirm the file is among the loaded directives and has a heading numbered `N`. Correct or drop a citation that does not resolve; `/comb:plan` copies these into `## Directive citations` as policy.
+5. **Directive citations.** For each `file.md §N` or `§N.N` a finding cites, confirm the file is among the loaded directives and has a heading numbered `N`. Correct or drop a citation that does not resolve; `/megamaid:plan` copies these into `## Directive citations` as policy.
 
 Carry each agent's `Confidence` line forward. Where an agent reported `Unverified` and you did not close the gap yourself, the report says so. An agent that omitted the field confirmed nothing you can rely on — treat its particulars as unconfirmed until you check them.
 
@@ -258,7 +258,7 @@ Carry each agent's `Confidence` line forward. Where an agent reported `Unverifie
 | Test gaps | Missing or weak coverage |
 | Deferred | Noted, explicitly out of scope |
 
-**Finding codes:** sequential by severity. C1, C2 / H1, H2 / M1, M2 / L1, L2 / T1, T2 / D1, D2. Every Deferred item gets a code too — `/comb:plan` plans them by code, so unnumbered bullets get dropped.
+**Finding codes:** sequential by severity. C1, C2 / H1, H2 / M1, M2 / L1, L2 / T1, T2 / D1, D2. Every Deferred item gets a code too — `/megamaid:plan` plans them by code, so unnumbered bullets get dropped.
 
 **Semantic refresh signal.** If any agent flagged a divergence as a *deliberate improvement / migration* or a *new canonical* pattern, record that the semantic refresh note should fire in the presentation. This is distinct from the commit-based staleness note.
 
@@ -403,8 +403,8 @@ Agents used: {list}
 
 **Manifest notes (non-blocking).** Append, when recorded:
 - The excerpt log line (`PATTERNS excerpt: …`) verbatim.
-- Commit-based staleness (`stale: yes`): `PATTERNS manifest may be stale — consider re-running /comb:patterns.` When `stale: unknown`: `PATTERNS staleness unknown (<detail>).`
-- Semantic refresh: `This diff evolves a convention not in the manifest — consider re-running /comb:patterns to capture it.`
+- Commit-based staleness (`stale: yes`): `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.` When `stale: unknown`: `PATTERNS staleness unknown (<detail>).`
+- Semantic refresh: `This diff evolves a convention not in the manifest — consider re-running /megamaid:patterns to capture it.`
 
 Then, last of all, remove this run's excerpt and brief working files (they share the stem): `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 

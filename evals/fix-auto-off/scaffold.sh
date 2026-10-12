@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Scratch repo with one plan item and NO fix.model_invocation flag: a natural-language
-# "apply the fixes" must be refused with the observed value and the /comb:fix command.
+# "apply the fixes" must be refused with the observed value and the /megamaid:fix command.
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com

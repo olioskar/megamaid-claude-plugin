@@ -436,7 +436,7 @@ def print_size_table(lines, header_end, sections, with_edits=False):
     globs = sum(1 for s in sections if s["kind"] == "global")
     print("total %dB ~%d tokens (bytes/4); %d area, %d global" % (total, total // 4, areas, globs))
     if total > 100 * 1024:
-        print("Large manifest — consider /comb:patterns --shave")
+        print("Large manifest — consider /megamaid:patterns --shave")
 
 
 # ------------------------------------------------------------------ anchors

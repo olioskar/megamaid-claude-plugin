@@ -17,7 +17,7 @@ base_commit: BASECOMMIT0
 > (live code wins), treat a silent area as a cue to read the code rather than
 > permission to do anything, and classify divergence (drift vs. deliberate
 > improvement vs. new canonical) before flagging. Project directives outrank
-> this manifest. Refresh with `/comb:patterns`.
+> this manifest. Refresh with `/megamaid:patterns`.
 
 ---
 

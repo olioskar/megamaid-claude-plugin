@@ -1,24 +1,24 @@
-# comb-the-desert
+# megamaid
 
-A Claude Code plugin for code review. `/comb:review` finds issues, `/comb:plan` turns each one into a fix instruction, `/comb:fix` applies them, and `/comb:the-desert` runs all three in one go.
+A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamaid:plan` turns each one into a fix instruction, `/megamaid:fix` applies them, and `/megamaid:the-desert` runs all three in one go.
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
 ## Commands
 
-- **`/comb:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
-- **`/comb:plan`** writes one self-contained fix instruction per finding.
-- **`/comb:fix`** applies the instructions. Each item gets an implementer and a reviewer, and items that touch different files run in parallel. Before each commit, the reviewer runs the plan's `Check:` line and the project's tests run. A failed attempt is reverted and recorded before the retry. Each passing item is committed as `<code>: <title>`. Only you can start it; see "Let Claude start fixes" below to change that.
-- **`/comb:the-desert`** runs review, plan, and fix without pauses. On a prose change it stops after review.
-- **`/comb:patterns`** scans the codebase and writes a PATTERNS manifest: the project's actual conventions, with `file:line` references. Review, plan, and fix give agents the relevant excerpt as a baseline. `--shave` shrinks an existing manifest without changing what it says.
-- **`/comb:configure`** changes the config from a plain-language request.
-- **`/comb:help`** prints an overview. `/comb:help <command>` shows one command in detail.
+- **`/megamaid:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
+- **`/megamaid:plan`** writes one self-contained fix instruction per finding.
+- **`/megamaid:fix`** applies the instructions. Each item gets an implementer and a reviewer, and items that touch different files run in parallel. Before each commit, the reviewer runs the plan's `Check:` line and the project's tests run. A failed attempt is reverted and recorded before the retry. Each passing item is committed as `<code>: <title>`. Only you can start it; see "Let Claude start fixes" below to change that.
+- **`/megamaid:the-desert`** runs review, plan, and fix without pauses. On a prose change it stops after review.
+- **`/megamaid:patterns`** scans the codebase and writes a PATTERNS manifest: the project's actual conventions, with `file:line` references. Review, plan, and fix give agents the relevant excerpt as a baseline. `--shave` shrinks an existing manifest without changing what it says.
+- **`/megamaid:configure`** changes the config from a plain-language request.
+- **`/megamaid:help`** prints an overview. `/megamaid:help <command>` shows one command in detail.
 
 Every command takes a free-form focus brief that steers which agents run and what they prioritize:
 
 ```
-/comb:review look for spec/plan misalignment
-/comb:the-desert ensure simplicity, scope discipline, and TDD coverage
+/megamaid:review look for spec/plan misalignment
+/megamaid:the-desert ensure simplicity, scope discipline, and TDD coverage
 ```
 
 ## Requirements
@@ -37,7 +37,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 For local development:
 
 ```bash
-claude --plugin-dir /path/to/comb-the-desert-claude-plugin
+claude --plugin-dir /path/to/megamaid-claude-plugin
 ```
 
 ## Quick start
@@ -45,10 +45,10 @@ claude --plugin-dir /path/to/comb-the-desert-claude-plugin
 In a git repo with changes on a branch:
 
 ```
-/comb:review
+/megamaid:review
 ```
 
-The report lands in `docs/combs/reviews/`. Run `/comb:plan` on it, then `/comb:fix`. Or run `/comb:the-desert` to do all three.
+The report lands in `docs/combs/reviews/`. Run `/megamaid:plan` on it, then `/megamaid:fix`. Or run `/megamaid:the-desert` to do all three.
 
 ## Configuration
 
@@ -58,7 +58,7 @@ Three layers are deep-merged, with later layers winning:
 2. `~/.claude/comb.config.json` (global)
 3. `<project-root>/.claude/comb.config.json` (project)
 
-`/comb:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for plan". It shows a diff, then writes the change to the global or project file.
+`/megamaid:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for plan". It shows a diff, then writes the change to the global or project file.
 
 `config/defaults.json` lists every key with its default. Three kinds of setting are absent by default: `effort.<lane>`, and the per-role `agents.<role>.model` and `agents.<role>.effort`.
 
@@ -90,7 +90,7 @@ In one measured review run, `medium` found the same bugs as `high` for about 8% 
 { "fix": { "model_invocation": true } }
 ```
 
-`/comb:fix` is user-only by default because it edits code and commits. With this flag, asking in your own words ("apply the fixes") runs the same workflow, with the same questions and commits. Without the flag, such a request gets a short reply naming `/comb:fix` and the flag.
+`/megamaid:fix` is user-only by default because it edits code and commits. With this flag, asking in your own words ("apply the fixes") runs the same workflow, with the same questions and commits. Without the flag, such a request gets a short reply naming `/megamaid:fix` and the flag.
 
 ### Use your own writer
 
@@ -152,13 +152,13 @@ Read-only is enforced by instruction. The edit tools are blocked, but Bash stays
 
 Each finding must name a real cost, such as a failure mode, a coverage gap, or a maintenance burden. A clean diff should come back with few or no findings. `simplifier`, `silent-failure-hunter`, and `consistency-auditor` re-check their findings in a final step. `code-reviewer` and `test-auditor` dropped that step after an experiment showed it changed nothing.
 
-Before a finding enters the report, `/comb:review` opens every cited line and recomputes every count. Each finding carries a `Verified:` line stating what was checked and what was not. `/comb:plan` re-checks anything marked unchecked.
+Before a finding enters the report, `/megamaid:review` opens every cited line and recomputes every count. Each finding carries a `Verified:` line stating what was checked and what was not. `/megamaid:plan` re-checks anything marked unchecked.
 
 Three more agents:
 
-- **`comb:implementer`** is the writer for `/comb:fix` and `/comb:plan`.
-- **`comb:pattern-scanner`** is used only by `/comb:patterns`.
-- **`comb:pattern-shaver`** is used only by `/comb:patterns --shave`.
+- **`comb:implementer`** is the writer for `/megamaid:fix` and `/megamaid:plan`.
+- **`comb:pattern-scanner`** is used only by `/megamaid:patterns`.
+- **`comb:pattern-shaver`** is used only by `/megamaid:patterns --shave`.
 
 ## How it works
 

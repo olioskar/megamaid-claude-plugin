@@ -7,4 +7,4 @@ timeout_seconds: 1800
 allowed_tools: [Read, Glob, Grep, Skill, Agent, TodoWrite]
 ---
 
-/comb:the-desert the feature branch against main
+/megamaid:the-desert the feature branch against main

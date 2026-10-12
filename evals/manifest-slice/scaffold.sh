@@ -24,7 +24,7 @@ git add -A && git commit -qm base
 SHA=$(git rev-parse --short=8 HEAD)
 PROV="**Generated:** 2026-06-08 · **Base:** \`docs/pattern-manifest\` @ \`6aff510f\` (off \`staging\`)"
 for i in 1 2 3 4 5 6; do PROV="$PROV · **Patched:** 2026-0$i-01 on \`refactor/step-$i\` (anchors re-based after step $i; the drift-register row was corrected and the token census recounted)"; done
-PROV="$PROV · **Regenerated (partial):** 2026-09-30 @ \`$SHA\` via \`/comb:patterns\`"
+PROV="$PROV · **Regenerated (partial):** 2026-09-30 @ \`$SHA\` via \`/megamaid:patterns\`"
 cat > docs/combs/PATTERNS.md <<EOT
 # PATTERNS — demo
 

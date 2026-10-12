@@ -1,6 +1,6 @@
 ---
 name: pattern-shaver
-description: Manifest shaver for one assigned section of a PATTERNS manifest. Generation-only — dispatched by /comb:patterns --shave, never part of a review palette.
+description: Manifest shaver for one assigned section of a PATTERNS manifest. Generation-only — dispatched by /megamaid:patterns --shave, never part of a review palette.
 model: opus
 disallowedTools: Write, Edit, NotebookEdit
 ---

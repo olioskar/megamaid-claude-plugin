@@ -1,6 +1,6 @@
 # Shared block: manifest excerpts
 
-Every consuming skill (`/comb:review`, `/comb:plan`, `/comb:fix`, and `/comb:the-desert` through them) delivers the PATTERNS manifest to agents as a **per-run excerpt**, not as the whole file. The excerpt is cut by the plugin's `scripts/manifest.py`; nobody reads the manifest to produce it. The command line lives in each skill body (the plugin-root variable is substituted there, not here); this block says what the `excerpt` subcommand does and what the skill does with its output. Every `manifest.py` command is run from the project root, because `.comb/` is keyed to the working directory.
+Every consuming skill (`/megamaid:review`, `/megamaid:plan`, `/megamaid:fix`, and `/megamaid:the-desert` through them) delivers the PATTERNS manifest to agents as a **per-run excerpt**, not as the whole file. The excerpt is cut by the plugin's `scripts/manifest.py`; nobody reads the manifest to produce it. The command line lives in each skill body (the plugin-root variable is substituted there, not here); this block says what the `excerpt` subcommand does and what the skill does with its output. Every `manifest.py` command is run from the project root, because `.comb/` is keyed to the working directory.
 
 ## What `excerpt` does
 
@@ -33,7 +33,7 @@ base_commit: <sha or none>
   | plan | the review report | Step 3 has parsed it |
   | fix | the instruction folder (every `.md` in it: per-finding files or the revise doc) | Step 2.5 has listed the folder (and so after the pre-flight) |
 
-- **Record `run`, `excerpt`, the log line, and `stale` once** and use the excerpt path in every dispatch of this run. `/comb:the-desert` records them afresh in each sub-step.
+- **Record `run`, `excerpt`, the log line, and `stale` once** and use the excerpt path in every dispatch of this run. `/megamaid:the-desert` records them afresh in each sub-step.
 - **Deliver per `${CLAUDE_PLUGIN_ROOT}/shared/observed-baseline.md`**: the excerpt path and the full manifest path, with the excerpt sentences.
 - **Echo the log line** in the presentation's manifest notes. When `stale` is `yes`, add the staleness note; when `unknown`, add `PATTERNS staleness unknown (<detail>)`.
 - **Clean up last**: `manifest.py clean --run <stem>`. Best-effort; a leftover is ignored by git and harmless.

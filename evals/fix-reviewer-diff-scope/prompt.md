@@ -7,4 +7,4 @@ timeout_seconds: 1800
 allowed_tools: [Read, Glob, Grep, Skill, Agent, TodoWrite]
 ---
 
-/comb:fix plans/plan-for-eval — execute M1 then M2 in that order. Do not ask me to confirm order or groupings; per-item commits stay on.
+/megamaid:fix plans/plan-for-eval — execute M1 then M2 in that order. Do not ask me to confirm order or groupings; per-item commits stay on.
