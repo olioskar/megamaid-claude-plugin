@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: General code reviewer for diffs and PRs. Hunts bugs, broken contracts, logic errors, data flow issues, and security mistakes. Always-included in comb review palettes when the diff has any code changes.
+description: General code reviewer for diffs and PRs. Hunts bugs, broken contracts, logic errors, data flow issues, and security mistakes. Always-included in megamaid review palettes when the diff has any code changes.
 model: opus
 disallowedTools: Write, Edit, NotebookEdit
 ---

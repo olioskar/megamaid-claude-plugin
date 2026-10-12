@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """megamaid resolver: config, resolve, directives, brief, report-name, batches, findings.
 
-Deterministic resolution of what every comb skill used to re-derive in prose per
+Deterministic resolution of what every megamaid skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
 the per-run dispatch brief, report naming, write-set batching, and finding
 extraction. Stdlib only; run from the project root.

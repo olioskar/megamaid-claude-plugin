@@ -3,7 +3,7 @@
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com
-git config user.name "comb eval"
+git config user.name "megamaid eval"
 mkdir -p src .claude
 cat > src/math.js <<'EOF'
 function add(a, b) {

@@ -31,7 +31,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ```
 /plugin marketplace add olioskar/claude-plugins
-/plugin install comb@olioskar-marketplace
+/plugin install megamaid@olioskar-marketplace
 ```
 
 For local development:
@@ -180,7 +180,7 @@ Release gate, in order:
    - The fixture tests for both scripts and the grader replay pass.
 3. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit` runs the eight behavioral cases in `evals/`, at about 5 USD per pass. On macOS it needs a standalone git, such as Homebrew's. `evals/README.md` explains the flags.
 
-`scripts/smoke.sh` is the offline check. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
+`scripts/smoke.sh` runs the free gates plus two short `claude -p` help checks (a few cents); run it once before a PR. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
 
 CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 

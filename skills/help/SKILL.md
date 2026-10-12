@@ -1,6 +1,6 @@
 ---
 name: help
-description: Use when the user types `/megamaid:help`, asks "what is comb", "what does comb do", "comb commands", "how do I use comb", or wants a refresher on the plugin. Pass a command name (e.g., `/megamaid:help fix`) for a deeper look at one command.
+description: Use when the user types `/megamaid:help`, asks "what is megamaid", "what does megamaid do", "megamaid commands", "how do I use megamaid", or wants a refresher on the plugin. Pass a command name (e.g., `/megamaid:help fix`) for a deeper look at one command.
 argument-hint: "[command-name]"
 allowed-tools:
   - Read
@@ -8,13 +8,13 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You print help for the comb plugin.
+You print help for the megamaid plugin.
 
 ## Behavior
 
 - If `$ARGUMENTS` is empty: print the **Overview** below verbatim.
 - If `$ARGUMENTS` names a command (`review`, `plan`, `fix`, `vacu-suck`, `patterns`, `configure`, `help`): print the matching **Per-command** entry verbatim.
-- If `$ARGUMENTS` is anything else: print the Overview and add a one-line note: `Note: "{argument}" isn't a comb command. Try one of: review, plan, fix, vacu-suck, patterns, configure.`
+- If `$ARGUMENTS` is anything else: print the Overview and add a one-line note: `Note: "{argument}" isn't a megamaid command. Try one of: review, plan, fix, vacu-suck, patterns, configure.`
 
 Don't paraphrase. The user is asking for the help text — give them the help text.
 
@@ -30,38 +30,38 @@ authoritative project directives.
 
 Commands
 
-  /megamaid:review       Dispatch 1–5 reviewer agents over a PR, branch, file
-                     list, or a spec/design doc. The orchestrator reads the
-                     work first and right-sizes the apparatus: code-shaped
-                     diffs get the full report (verdict, severity scale,
-                     verification); non-code artifacts get a condensed
-                     report (flat findings, no verdict). Read-only.
+  /megamaid:review     Dispatch 1–5 reviewer agents over a PR, branch, file
+                       list, or a spec/design doc. The orchestrator reads the
+                       work first and right-sizes the apparatus: code-shaped
+                       diffs get the full report (verdict, severity scale,
+                       verification); non-code artifacts get a condensed
+                       report (flat findings, no verdict). Read-only.
 
-  /megamaid:plan         Turn each review finding into a self-contained fix
-                     instruction file. Read-only.
+  /megamaid:plan       Turn each review finding into a self-contained fix
+                       instruction file. Read-only.
 
-  /megamaid:fix          Execute fix instructions: implementer + reviewer
-                     per item, parallel batching where safe.
+  /megamaid:fix        Execute fix instructions: implementer + reviewer
+                       per item, parallel batching where safe.
 
-  /megamaid:vacu-suck   Run review → plan → fix as one continuous sweep.
-                     One model (models.vacu_suck) everywhere. No pauses,
-                     nothing skipped but not-reproduced items. On non-code
-                     artifacts, stops after
-                     review — findings go back into your design
-                     conversation, not an autonomous rewrite pass.
+  /megamaid:vacu-suck  Run review → plan → fix as one continuous sweep.
+                       One model (models.vacu_suck) everywhere. No pauses,
+                       nothing skipped but not-reproduced items. On non-code
+                       artifacts, stops after
+                       review — findings go back into your design
+                       conversation, not an autonomous rewrite pass.
 
-  /megamaid:patterns     Scan the codebase and write a PATTERNS manifest of
-                     concrete conventions (structure, naming, closed token
-                     sets, abstraction level, reuse points) with real code
-                     references. Interactive: confirms scan areas first.
-                     review/plan/fix consume it as an observed baseline,
-                     delivered to agents as a per-run excerpt. --shave
-                     trims an existing manifest without changing it.
+  /megamaid:patterns   Scan the codebase and write a PATTERNS manifest of
+                       concrete conventions (structure, naming, closed token
+                       sets, abstraction level, reuse points) with real code
+                       references. Interactive: confirms scan areas first.
+                       review/plan/fix consume it as an observed baseline,
+                       delivered to agents as a per-run excerpt. --shave
+                       trims an existing manifest without changing it.
 
-  /megamaid:configure    Edit megamaid.config.json conversationally — paths,
-                     models, enable/disable agents.
+  /megamaid:configure  Edit megamaid.config.json conversationally — paths,
+                       models, enable/disable agents.
 
-  /megamaid:help         This message. Pass a command name for details.
+  /megamaid:help       This message. Pass a command name for details.
 
 Focus brief
 
@@ -237,7 +237,7 @@ Config knobs
 ```
 /megamaid:patterns [--shave] [focus brief]
 
-Generate or refresh the PATTERNS manifest — comb's record of this
+Generate or refresh the PATTERNS manifest — megamaid's record of this
 codebase's concrete conventions, with real file:line references.
 With --shave: trim an existing manifest without changing what it
 asserts.
@@ -289,8 +289,8 @@ Consumed by
   one with sed -n. Excerpts live under .megamaid/ (self-ignored by git)
   and are removed at the end of the run. The excerpt falls back to
   the full manifest with a printed notice when the script fails.
-  python3 is required for every comb command since 0.15.0: each
-  skill starts with scripts/megamaid.py config and stops if it fails.
+  python3 is required for every megamaid command: each skill
+  starts with scripts/megamaid.py config and stops if it fails.
 
 Config knobs
   paths.patterns          (default: docs/megamaid/PATTERNS.md)  null disables consumption

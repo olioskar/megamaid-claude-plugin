@@ -1,5 +1,7 @@
 # Re-baseline experiments
 
+Results and version numbers below were recorded on [comb](https://github.com/olioskar/comb-the-desert-claude-plugin); command and file names are updated to megamaid.
+
 Paid, two-arm runs that decide whether a prompt passage still earns its tokens. A passage is removed only when the treatment arm, with the passage removed, shows that the failure it guards against does not recur. Each case here has the same shape as `evals/` but stays out of the per-PR suite. Run one arm with:
 
 ```

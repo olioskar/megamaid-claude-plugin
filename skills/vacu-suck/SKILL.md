@@ -1,6 +1,6 @@
 ---
 name: vacu-suck
-description: Use when the user wants the full comb pipeline — review → plan → fix — run as one continuous sweep. The user must invoke this explicitly — it executes code changes.
+description: Use when the user wants the full megamaid pipeline — review → plan → fix — run as one continuous sweep. The user must invoke this explicitly — it executes code changes.
 argument-hint: "[scope] [focus brief]"
 allowed-tools:
   - Bash

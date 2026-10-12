@@ -11,7 +11,7 @@ F="$ROOT/scripts/fixtures/megamaid"
 E="$F/expected"
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
 export PYTHONUNBUFFERED=1   # stderr and stdout interleave in write order, so warnings come first by construction
-T=$(mktemp -d "${TMPDIR:-/tmp}/comb-test.XXXXXX")
+T=$(mktemp -d "${TMPDIR:-/tmp}/megamaid-test.XXXXXX")
 trap 'rm -rf "$T"' EXIT
 OUT="$T/out"; mkdir -p "$OUT" "$E"
 TR=$(cd "$T" && pwd -P)   # macOS: $TMPDIR is a symlink into /private

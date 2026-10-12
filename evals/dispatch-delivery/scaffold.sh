@@ -7,7 +7,7 @@
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com
-git config user.name "comb eval"
+git config user.name "megamaid eval"
 mkdir -p src reviews .claude
 cat > .claude/megamaid.config.json <<'EOF'
 { "agents": { "implementer": { "subagent_type": "general-purpose",

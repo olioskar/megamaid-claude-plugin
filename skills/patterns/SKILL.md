@@ -1,6 +1,6 @@
 ---
 name: patterns
-description: Use when the user wants to set up, generate, or refresh comb's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /megamaid:review, /megamaid:plan, and /megamaid:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
+description: Use when the user wants to set up, generate, or refresh megamaid's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /megamaid:review, /megamaid:plan, and /megamaid:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
 argument-hint: "[--shave] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You generate or refresh the **PATTERNS manifest** — a persisted, project-specific record of the codebase's *concrete, observed conventions with references to real code*. The manifest is the concrete instantiation of comb's directive principles: a directive says *use the codebase's vocabulary*; the manifest records *the vocabulary is `worksite`, `job`, `crew`, canonical at `src/domain/Worksite.ts:1`*.
+You generate or refresh the **PATTERNS manifest** — a persisted, project-specific record of the codebase's *concrete, observed conventions with references to real code*. The manifest is the concrete instantiation of megamaid's directive principles: a directive says *use the codebase's vocabulary*; the manifest records *the vocabulary is `worksite`, `job`, `crew`, canonical at `src/domain/Worksite.ts:1`*.
 
 This is an **interactive** command. You do recon, propose scan areas, and wait for the user to confirm before dispatching any agents.
 
@@ -125,7 +125,7 @@ You're a read-only convention scanner. Map ONE area and report its concrete, est
 Repository: {project-root}
 Area: {area label}
 Scope (paths/globs): {area path scope}
-comb version: {version}
+megamaid version: {version}
 
 ## 2. Directives for your area (your lenses AND your baseline)
 
@@ -154,17 +154,17 @@ Assemble the manifest **in memory** — writing happens in Step 9, after the int
 
 Assemble **area-major**: each area a top-level `##` section; within it the thematic `###` subsections returned (empty ones omitted). Deduplicate repeated entries within an area. The manifest body records only directive-conforming conventions.
 
-Read the comb version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`version` field) and the base commit from `git rev-parse HEAD`. Render the manifest text in memory using this template:
+Read the megamaid version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`version` field) and the base commit from `git rev-parse HEAD`. Render the manifest text in memory using this template:
 
 ```markdown
 # PATTERNS — {repo name}
 
 **Generated:** {YYYY-MM-DD}
 **Base commit:** {sha}
-**comb version:** {version}
+**megamaid version:** {version}
 **Scan areas:** {comma-separated confirmed area labels}
 
-> Observed baseline, not law. comb's reviewers reconcile this against live code
+> Observed baseline, not law. megamaid's reviewers reconcile this against live code
 > (live code wins), treat a silent area as a cue to read the code rather than
 > permission to do anything, and classify divergence (drift vs. deliberate
 > improvement vs. new canonical) before flagging. Project directives outrank

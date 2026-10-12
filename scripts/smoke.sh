@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline structural check: runs the structural gates, then two non-interactive help checks.
+# Structural check plus two short claude -p help runs (a few cents); run once before a PR.
 # The behavioural gate is `claude plugin eval` (see evals/README.md).
 set -euo pipefail
 cd "$(dirname "$0")/.."

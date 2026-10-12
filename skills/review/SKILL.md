@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, comb through changes, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/megamaid:review look for ambiguities and inconsistencies").
+description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/megamaid:review look for ambiguities and inconsistencies").
 argument-hint: "[scope] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You are running step 1 of the comb workflow: review → plan → fix.
+You are running step 1 of the megamaid workflow: review → plan → fix.
 
 You're a senior tech lead. You pick the right experts for the job, give them clear scope, and pull their findings into one honest report.
 

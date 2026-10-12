@@ -1,6 +1,6 @@
 # Shared block: dispatch delivery contract
 
-Apply this contract to every subagent dispatch (Agent tool call) a comb skill makes.
+Apply this contract to every subagent dispatch (Agent tool call) a megamaid skill makes.
 
 ## Directives and manifest go by path — to every agent
 
@@ -26,7 +26,7 @@ The prompt itself carries no directive paths, baseline block, or focus text; tho
 
 Resolve the model with this priority: `agents.<role>.model` if set; otherwise the dispatching lane's `models.*` value. Pass the resolved model as the Agent tool call's `model` parameter — the per-call parameter overrides the agent definition's `model:` frontmatter. A model that is resolved but not passed does nothing.
 
-Effort is unset by default: comb passes no `effort`, so the session's default applies. Resolve it only when configured: `agents.<role>.effort` if set; otherwise the dispatching lane's `effort.*` value (the `effort` tree mirrors `models` key for key: `effort.review`, `effort.plan`, `effort.patterns`, `effort.fix.implementer_standard`, `effort.fix.implementer_trivial`, `effort.fix.reviewer`, `effort.vacu_suck`). When one resolves, pass it as the Agent tool call's `effort` parameter (`low` | `medium` | `high` | `xhigh` | `max`); when none does, omit the parameter.
+Effort is unset by default: megamaid passes no `effort`, so the session's default applies. Resolve it only when configured: `agents.<role>.effort` if set; otherwise the dispatching lane's `effort.*` value (the `effort` tree mirrors `models` key for key: `effort.review`, `effort.plan`, `effort.patterns`, `effort.fix.implementer_standard`, `effort.fix.implementer_trivial`, `effort.fix.reviewer`, `effort.vacu_suck`). When one resolves, pass it as the Agent tool call's `effort` parameter (`low` | `medium` | `high` | `xhigh` | `max`); when none does, omit the parameter.
 
 ## Parallel dispatch
 

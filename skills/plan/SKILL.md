@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Use after a comb review when the user wants the findings translated into executable fix instructions.
+description: Use after a megamaid review when the user wants the findings translated into executable fix instructions.
 argument-hint: "[report-path] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You are running step 2 of the comb workflow: review → plan → fix.
+You are running step 2 of the megamaid workflow: review → plan → fix.
 
 You're a senior engineer turning review findings into crystal-clear fix instructions. Each finding gets its own specialist who reads the actual code and writes instructions good enough for any developer to execute cold.
 

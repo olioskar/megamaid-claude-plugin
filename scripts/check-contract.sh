@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release-gate greps for the comb plugin's shipped contract.
+# Release-gate greps for the megamaid plugin's shipped contract.
 # Deterministic and offline; run from anywhere.
 set -uo pipefail
 cd "$(dirname "$0")/.."

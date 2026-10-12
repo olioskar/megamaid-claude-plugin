@@ -1,6 +1,8 @@
-# comb eval suite
+# megamaid eval suite
 
-Behavioral regression tests for the comb plugin, in the `claude plugin eval` format
+Results and version numbers below were recorded on [comb](https://github.com/olioskar/comb-the-desert-claude-plugin); command and file names are updated to megamaid.
+
+Behavioral regression tests for the megamaid plugin, in the `claude plugin eval` format
 (`<case>/prompt.md` + `<case>/graders/*.md`, optional `scaffold.sh` per case).
 
 ## Status
@@ -16,7 +18,7 @@ First live run on 2026-10-11 (Claude Code 2.1.296). What it established:
   unless the run passes `--allow-tools Bash Write Edit`; a case cannot grant them.
 - **Graders.** Facts about tool calls (what was dispatched, with what prompt, what was
   read) are checked by `tool_used`, `file_exists`, and `regex` graders. The LLM judge's
-  `trace` view is the first and last 12 messages only, so a comb run of 40 to 100
+  `trace` view is the first and last 12 messages only, so a megamaid run of 40 to 100
   messages cannot be judged on its middle; every `llm` grader here reads `last_message`
   and confirms the final report, nothing more. Exact-text checks are `regex`, not a
   judge. Report contents are graded with `target: { source: file, path: … }`.

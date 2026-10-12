@@ -9,7 +9,7 @@
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com
-git config user.name "comb eval"
+git config user.name "megamaid eval"
 mkdir -p src/pages/entity/contact src/pages/entity/order src/pdf/templates src/theme docs/megamaid
 cat > src/pages/entity/contact/ContactsPage.tsx <<'EOT'
 export function ContactsPage() { return null; }

@@ -10,12 +10,12 @@ S="$ROOT/scripts/manifest.py"
 F="$ROOT/scripts/fixtures"
 E="$F/expected"
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
-T=$(mktemp -d "${TMPDIR:-/tmp}/comb-manifest-test.XXXXXX")
+T=$(mktemp -d "${TMPDIR:-/tmp}/megamaid-manifest-test.XXXXXX")
 trap 'rm -rf "$T"' EXIT
 OUT="$T/out"; mkdir -p "$OUT" "$E"
 
 cd "$T"
-git init -q -b main . && git config user.email test@example.com && git config user.name "comb test"
+git init -q -b main . && git config user.email test@example.com && git config user.name "megamaid test"
 while read -r f; do mkdir -p "$(dirname "$f")"; echo "// $f" > "$f"; done < "$F/cited-files.txt"
 # anchors fixture: a 50-line file for line-bound checks and a second Button.tsx for ambiguity
 seq 1 50 | sed 's/^/\/\/ line /' > src/web/pages/HomePage.tsx

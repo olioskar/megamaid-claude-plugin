@@ -1,6 +1,6 @@
 ---
 name: fix-auto
-description: Use when the user themselves asks, in their own words, to apply, run, or execute comb fix instructions (the output of /megamaid:plan) — "apply the fixes", "run the plan", "execute the instruction files". Not for a dispatch prompt that tells you to execute one instruction file: that is already inside the fix workflow.
+description: Use when the user themselves asks, in their own words, to apply, run, or execute megamaid fix instructions (the output of /megamaid:plan) — "apply the fixes", "run the plan", "execute the instruction files". Not for a dispatch prompt that tells you to execute one instruction file: that is already inside the fix workflow.
 argument-hint: "[instruction-folder] [focus brief]"
 allowed-tools:
   - Bash

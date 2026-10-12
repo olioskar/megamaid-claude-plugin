@@ -1,6 +1,6 @@
 # Shared block: layered config loading
 
-Every comb skill loads its config this way. Read the layers in this order, deep-merging each layer onto the previous:
+Every megamaid skill loads its config this way. Read the layers in this order, deep-merging each layer onto the previous:
 
 1. `${CLAUDE_PLUGIN_ROOT}/config/defaults.json` — shipped defaults
 2. `~/.claude/megamaid.config.json` — global override (skip if not present)

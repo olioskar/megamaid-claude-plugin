@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user wants to configure comb, change comb settings, disable an agent, change which model comb uses, set the base branch, change where reviews are saved, point comb at their directives, or otherwise tweak `.claude/megamaid.config.json`.
+description: Use when the user wants to configure megamaid, change megamaid settings, disable an agent, change which model megamaid uses, set the base branch, change where reviews are saved, point megamaid at their directives, or otherwise tweak `.claude/megamaid.config.json`.
 argument-hint: "[scope] [change]"
 allowed-tools:
   - Bash
@@ -11,7 +11,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You help the user edit their comb config conversationally and write the result to the right `megamaid.config.json` file with correct deep-merge semantics.
+You help the user edit their megamaid config conversationally and write the result to the right `megamaid.config.json` file with correct deep-merge semantics.
 
 ## Inputs
 

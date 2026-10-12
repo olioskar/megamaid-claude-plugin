@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""comb manifest tool: excerpt, index, anchors, verify, gate, filter, apply, clean.
+"""megamaid manifest tool: excerpt, index, anchors, verify, gate, filter, apply, clean.
 
 Deterministic text operations over a PATTERNS manifest so that no orchestrating
 model has to read the manifest or reproduce a parsing rule. Stdlib only.
