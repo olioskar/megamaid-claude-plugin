@@ -1,0 +1,45 @@
+dropped: paths.nope
+dropped: paths.nope2
+dropped: directives.bogus
+dropped: models.fix.unknown
+dropped: effort.nope
+dropped: legacy
+dropped: dropped
+{
+  "paths": {
+    "reviews": "docs/combs/reviews"
+  },
+  "agents": {
+    "simplifier": null,
+    "code-reviewer": {
+      "subagent_type": "megamaid:code-reviewer",
+      "when_to_use": "Run comb:code-reviewer first.",
+      "model": "opus"
+    },
+    "ours": {
+      "subagent_type": "acme:reviewer",
+      "when_to_use": "Custom lens."
+    },
+    "broken": {
+      "when_to_use": "no type"
+    }
+  },
+  "models": {
+    "vacu_suck": "sonnet",
+    "review": null,
+    "fix": {
+      "reviewer": "haiku"
+    }
+  },
+  "effort": {
+    "vacu_suck": "high",
+    "review": "low",
+    "fix": {
+      "implementer_trivial": "low"
+    }
+  },
+  "fix": {
+    "commit_per_item": true
+  }
+}
+exit=0

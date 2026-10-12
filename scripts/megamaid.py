@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""megamaid resolver: config, resolve, directives, brief, report-name, batches, findings.
+"""megamaid resolver: config, resolve, directives, brief, report-name, batches, findings, migrate.
 
 Deterministic resolution of what every megamaid skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
@@ -16,6 +16,8 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     stderr: `warning: agents.<role> dropped — missing <subagent_type|when_to_use>`
             plus a warning when `agents` is not an object, `directives.include_plugin_defaults` is not a
             boolean, or `directives.user_path` exists but is not a directory. A config file may start with a BOM.
+            Then one `notice:` line per file from an earlier install that is not read (scripts/migrate.py);
+            notices never change the exit code.
     exit 2: `megamaid.py: invalid JSON in <path>: <msg>` (first bad layer) or `megamaid.py: <path>: <os error>`.
     Layers: P/config/defaults.json, H/.claude/megamaid.config.json, R/.claude/megamaid.config.json;
     missing override files are skipped. Dicts deep-merge, lists replace, null deletes
@@ -83,9 +85,21 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     A report whose entries carry labels instead of codes is `non-code` with empty codes. A finding
     without a `**Verified:**` line (a report that predates the field) is returned with `verified: ""`.
     Anything else is count 0, shape unknown — never a traceback.
+
+  megamaid.py migrate config --layer home|project [config flags]
+    stdout: that layer's earlier-install config translated to megamaid's keys, JSON indent 2, input order.
+    stderr: `dropped: <dotted.key>` per key megamaid has no use for. Rules: scripts/migrate.py translate().
+    exit 2: `megamaid.py: <path>: missing`, `… invalid JSON in <path>: <msg>`, `… <path>: top level is not an object`.
+
+  megamaid.py migrate manifest --move|--copy [config flags]
+    Moves or copies the earlier install's PATTERNS manifest to megamaid's paths.patterns; never runs git.
+    stdout: `moved|copied <src> -> <dst>` (realpaths).
+    exit 2: `no PATTERNS manifest from an earlier install`, `paths.patterns is disabled`, `<dst> exists; not overwritten`.
+    Any command that needs scripts/migrate.py exits 2 with `cannot load scripts/migrate.py: <error>` when it can't be loaded.
 """
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import random
@@ -117,6 +131,24 @@ def project_root_default():
         return out.stdout.strip()
     except Exception:
         return os.getcwd()
+
+
+def load_migrate():
+    """scripts/migrate.py, loaded by file path: python3 -I drops this script's directory from sys.path."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrate.py")
+    try:
+        spec = importlib.util.spec_from_file_location("megamaid_migrate", path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.dont_write_bytecode = True  # -I does not imply -B; keep the plugin directory clean
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as ex:
+        die("cannot load scripts/migrate.py: %s" % ex)
+
+
+def patterns_value(cfg):
+    paths = cfg.get("paths")
+    return paths.get("patterns") if isinstance(paths, dict) else None
 
 
 # ------------------------------------------------------------------- config
@@ -186,8 +218,35 @@ def merged_config(a):
 
 
 def cmd_config(a):
+    m = load_migrate()
     cfg = merged_config(a)
+    for line in m.notices(a.home, a.project_root, patterns_value(cfg)):
+        sys.stderr.write(line + "\n")
+    sys.stderr.flush()
     print(json.dumps(cfg, indent=1, sort_keys=True, ensure_ascii=False))
+
+
+def cmd_migrate_config(a):
+    m = load_migrate()
+    try:
+        old = m.read_old_config(a.home if a.layer == "home" else a.project_root)
+    except m.MigrateError as ex:
+        die(str(ex))
+    defaults = load_layer(os.path.join(a.plugin_root, "config", "defaults.json"), required=True)
+    new, dropped = m.translate(old, defaults)
+    for k in dropped:
+        sys.stderr.write("dropped: %s\n" % k)
+    sys.stderr.flush()
+    print(json.dumps(new, indent=2, ensure_ascii=False))
+
+
+def cmd_migrate_manifest(a):
+    m = load_migrate()
+    cfg = merged_config(a)
+    try:
+        print(m.move_manifest(a.home, a.project_root, patterns_value(cfg), "move" if a.move else "copy"))
+    except m.MigrateError as ex:
+        die(str(ex))
 
 
 # ------------------------------------------------------------------ resolve
@@ -774,6 +833,17 @@ def main(argv=None):
     s = sub.add_parser("findings", help="findings of a review report as JSON (count 0 when the template is absent)")
     s.add_argument("--report", required=True)
     s.set_defaults(fn=cmd_findings)
+
+    s = sub.add_parser("migrate", help="carry over a config or PATTERNS manifest from an earlier install")
+    msub = s.add_subparsers(dest="what", required=True)
+    t = msub.add_parser("config", parents=[common], help="print an earlier install's config translated to megamaid's keys")
+    t.add_argument("--layer", required=True, choices=["home", "project"])
+    t.set_defaults(fn=cmd_migrate_config)
+    t = msub.add_parser("manifest", parents=[common], help="move or copy an earlier install's PATTERNS manifest to paths.patterns")
+    g = t.add_mutually_exclusive_group(required=True)
+    g.add_argument("--move", action="store_true")
+    g.add_argument("--copy", action="store_true")
+    t.set_defaults(fn=cmd_migrate_manifest)
 
     a = p.parse_args(argv)
     if getattr(a, "project_root", "") is None:

@@ -100,13 +100,56 @@ done
 python3 -I "$ROOT/scripts/manifest.py" clean --run fix-1-cccc > "$OUT/brief-clean.out" 2>&1
 { ls .megamaid/excerpts 2>/dev/null | grep -c fix-1-cccc || true; } >> "$OUT/brief-clean.out"
 
+# migrate: notices from `config`, `migrate config`, `migrate manifest`. Inputs and expected outputs
+# live in scripts/fixtures/migrate/ (exempt from check-contract's old-name guard); cases run on a
+# temp copy of the layouts so a move never touches the repo.
+M="$ROOT/scripts/fixtures/migrate"; ME="$M/expected"
+OUT2="$T/out2"; mkdir -p "$OUT2" "$ME"
+cp -R "$M/layouts" "$T/L"; L="$T/L"
+run2() { name=$1; shift; python3 -I "$S" "$@" 2>&1 | norm > "$OUT2/$name.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/$name.out"; }
+runn() { name=$1; shift; python3 -I "$S" "$@" 2>&1 >/dev/null | norm > "$OUT2/$name.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/$name.out"; }
+lay() { LAY=(--plugin-root "$P" --home "$L/$1/home" --project-root "$L/$1/project"); }
+lay home-only;           runn notice-home                config "${LAY[@]}"
+lay project-only;        runn notice-project             config "${LAY[@]}"
+lay both;                runn notice-both                config "${LAY[@]}"
+lay mixed;               runn notice-mixed               config "${LAY[@]}"
+ln -s "$T/L/same/root" "$T/same-link"
+runn notice-same config --plugin-root "$P" --home "$T/same-link" --project-root "$TR/L/same/root"
+lay invalid;             runn notice-invalid             config "${LAY[@]}"
+lay manifest-default;    runn notice-manifest-default    config "${LAY[@]}"
+lay manifest-configured; runn notice-manifest-configured config "${LAY[@]}"
+lay manifest-oldnull;    runn notice-manifest-oldnull    config "${LAY[@]}"
+lay manifest-newnull;    runn notice-manifest-newnull    config "${LAY[@]}"
+lay kept-path;           runn notice-kept-path           config "${LAY[@]}"
+mkdir -p lone && cp "$S" lone/
+python3 -I lone/megamaid.py config "${C[@]}" 2>&1 >/dev/null | norm > "$OUT2/lone.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone.out"
+python3 -I lone/megamaid.py migrate config --layer home "${C[@]}" 2>&1 | norm > "$OUT2/lone-migrate.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone-migrate.out"
+lay translate;           run2 translate         migrate config --layer project "${LAY[@]}"
+lay bom;                 run2 translate-bom     migrate config --layer project "${LAY[@]}"
+lay invalid;             run2 translate-badjson migrate config --layer project "${LAY[@]}"
+lay list;                run2 translate-list    migrate config --layer project "${LAY[@]}"
+lay effort-scalar;       run2 translate-scalar  migrate config --layer project "${LAY[@]}"
+lay home-only;           run2 translate-missing migrate config --layer project "${LAY[@]}"
+lay home-only;           run2 translate-home    migrate config --layer home "${LAY[@]}"
+run2 translate-same migrate config --layer project --plugin-root "$P" --home "$L/same/root" --project-root "$L/same/root"
+lay manifest-default;    run2 manifest-move       migrate manifest --move "${LAY[@]}"
+                         run2 manifest-move-again migrate manifest --move "${LAY[@]}"
+lay manifest-configured; run2 manifest-copy       migrate manifest --copy "${LAY[@]}"
+                         run2 manifest-copy-again migrate manifest --copy "${LAY[@]}"
+lay kept-path;           run2 manifest-kept       migrate manifest --copy "${LAY[@]}"
+lay project-only;        run2 manifest-missing    migrate manifest --copy "${LAY[@]}"
+lay manifest-newnull;    run2 manifest-disabled   migrate manifest --copy "${LAY[@]}"
+
 fail=0
-for o in "$OUT"/*; do
-  n=$(basename "$o")
-  if [ "$UPDATE" = 1 ]; then cp "$o" "$E/$n"; continue; fi
-  if [ ! -f "$E/$n" ]; then echo "FAIL: no expected file for $n"; fail=1; continue; fi
-  if ! diff -u "$E/$n" "$o" > "$T/diff.txt"; then echo "FAIL: $n differs"; cat "$T/diff.txt"; fail=1; fi
-done
-[ "$UPDATE" = 1 ] && { echo "expected files updated in scripts/fixtures/megamaid/expected/"; exit 0; }
-[ "$fail" = 0 ] && echo "test-megamaid: OK ($(ls "$E" | wc -l | tr -d ' ') expectations)"
+check() {  # $1 output dir, $2 expected dir
+  for o in "$1"/*; do
+    n=$(basename "$o")
+    if [ "$UPDATE" = 1 ]; then cp "$o" "$2/$n"; continue; fi
+    if [ ! -f "$2/$n" ]; then echo "FAIL: no expected file for $n"; fail=1; continue; fi
+    if ! diff -u "$2/$n" "$o" > "$T/diff.txt"; then echo "FAIL: $n differs"; cat "$T/diff.txt"; fail=1; fi
+  done
+}
+check "$OUT" "$E"; check "$OUT2" "$ME"
+[ "$UPDATE" = 1 ] && { echo "expected files updated in scripts/fixtures/megamaid/expected/ and scripts/fixtures/migrate/expected/"; exit 0; }
+[ "$fail" = 0 ] && echo "test-megamaid: OK ($(( $(ls "$E" | wc -l) + $(ls "$ME" | wc -l) )) expectations)"
 exit $fail
