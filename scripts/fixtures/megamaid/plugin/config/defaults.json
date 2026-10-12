@@ -1,8 +1,8 @@
 {
   "paths": {
-    "reviews":     "docs/combs/reviews",
-    "plans":       "docs/combs/plans",
-    "patterns":    "docs/combs/PATTERNS.md",
+    "reviews":     "docs/megamaid/reviews",
+    "plans":       "docs/megamaid/plans",
+    "patterns":    "docs/megamaid/PATTERNS.md",
     "base_branch": "main"
   },
   "directives": {

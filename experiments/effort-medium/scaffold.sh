@@ -6,7 +6,7 @@ git init -q -b main .
 git config user.email eval@example.com
 git config user.name "comb eval"
 mkdir -p src .claude
-printf '{ "effort": { "review": "medium" } }\n' > .claude/comb.config.json
+printf '{ "effort": { "review": "medium" } }\n' > .claude/megamaid.config.json
 cat > src/config.js <<'EOF'
 async function readConfig() {
   return { currency: "EUR" };

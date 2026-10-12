@@ -3,8 +3,8 @@
 Every comb skill loads its config this way. Read the layers in this order, deep-merging each layer onto the previous:
 
 1. `${CLAUDE_PLUGIN_ROOT}/config/defaults.json` — shipped defaults
-2. `~/.claude/comb.config.json` — global override (skip if not present)
-3. `<project-root>/.claude/comb.config.json` — project override (skip if not present)
+2. `~/.claude/megamaid.config.json` — global override (skip if not present)
+3. `<project-root>/.claude/megamaid.config.json` — project override (skip if not present)
 
 **Project root** is `git rev-parse --show-toplevel` (which correctly returns the worktree path for git worktrees; cwd fallback when not in git).
 

@@ -3,7 +3,7 @@ PATTERNS excerpt: 3 of 6 area sections included (3. SidePanel / PanelHost; 9. De
 stale: no (no cited file in the touched set)
 base_commit: BASECOMMIT0
 --- excerpt body ---
-> comb excerpt of docs/combs/PATTERNS.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/combs/PATTERNS.md`:
+> megamaid excerpt of docs/megamaid/PATTERNS.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/megamaid/PATTERNS.md`:
 > - 1. Entity Page — lines 17–32
 > - 12. PDF / reporting — lines 58–67
 > - 14. Testing conventions — lines 68–75

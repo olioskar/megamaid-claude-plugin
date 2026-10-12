@@ -410,7 +410,7 @@ Then, last of all, remove this run's excerpt and brief working files (they share
 
 ## Ground rules
 
-- **Read-only.** Nobody edits code. The only files created are the report and this run's excerpt and brief working files under `.comb/excerpts/`, which are removed at the end.
+- **Read-only.** Nobody edits code. The only files created are the report and this run's excerpt and brief working files under `.megamaid/excerpts/`, which are removed at the end.
 - **Agents read actual source code.** Not just filenames.
 - **The report's voice is authoritative.** Step 7's verification gate is what earns it. A particular that survived no check is marked, not stated.
 - **Project-aware.** Every agent gets the project's directives.

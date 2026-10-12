@@ -72,8 +72,8 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
  },
  "paths": {
   "base_branch": "main",
-  "plans": "docs/combs/plans",
-  "reviews": "docs/combs/reviews"
+  "plans": "docs/megamaid/plans",
+  "reviews": "docs/megamaid/reviews"
  }
 }
 exit=0

@@ -12,7 +12,7 @@ user-invocable: false
 disable-model-invocation: false
 ---
 
-You are the model-invocable entry to `/megamaid:fix`. `/megamaid:fix` itself is user-only (`disable-model-invocation: true`) because it edits code and commits; this skill exists so a project can opt in to letting Claude start that workflow from a natural-language request. It cannot be typed as a slash command; only the model invokes it. It refuses by default: a project opts in with `fix.model_invocation: true` in its `.claude/comb.config.json` (or globally in `~/.claude/comb.config.json`).
+You are the model-invocable entry to `/megamaid:fix`. `/megamaid:fix` itself is user-only (`disable-model-invocation: true`) because it edits code and commits; this skill exists so a project can opt in to letting Claude start that workflow from a natural-language request. It cannot be typed as a slash command; only the model invokes it. It refuses by default: a project opts in with `fix.model_invocation: true` in its `.claude/megamaid.config.json` (or globally in `~/.claude/megamaid.config.json`).
 
 ## Step 1: Check the gate
 

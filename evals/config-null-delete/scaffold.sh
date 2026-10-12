@@ -12,7 +12,7 @@ function add(a, b) {
 
 module.exports = { add };
 EOF
-cat > .claude/comb.config.json <<'EOF'
+cat > .claude/megamaid.config.json <<'EOF'
 {
   "agents": {
     "simplifier": null

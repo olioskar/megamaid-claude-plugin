@@ -1,2 +1,2 @@
-manifest.py: passing set TMP/.comb/excerpts/RUN.index.json has no 'edits' key (wrong file?)
+manifest.py: passing set TMP/.megamaid/excerpts/RUN.index.json has no 'edits' key (wrong file?)
 exit=2

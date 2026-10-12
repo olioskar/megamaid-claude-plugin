@@ -65,7 +65,7 @@ Check: node -e "const {sum}=require('./src/util.js'); if (sum([1,2,3])!==6) proc
 ## Directive citations
 None — no policy citation needed.
 EOF
-cat > .claude/comb.config.json <<'EOF2'
+cat > .claude/megamaid.config.json <<'EOF2'
 {
   "fix": { "model_invocation": true, "commit_per_item": false }
 }

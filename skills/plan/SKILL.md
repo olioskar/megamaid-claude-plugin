@@ -126,7 +126,7 @@ The user decides. Grouped items share one .md file but list each sub-item explic
 
 Default: `<paths.plans>/plan-for-{report-stem}/`
 
-For example, report at `docs/combs/reviews/pr-123-round1-report.md` → instructions at `docs/combs/plans/plan-for-pr-123-round1-report/`.
+For example, report at `docs/megamaid/reviews/pr-123-round1-report.md` → instructions at `docs/megamaid/plans/plan-for-pr-123-round1-report/`.
 
 User may override.
 
@@ -268,7 +268,7 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, {run bri
 All {N} instruction files ready:
 
 Critical ({count}):
-  - docs/combs/plans/plan-for-.../C1-stale-closure-in-hook.md
+  - docs/megamaid/plans/plan-for-.../C1-stale-closure-in-hook.md
   - ...
 
 High ({count}):

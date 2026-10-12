@@ -9,7 +9,7 @@ git init -q -b main .
 git config user.email eval@example.com
 git config user.name "comb eval"
 mkdir -p src reviews .claude
-cat > .claude/comb.config.json <<'EOF'
+cat > .claude/megamaid.config.json <<'EOF'
 { "agents": { "implementer": { "subagent_type": "general-purpose",
   "when_to_use": "Writer-capable agent; foreign per the delivery contract." } } }
 EOF

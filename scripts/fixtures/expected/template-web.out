@@ -3,7 +3,7 @@ PATTERNS excerpt: 1 of 3 area sections included (React frontend); 2 global; omit
 stale: no (0 cited files changed since BASECOMMIT0)
 base_commit: BASECOMMIT0
 --- excerpt body ---
-> comb excerpt of docs/combs/TEMPLATE.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/combs/TEMPLATE.md`:
+> megamaid excerpt of docs/megamaid/TEMPLATE.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/megamaid/TEMPLATE.md`:
 > - API — lines 33–45
 > - Shared types — lines 46–55
 

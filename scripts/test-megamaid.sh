@@ -46,7 +46,7 @@ run directives-user      directives --brief "velocity" "${C[@]}"
 run directives-noplugin  directives --plugin-root "$P" --home "$H" --project-root "$F/noplugin"
 run directives-short-positive directives --brief "the api" --plugin-root "$P" --home "$H" --project-root "$F/noplugin"
 run directives-oddities  directives --plugin-root "$P" --home "$H" --project-root "$F/oddities"
-# brief: the per-run dispatch block, written under the temp cwd's .comb/excerpts
+# brief: the per-run dispatch block, written under the temp cwd's .megamaid/excerpts
 touch ex.md PATTERNS.md
 run brief-native-review  brief --skill review --role code-reviewer --run review-1-aaaa --brief "scope and simplicity" --excerpt "$T/ex.md" --manifest "$T/PATTERNS.md" "${C[@]}"
 run brief-foreign-plan   brief --skill plan --role ours --run plan-1-bbbb --brief "keep it simpl" --manifest "$T/PATTERNS.md" "${C[@]}"
@@ -93,12 +93,12 @@ run findings-missing     findings --report "$R/reports/no-such-report.md"
 run findings-old         findings --report "$R/reports/old-report.md"
 run findings-mixed-deferred findings --report "$R/reports/mixed-deferred.md"
 for b in review-1-aaaa.review.code-reviewer plan-1-bbbb.plan.ours fix-1-cccc.fix.implementer fix-1-cccc.fix.test-auditor fix-1-cccc.plan.implementer fix-1-dddd.fix.implementer review-1-ffff.review.code-reviewer; do
-  if [ -f ".comb/excerpts/$b.brief.md" ]; then norm < ".comb/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; else echo "MISSING .comb/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; fi
+  if [ -f ".megamaid/excerpts/$b.brief.md" ]; then norm < ".megamaid/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; else echo "MISSING .megamaid/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; fi
 done
-[ -f .comb/.gitignore ] && cat .comb/.gitignore > "$OUT/brief-gitignore.out" || echo "MISSING .comb/.gitignore" > "$OUT/brief-gitignore.out"
+[ -f .megamaid/.gitignore ] && cat .megamaid/.gitignore > "$OUT/brief-gitignore.out" || echo "MISSING .megamaid/.gitignore" > "$OUT/brief-gitignore.out"
 # manifest.py clean removes a run's briefs (same stem)
 python3 -I "$ROOT/scripts/manifest.py" clean --run fix-1-cccc > "$OUT/brief-clean.out" 2>&1
-{ ls .comb/excerpts 2>/dev/null | grep -c fix-1-cccc || true; } >> "$OUT/brief-clean.out"
+{ ls .megamaid/excerpts 2>/dev/null | grep -c fix-1-cccc || true; } >> "$OUT/brief-clean.out"
 
 fail=0
 for o in "$OUT"/*; do

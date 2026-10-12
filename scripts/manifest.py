@@ -13,7 +13,7 @@ Excerpt grammar (the contract shared/manifest-slicing.md points at):
 3. Derives each area section's scope from two sources only. **Scope lines**: a line beginning `Scope:` or `Home:` (after leading `_`/`*`); the first clause (up to an em dash or sentence end) that carries a path-like token supplies the globs, from its backticked tokens or, without backticks, its comma-separated items; parenthesised asides with prose are ignored; a token is path-like when it contains `/` or starts with `*.`/`**/`; `{x}` → `*`, a trailing `(x)` → `*`, trailing `/` → `/**`, a directory without a glob character → `/**`, a file-like token matches exactly; a line with no path-like token is prose and counts as absent. **Anchors**: `path/with/ext:line` tokens in the text. A section with neither is **unscoped**.
 4. Extracts touched paths (a token with a `/`, or a bare file-shaped basename; `./` prefixes and `:line` parts stripped; `a/`/`b/` prefixes stripped unless the prefixed path exists in the project) from the raw touched text: a piped diff name list, a review report, an instruction folder, a revise doc. No skill parses paths itself.
 5. Marks an area section relevant when a touched path matches one of its globs, equals one of its anchors, or (only for a section with no scope line) sits in the same directory as one of its anchors. Unscoped sections, the header, and every global section always travel.
-6. Writes the excerpt under `.comb/excerpts/` in the current working directory, creating `.comb/` with a `.gitignore` of `*` on first use, so nothing under it ever appears in `git status` or gets staged. Header lines over 400 characters (provenance stamps) are truncated in the excerpt. The excerpt opens with a banner listing the omitted sections and their line ranges so an agent can read one with `sed -n START,ENDp <manifest>`.
+6. Writes the excerpt under `.megamaid/excerpts/` in the current working directory, creating `.megamaid/` with a `.gitignore` of `*` on first use, so nothing under it ever appears in `git status` or gets staged. Header lines over 400 characters (provenance stamps) are truncated in the excerpt. The excerpt opens with a banner listing the omitted sections and their line ranges so an agent can read one with `sed -n START,ENDp <manifest>`.
 7. Computes staleness: `cited` = the manifest's anchors (basenames resolved through their section's directories where the file exists); when `cited ∩ touched` is empty the manifest is not stale; otherwise `git diff --name-only <base_commit> HEAD -- <intersection>` decides; a git failure or a header with no base commit gives `unknown`. The base commit is the `**Base commit:**` line when present, else the last hex token in the header that contains a letter.
 """
 import argparse
@@ -75,7 +75,7 @@ def repo_root():
 
 
 def state_dir():
-    d = os.path.join(os.getcwd(), ".comb")
+    d = os.path.join(os.getcwd(), ".megamaid")
     ex = os.path.join(d, "excerpts")
     os.makedirs(ex, exist_ok=True)
     gi = os.path.join(d, ".gitignore")
@@ -360,7 +360,7 @@ def cmd_excerpt(a):
     out_path = os.path.join(ex_dir, stem + ".md")
 
     omitted = [s for s in sections if s["n"] not in included]
-    banner = ["> comb excerpt of %s for this run. Omitted sections, readable by line range "
+    banner = ["> megamaid excerpt of %s for this run. Omitted sections, readable by line range "
               "with `sed -n START,ENDp %s`:" % (a.manifest, a.manifest)]
     if omitted:
         for s in omitted:
@@ -996,7 +996,7 @@ def cmd_apply(a):
 def cmd_clean(a):
     if not RUN_STEM.match(a.run):
         die("clean: %r is not a run stem (<skill>-<digits>-<hex>); nothing removed" % a.run, 2)
-    ex_dir = os.path.join(os.getcwd(), ".comb", "excerpts")
+    ex_dir = os.path.join(os.getcwd(), ".megamaid", "excerpts")
     n = 0
     if os.path.isdir(ex_dir):
         for name in os.listdir(ex_dir):

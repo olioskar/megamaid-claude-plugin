@@ -1,7 +1,7 @@
 # Revise spec
 
 **Target spec:** `docs/spec.md`
-**Source report:** `docs/combs/reviews/spec-report.md`
+**Source report:** `docs/megamaid/reviews/spec-report.md`
 **Revisions:** 2 (1 Ambiguity, 1 Blind spot)
 
 ---

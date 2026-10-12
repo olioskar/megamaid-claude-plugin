@@ -17,7 +17,7 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             plus a warning when `agents` is not an object, `directives.include_plugin_defaults` is not a
             boolean, or `directives.user_path` exists but is not a directory. A config file may start with a BOM.
     exit 2: `megamaid.py: invalid JSON in <path>: <msg>` (first bad layer) or `megamaid.py: <path>: <os error>`.
-    Layers: P/config/defaults.json, H/.claude/comb.config.json, R/.claude/comb.config.json;
+    Layers: P/config/defaults.json, H/.claude/megamaid.config.json, R/.claude/megamaid.config.json;
     missing override files are skipped. Dicts deep-merge, lists replace, null deletes
     at any depth; a role that is not a dict with string subagent_type and when_to_use
     is dropped with a warning.
@@ -40,7 +40,7 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     hyphen-separated segment of the basename instead (so "it" flags nothing, "api" flags api.md).
 
   megamaid.py brief --skill S --role R [--run <stem>] [--excerpt <path>] [--manifest <path>] [--brief "<text>"] [config flags]
-    S in review|plan|fix|patterns. Writes .comb/excerpts/<run>.<S>.<R>.brief.md under the cwd
+    S in review|plan|fix|patterns. Writes .megamaid/excerpts/<run>.<S>.<R>.brief.md under the cwd
     (minting `<S>-<epoch>-<4 hex>` and printing `run: <stem>` first when --run is omitted;
     manifest.py clean --run removes it) and prints:
       brief: <abs path>
@@ -151,8 +151,8 @@ def load_layer(path, required):
 
 def layer_paths(a):
     return [os.path.join(a.plugin_root, "config", "defaults.json"),
-            os.path.join(a.home, ".claude", "comb.config.json"),
-            os.path.join(a.project_root, ".claude", "comb.config.json")]
+            os.path.join(a.home, ".claude", "megamaid.config.json"),
+            os.path.join(a.project_root, ".claude", "megamaid.config.json")]
 
 
 def merged_config(a):
@@ -376,7 +376,7 @@ SKILLS = ("review", "plan", "fix", "patterns")
 
 
 def state_dir():
-    d = os.path.join(os.getcwd(), ".comb")
+    d = os.path.join(os.getcwd(), ".megamaid")
     ex = os.path.join(d, "excerpts")
     os.makedirs(ex, exist_ok=True)
     gi = os.path.join(d, ".gitignore")

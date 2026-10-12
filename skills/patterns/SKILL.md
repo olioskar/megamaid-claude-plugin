@@ -32,7 +32,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, take:
-- `paths.patterns` — where the manifest is written/read (default `docs/combs/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
+- `paths.patterns` — where the manifest is written/read (default `docs/megamaid/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
 - `models.patterns` — model for the scanner agents (default `opus`).
 - `agents.pattern-scanner` — the scanner role (`subagent_type`, default `megamaid:pattern-scanner`).
 - `directives` — the loaded directive set. Read each directive's name and its opening purpose line; you map directives to areas at the gate (Step 3) and dispatch each scanner only the directives relevant to its area (Step 5). **Authority is the user's call at the gate, never the scanner's** — every dispatched directive is authoritative unless the user down-weights it. If a directive's name or frontmatter self-marks as draft/WIP/superseded/non-authoritative, note it and pre-flag it at the gate as a *suggested* down-weight (the user confirms); a scanner is never told to disregard a directive on its own judgment.
@@ -218,10 +218,10 @@ This is the headline of the interactive flow: it resolves the stale-directive-vs
 
 ## Step 8: Pre-write review (interactive)
 
-**Anchor check (mechanical).** Write the in-memory manifest text to `.comb/excerpts/patterns-draft.md` (the script's working directory; the script keeps it ignored by git), then run from the project root:
+**Anchor check (mechanical).** Write the in-memory manifest text to `.megamaid/excerpts/patterns-draft.md` (the script's working directory; the script keeps it ignored by git), then run from the project root:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" anchors --manifest .comb/excerpts/patterns-draft.md
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" anchors --manifest .megamaid/excerpts/patterns-draft.md
 ```
 
 It prints one line per anchor whose file does not exist or whose line is past the end of the file, one per basename anchor that resolves to more than one file, and a summary. **Bound:** it checks existence and line bounds only; it does not read the line or judge whether it supports the claim.
@@ -259,7 +259,7 @@ Size: {total bytes}B ~{tokens} tokens; {area} area, {global} global sections{ ·
 Consumed automatically by /megamaid:review, /megamaid:plan, /megamaid:fix when present (as a per-run excerpt).
 ```
 
-Then `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>` for the index run, and remove the draft: `rm -f .comb/excerpts/patterns-draft.md`.
+Then `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>` for the index run, and remove the draft: `rm -f .megamaid/excerpts/patterns-draft.md`.
 
 **Reconciliation outcomes (only when Step 7 ran).** Append whichever apply — these turn the old dead-end warning into an actionable result:
 
@@ -308,7 +308,7 @@ A reply that names no file, or names a file that is missing, is recorded as `sec
 **S4. Verify.** Run, listing every edit file the shavers wrote:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" verify --manifest <paths.patterns> --index <index> --edits <edits-n.json ...> --out .comb/excerpts/<run>.passing.json
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" verify --manifest <paths.patterns> --index <index> --edits <edits-n.json ...> --out .megamaid/excerpts/<run>.passing.json
 ```
 
 It prints one line per edit (`ok` or `FAIL … : <check>`), one `UNUSABLE <file>: <why>` line per edit file it could not parse, and a summary, and writes the passing set. A non-zero exit means some edits or files were rejected, not that the run failed; the passing set is always written. **Bound:** verify checks the mechanical properties in the rules file only; it does not judge whether a surviving anchor still supports its claim, does not open the codebase, and does not evaluate the shaver's comparison.
@@ -316,10 +316,10 @@ It prints one line per edit (`ok` or `FAIL … : <check>`), one `UNUSABLE <file>
 **S5. Gate** (shave mode's one hard stop; no default). Run:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" gate --edits .comb/excerpts/<run>.passing.json
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" gate --edits .megamaid/excerpts/<run>.passing.json
 ```
 
-If it prints `Nothing to shave: the passing set is empty (…)`, report that line with the rejected and unusable counts and stop with `clean`; there is nothing to apply. Otherwise show its output verbatim: per section the counts by class and bytes removed, every `duplicate` in full (`old` → `new`, owner), every `anchor` as the dropped anchor and its line, every `fixed-drift` as the line, and the rejected edits with their checks; past 200 lines of full text the duplicates collapse to one line each. Replies: `apply`; `skip <class>` or `skip <section>` (run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" filter --edits <passing> --skip-class … --skip-section … --out .comb/excerpts/<run>.final.json`, then show the gate again for the final file); `show <section>` (run `gate … --show "<heading>"`). Nothing is applied until the user says `apply`.
+If it prints `Nothing to shave: the passing set is empty (…)`, report that line with the rejected and unusable counts and stop with `clean`; there is nothing to apply. Otherwise show its output verbatim: per section the counts by class and bytes removed, every `duplicate` in full (`old` → `new`, owner), every `anchor` as the dropped anchor and its line, every `fixed-drift` as the line, and the rejected edits with their checks; past 200 lines of full text the duplicates collapse to one line each. Replies: `apply`; `skip <class>` or `skip <section>` (run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" filter --edits <passing> --skip-class … --skip-section … --out .megamaid/excerpts/<run>.final.json`, then show the gate again for the final file); `show <section>` (run `gate … --show "<heading>"`). Nothing is applied until the user says `apply`.
 
 **S6. Write.** Run:
 
@@ -339,7 +339,7 @@ and finish with `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --
 ## Ground rules
 
 - **Interactive before heavy work, but never naggy.** One hard stop per mode: the scan plan (Step 3) in generate mode, the shave gate in shave mode. In generate mode also confirm before overwriting an existing manifest (Steps 4, 8). Batch every gate into one prompt with safe "go"/"write" defaults — never drip questions one at a time, and never ask what recon already detected. The interactive steps that involve the user (3, 7, 8) only stop when there's a real decision to make: Step 7 fires only when dominant conflicts exist, Step 8's re-scan only when the user asks.
-- **Scanners never edit; shavers write one file.** `megamaid:pattern-scanner` never edits. `megamaid:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.comb/excerpts/`; nothing else.
+- **Scanners never edit; shavers write one file.** `megamaid:pattern-scanner` never edits. `megamaid:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.megamaid/excerpts/`; nothing else.
 - **Shave never rescans.** It reads code only to confirm two anchors pin one convention. In shave mode the orchestrator never reads the manifest; it reads the script's output and the shavers' replies.
 - **Facts, not principles.** Every entry cites real code. Omit empty lenses rather than padding.
 - **Full scan lives here only.** The consuming skills never re-scan the whole codebase; they read this manifest plus the files around their diff.

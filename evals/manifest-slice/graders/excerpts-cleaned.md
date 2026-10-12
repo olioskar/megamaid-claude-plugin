@@ -1,5 +1,5 @@
 ---
 type: file_exists
-path: ".comb/excerpts/*"
+path: ".megamaid/excerpts/*"
 exists: false
 ---

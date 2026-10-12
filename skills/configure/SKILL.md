@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user wants to configure comb, change comb settings, disable an agent, change which model comb uses, set the base branch, change where reviews are saved, point comb at their directives, or otherwise tweak `.claude/comb.config.json`.
+description: Use when the user wants to configure comb, change comb settings, disable an agent, change which model comb uses, set the base branch, change where reviews are saved, point comb at their directives, or otherwise tweak `.claude/megamaid.config.json`.
 argument-hint: "[scope] [change]"
 allowed-tools:
   - Bash
@@ -11,13 +11,13 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You help the user edit their comb config conversationally and write the result to the right `comb.config.json` file with correct deep-merge semantics.
+You help the user edit their comb config conversationally and write the result to the right `megamaid.config.json` file with correct deep-merge semantics.
 
 ## Inputs
 
 You need:
 
-1. **Scope** — `project` (`<project-root>/.claude/comb.config.json`) or `global` (`~/.claude/comb.config.json`).
+1. **Scope** — `project` (`<project-root>/.claude/megamaid.config.json`) or `global` (`~/.claude/megamaid.config.json`).
 2. **Change(s)** — what the user wants different from the merged config they have now. The user may pass these in `$ARGUMENTS` or describe them in conversation. One invocation can apply multiple changes.
 
 If either is missing, ask once.
@@ -25,8 +25,8 @@ If either is missing, ask once.
 ## Step 1: Resolve target file
 
 - **Project root:** `git rev-parse --show-toplevel` (cwd fallback).
-- **Project scope:** `<project-root>/.claude/comb.config.json`
-- **Global scope:** `~/.claude/comb.config.json`
+- **Project scope:** `<project-root>/.claude/megamaid.config.json`
+- **Global scope:** `~/.claude/megamaid.config.json`
 
 If the file doesn't exist, you'll create it. If `.claude/` doesn't exist for project scope, create the directory.
 

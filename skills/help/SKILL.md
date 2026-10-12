@@ -58,7 +58,7 @@ Commands
                      delivered to agents as a per-run excerpt. --shave
                      trims an existing manifest without changing it.
 
-  /megamaid:configure    Edit comb.config.json conversationally — paths,
+  /megamaid:configure    Edit megamaid.config.json conversationally — paths,
                      models, enable/disable agents.
 
   /megamaid:help         This message. Pass a command name for details.
@@ -81,8 +81,8 @@ Config
 
   Layered, deep-merged in this order (later wins):
     1. plugin defaults  (${CLAUDE_PLUGIN_ROOT}/config/defaults.json)
-    2. global override  (~/.claude/comb.config.json)
-    3. project override (<project-root>/.claude/comb.config.json)
+    2. global override  (~/.claude/megamaid.config.json)
+    3. project override (<project-root>/.claude/megamaid.config.json)
 
   Edit interactively: /megamaid:configure
   Or hand-edit the JSON files above.
@@ -275,7 +275,7 @@ Shave (--shave)
     --shave.
 
 Output
-  <paths.patterns>   (default: docs/combs/PATTERNS.md)
+  <paths.patterns>   (default: docs/megamaid/PATTERNS.md)
 
 Consumed by
   /megamaid:review, /megamaid:plan, /megamaid:fix — injected as an "observed
@@ -286,14 +286,14 @@ Consumed by
   the global sections (how-to-read, cross-reference map, drift
   register), and the area sections whose scope meets the change.
   Omitted sections are listed with line ranges so an agent can read
-  one with sed -n. Excerpts live under .comb/ (self-ignored by git)
+  one with sed -n. Excerpts live under .megamaid/ (self-ignored by git)
   and are removed at the end of the run. The excerpt falls back to
   the full manifest with a printed notice when the script fails.
   python3 is required for every comb command since 0.15.0: each
   skill starts with scripts/megamaid.py config and stops if it fails.
 
 Config knobs
-  paths.patterns          (default: docs/combs/PATTERNS.md)  null disables consumption
+  paths.patterns          (default: docs/megamaid/PATTERNS.md)  null disables consumption
   models.patterns         (default: opus)                    scanner and shaver model
   effort.patterns         (default: unset)                   scanner and shaver effort
   agents.pattern-shaver   (default: megamaid:pattern-shaver)     shaver role
@@ -304,12 +304,12 @@ Config knobs
 ```
 /megamaid:configure [scope] [change]
 
-Edit comb.config.json conversationally.
+Edit megamaid.config.json conversationally.
 
 Inputs
   scope    "project" or "global". project edits
-           <project-root>/.claude/comb.config.json; global edits
-           ~/.claude/comb.config.json. The shipped defaults at
+           <project-root>/.claude/megamaid.config.json; global edits
+           ~/.claude/megamaid.config.json. The shipped defaults at
            ${CLAUDE_PLUGIN_ROOT}/config/defaults.json are not editable.
   change   What you want different. Examples:
              "disable test-auditor"

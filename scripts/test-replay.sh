@@ -25,6 +25,6 @@ expect 1 fix-reviewer-diff-scope fix-fail \
   "replay: fix-reviewer-diff-scope — FAIL"
 expect 0 noncode-shortcircuit noncode-pass \
   "✓ announces-shortcircuit" "✓ design-doc-untouched: Write called 0x" "✓ no-edits: Edit called 0x" \
-  "✓ no-plan-files: docs/combs/plans/*/*.md absent as expected"
+  "✓ no-plan-files: docs/megamaid/plans/*/*.md absent as expected"
 [ "$fail" -eq 0 ] && echo "test-replay: OK"
 exit "$fail"
