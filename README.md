@@ -185,7 +185,7 @@ CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 
 ## Status
 
-v0.15.3. See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+v0.1.0. See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## License
 
