@@ -121,6 +121,7 @@ lay manifest-configured; runn notice-manifest-configured config "${LAY[@]}"
 lay manifest-oldnull;    runn notice-manifest-oldnull    config "${LAY[@]}"
 lay manifest-newnull;    runn notice-manifest-newnull    config "${LAY[@]}"
 lay kept-path;           runn notice-kept-path           config "${LAY[@]}"
+lay latin1;              runn notice-latin1              config "${LAY[@]}"
 mkdir -p lone && cp "$S" lone/
 python3 -I lone/megamaid.py config "${C[@]}" 2>&1 >/dev/null | norm > "$OUT2/lone.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone.out"
 python3 -I lone/megamaid.py migrate config --layer home "${C[@]}" 2>&1 | norm > "$OUT2/lone-migrate.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT2/lone-migrate.out"
@@ -129,6 +130,7 @@ lay bom;                 run2 translate-bom     migrate config --layer project "
 lay invalid;             run2 translate-badjson migrate config --layer project "${LAY[@]}"
 lay list;                run2 translate-list    migrate config --layer project "${LAY[@]}"
 lay effort-scalar;       run2 translate-scalar  migrate config --layer project "${LAY[@]}"
+lay latin1;              run2 translate-latin1  migrate config --layer project "${LAY[@]}"
 lay home-only;           run2 translate-missing migrate config --layer project "${LAY[@]}"
 lay home-only;           run2 translate-home    migrate config --layer home "${LAY[@]}"
 run2 translate-same migrate config --layer project --plugin-root "$P" --home "$L/same/root" --project-root "$L/same/root"
@@ -139,6 +141,9 @@ lay manifest-configured; run2 manifest-copy       migrate manifest --copy "${LAY
 lay kept-path;           run2 manifest-kept       migrate manifest --copy "${LAY[@]}"
 lay project-only;        run2 manifest-missing    migrate manifest --copy "${LAY[@]}"
 lay manifest-newnull;    run2 manifest-disabled   migrate manifest --copy "${LAY[@]}"
+# a symlinked manifest: --move moves the manifest, never the shared file the link points to
+lay linked;              run2 manifest-linked     migrate manifest --move "${LAY[@]}"
+{ ls "$L/linked/shared"; cat "$L/linked/project/docs/megamaid/PATTERNS.md"; } > "$OUT2/manifest-linked-shared.out" 2>&1
 
 fail=0
 check() {  # $1 output dir, $2 expected dir

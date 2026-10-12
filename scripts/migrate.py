@@ -31,6 +31,11 @@ def real(path):
     return os.path.realpath(path)
 
 
+def real_parent(path):
+    """path with its directory resolved but not the file itself, so a symlinked manifest stays the link."""
+    return os.path.join(real(os.path.dirname(path)), os.path.basename(path))
+
+
 def layer_dirs(home, project_root):
     """[home, project] realpaths; one entry when they are the same directory."""
     h, r = real(home), real(project_root)
@@ -45,6 +50,8 @@ def read_json(path):
             data = json.load(f)
     except json.JSONDecodeError as ex:
         raise MigrateError("invalid JSON in %s: %s" % (path, ex.msg))
+    except UnicodeDecodeError:
+        raise MigrateError("invalid JSON in %s: not UTF-8 text" % path)
     except OSError as ex:
         raise MigrateError("%s: %s" % (path, ex.strerror))
     if not isinstance(data, dict):
@@ -78,7 +85,7 @@ def old_manifest(home, project_root):
             value = None
     if not isinstance(value, str):
         return None
-    return real(os.path.join(project_root, value))
+    return real_parent(os.path.join(project_root, value))
 
 
 def new_manifest(project_root, new_patterns):
@@ -158,7 +165,12 @@ def move_manifest(home, project_root, new_patterns, mode):
         raise MigrateError("%s exists; not overwritten" % dst)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if mode == "move":
-        shutil.move(src, dst)
+        if os.path.islink(src):
+            # Copy what the link points to, then drop the link: the shared file stays where it is.
+            shutil.copy2(src, dst)
+            os.unlink(src)
+        else:
+            shutil.move(src, dst)
         return "moved %s -> %s" % (src, dst)
     shutil.copy2(src, dst)
     return "copied %s -> %s" % (src, dst)
