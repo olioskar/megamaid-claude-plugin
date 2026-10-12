@@ -195,29 +195,48 @@ PY
 #     not match itself. GUARD=off skips the repo scan (the self-tests still run).
 w='co''mb'
 GUARD_WORDS="$w|${w}s|the-""desert|the_""desert"
-GUARD_FIXED="${w}_"
+GUARD_CAMEL="[a-z]Co""mb|[Cc]o""mb[A-Z]"
 GUARD_URL="github.com/olioskar/${w}-the-""desert-claude-plugin"
 GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/)'
+# Three shapes: the word (case-insensitive, whole word), `_`-joined forms, and camelCase forms.
+guard_grep() {  # $1: "files" to filter stdin paths with grep, or "git" to search contents of repo $2
+  if [ "$1" = files ]; then
+    local in; in=$(cat)
+    printf '%s\n' "$in" | grep -iwE "$GUARD_WORDS" || [ $? -eq 1 ] || return 2
+    printf '%s\n' "$in" | grep -iF -e "${w}_" -e "_$w" -e "${w}s_" || [ $? -eq 1 ] || return 2
+    printf '%s\n' "$in" | grep -E "$GUARD_CAMEL" || [ $? -eq 1 ] || return 2
+  else
+    git -C "$2" grep --no-color -nI -iwE "$GUARD_WORDS" || [ $? -eq 1 ] || return 2
+    git -C "$2" grep --no-color -nI -iF -e "${w}_" -e "_$w" -e "${w}s_" || [ $? -eq 1 ] || return 2
+    git -C "$2" grep --no-color -nI -E "$GUARD_CAMEL" || [ $? -eq 1 ] || return 2
+  fi
+  return 0
+}
 name_guard() {
-  local dir=$1 files a b rc line f rest n out=0
+  local dir=$1 files hits gerr line f rest n out=0
   files=$(git -C "$dir" ls-files 2>/dev/null) || { echo "FAIL: $w guard could not run"; return 1; }
   [ -n "$files" ] || { echo "FAIL: $w guard could not run"; return 1; }
+  gerr=$(mktemp "${TMPDIR:-/tmp}/guard-err.XXXXXX")
+  # Any error text counts as a failed run: git grep exits 1 (same as "no match") on an unreadable file.
+  if ! hits=$(printf '%s\n' "$files" | guard_grep files 2>"$gerr") || [ -s "$gerr" ]; then
+    rm -f "$gerr"; echo "FAIL: $w guard could not run"; return 1
+  fi
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     [[ "$f" =~ $GUARD_EXEMPT ]] && continue
     echo "FAIL: $w identifier at $f"; out=1
-  done < <({ printf '%s\n' "$files" | grep -iwE "$GUARD_WORDS"; printf '%s\n' "$files" | grep -iF "$GUARD_FIXED"; } | sort -u)
-  a=$(git -C "$dir" grep -nI -iwE "$GUARD_WORDS" 2>/dev/null); rc=$?
-  [ "$rc" -gt 1 ] && { echo "FAIL: $w guard could not run"; return 1; }
-  b=$(git -C "$dir" grep -nI -iF "$GUARD_FIXED" 2>/dev/null); rc=$?
-  [ "$rc" -gt 1 ] && { echo "FAIL: $w guard could not run"; return 1; }
+  done < <(printf '%s\n' "$hits" | sort -u)
+  if ! hits=$(guard_grep git "$dir" 2>"$gerr") || [ -s "$gerr" ]; then
+    rm -f "$gerr"; echo "FAIL: $w guard could not run"; return 1
+  fi
+  rm -f "$gerr"
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     f=${line%%:*}; rest=${line#*:}; n=${rest%%:*}
     [[ "$f" =~ $GUARD_EXEMPT ]] && continue
     [[ "$line" == *"$GUARD_URL"* ]] && continue
     echo "FAIL: $w identifier at $f:$n"; out=1
-  done < <(printf '%s\n%s\n' "$a" "$b" | sort -u)
+  done < <(printf '%s\n' "$hits" | sort -u)
   return $out
 }
 if [ "${GUARD:-on}" = off ]; then
@@ -233,12 +252,25 @@ gt=$(mktemp -d "${TMPDIR:-/tmp}/guard.XXXXXX")
 if ! { name_guard "$gt" 2>/dev/null || true; } | grep -qF "guard could not run"; then
   echo "FAIL: name guard does not fail closed outside a git repo"; fail=1
 fi
+W='Co''mb'
 git -C "$gt" init -q && mkdir -p "$gt/scripts" \
- && printf 'see %s.py here\nsee %sined here\nx %s_dir\ny the-%s z\nhttps://%s\n' "$w" "$w" "$w" desert "$GUARD_URL" > "$gt/a.md" \
+ && printf 'see %s.py here\nsee %sined here\nx %s_dir\ny the-%s z\nhttps://%s\nis_%s=1\n%ss_dir\n%sConfig\nis%s\n' \
+      "$w" "$w" "$w" desert "$GUARD_URL" "$w" "$w" "$W" "$W" > "$gt/a.md" \
  && printf '%s\n' "$w" > "$gt/scripts/migrate.py" && : > "$gt/$w-x.txt" && git -C "$gt" add -A
+want=$(printf 'FAIL: %s identifier at %s\n' "$w" "$w-x.txt" "$w" a.md:1 "$w" a.md:3 "$w" a.md:4 "$w" a.md:6 "$w" a.md:7 "$w" a.md:8 "$w" a.md:9)
 gout=$(name_guard "$gt" 2>&1)
-want=$(printf 'FAIL: %s identifier at %s\n' "$w" "$w-x.txt" "$w" a.md:1 "$w" a.md:3 "$w" a.md:4)
 [ "$gout" = "$want" ] || { echo "FAIL: name guard self-test: expected:"; echo "$want"; echo "got: $gout"; fail=1; }
+# A colour-forcing git config must not hide exemptions or break line parsing.
+gout=$(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=always name_guard "$gt" 2>&1)
+[ "$gout" = "$want" ] || { echo "FAIL: name guard self-test with color.ui=always: got: $gout"; fail=1; }
+# An unreadable tracked file makes git grep print an error but exit 1 ("no match"): that must not pass.
+if [ "$(id -u)" != 0 ]; then
+  chmod 000 "$gt/a.md"
+  if ! { name_guard "$gt" 2>/dev/null || true; } | grep -qF "guard could not run"; then
+    echo "FAIL: name guard passes when git grep cannot read a tracked file"; fail=1
+  fi
+  chmod 644 "$gt/a.md"
+fi
 rm -rf "$gt"
 
 if [ "$fail" -eq 0 ]; then
