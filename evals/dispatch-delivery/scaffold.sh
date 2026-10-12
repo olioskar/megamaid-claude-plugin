@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Scratch repo with a finished code-shaped review report. The project config
 # overrides the writer with general-purpose (foreign per the delivery contract);
-# the shipped default is the native comb:implementer, which gets no authority
+# the shipped default is the native megamaid:implementer, which gets no authority
 # sentence, and this is the one case that exercises the foreign framing.
 # Regression target: directives must reach the planner as paths, never embedded.
 set -euo pipefail
@@ -25,7 +25,7 @@ cat > reviews/pr-1-round1-report.md <<'EOF'
 
 **Branch:** `feature` -> `main`
 **Scope:** 1 file, +5 / -0 lines
-**Reviewers:** 1 agent (comb:code-reviewer)
+**Reviewers:** 1 agent (megamaid:code-reviewer)
 **Date:** 2026-09-01
 
 ---

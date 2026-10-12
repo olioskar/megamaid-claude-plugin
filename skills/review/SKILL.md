@@ -195,7 +195,7 @@ For each picked role, resolve and construct the dispatch prompt:
 
 3. **Read first:** the line `Read first: <brief: path from comb.py brief>`. The run brief carries the directive paths (native or foreign form, with the primaries), the observed-baseline block, and the focus brief; the prompt repeats none of them.
 
-4. **Agent-specific instructions:** for native `comb:*` agents this is already in the agent file body. For foreign agents the run brief's `Your lens:` line carries the role's `when_to_use`; add nothing else.
+4. **Agent-specific instructions:** for native `megamaid:*` agents this is already in the agent file body. For foreign agents the run brief's `Your lens:` line carries the role's `when_to_use`; add nothing else.
 
 5. **Output format spec:**
    - **Native agents:** `Output format per your agent definition; finding codes are placeholders the orchestrator renumbers; include the Confidence line on every finding.`

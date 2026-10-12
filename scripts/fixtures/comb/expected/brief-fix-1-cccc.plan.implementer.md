@@ -1,4 +1,4 @@
-# comb brief — plan / implementer (comb:implementer)
+# comb brief — plan / implementer (megamaid:implementer)
 
 ## Directives
 

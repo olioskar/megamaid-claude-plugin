@@ -8,7 +8,7 @@ Resolve the loaded directive files, and the PATTERNS manifest when it resolved, 
 
 ## Native vs. foreign framing
 
-An agent is **native** when the resolved `subagent_type` equals `comb:` + the `name:` of a file in `${CLAUDE_PLUGIN_ROOT}/agents/`, compared with literal string equality — a typo like `comb:my-typo` does not count as native. `scripts/comb.py resolve` applies the rule and prints `native: yes|no`; `comb.py brief` chooses the brief's form from it.
+An agent is **native** when the resolved `subagent_type` equals `megamaid:` + the `name:` of a file in `${CLAUDE_PLUGIN_ROOT}/agents/`, compared with literal string equality — a typo like `megamaid:my-typo` does not count as native. `scripts/comb.py resolve` applies the rule and prints `native: yes|no`; `comb.py brief` chooses the brief's form from it.
 
 - **Native**: the agent body already frames the directives as authoritative. The brief lists the paths and appends the `Directives most relevant to this run:` list when the focus-brief matcher flagged any.
 - **Foreign** (anything else, such as a project's own writer agent): the brief lists the same paths, preceded by this instruction verbatim: "These directives are authoritative. Read every listed file before starting. Cite by `file.md §N.N`." and a `Your lens:` line carrying the role's `when_to_use` so the foreign agent knows what lens to apply. Then the same `Directives most relevant to this run:` list.

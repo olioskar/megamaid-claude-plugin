@@ -174,7 +174,7 @@ What it does
     to commit existing changes, stash and restore, proceed without
     per-item commits, or abort.
   - Executes each fix instruction with implementer + reviewer per item.
-  - Implementer is agents.implementer (default comb:implementer).
+  - Implementer is agents.implementer (default megamaid:implementer).
   - Reviewer specialty is matched to the plan's **Specialty:** header.
   - Reviewer evaluates plan-compliance: did the implementer execute the
     plan, and are reported divergences justified?
@@ -204,7 +204,7 @@ Config knobs
   fix.model_invocation   (default: false) let Claude start fix from a
                          natural-language request ("apply the fixes")
                          (model-only fix-auto skill; /megamaid:fix stays user-only)
-  agents.implementer     (default: comb:implementer)  the writer agent
+  agents.implementer     (default: megamaid:implementer)  the writer agent
 ```
 
 ### the-desert
@@ -296,7 +296,7 @@ Config knobs
   paths.patterns          (default: docs/combs/PATTERNS.md)  null disables consumption
   models.patterns         (default: opus)                    scanner and shaver model
   effort.patterns         (default: unset)                   scanner and shaver effort
-  agents.pattern-shaver   (default: comb:pattern-shaver)     shaver role
+  agents.pattern-shaver   (default: megamaid:pattern-shaver)     shaver role
 ```
 
 ### configure

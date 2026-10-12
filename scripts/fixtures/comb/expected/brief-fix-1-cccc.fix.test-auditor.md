@@ -1,4 +1,4 @@
-# comb brief — fix / test-auditor (comb:test-auditor)
+# comb brief — fix / test-auditor (megamaid:test-auditor)
 
 ## Directives
 

@@ -196,7 +196,7 @@ For trivial items: announce "(trivial — implementer `{resolved models.fix.impl
 
 **Agent config (resolved per item):**
 
-- **Resolve the writer role** (the shipped `comb:implementer` by default; the five review agents are read-only and cannot serve; the user's `agents.implementer` override is honored):
+- **Resolve the writer role** (the shipped `megamaid:implementer` by default; the five review agents are read-only and cannot serve; the user's `agents.implementer` override is honored):
 
   ```
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role implementer --lane fix.implementer_standard      # fix.implementer_trivial for trivial items

@@ -63,7 +63,7 @@ Print a short summary of the effective config (not the full JSON dump unless the
 **Translation rules** that are not a direct key write:
 
 - **"Disable agent X"** → set `agents.X = null` in the override file (null-as-delete merge semantics). **"Re-enable"** → remove the `null` entry, or re-supply the full agent object for a custom version.
-- **"Add a custom agent"** → write `agents.<new-role> = {subagent_type: "...", when_to_use: "..."}` and tell the user that a `subagent_type` other than `comb:` + a shipped agent name is foreign per the delivery contract: its run brief carries the authority sentence and a `Your lens:` line taken from `when_to_use`.
+- **"Add a custom agent"** → write `agents.<new-role> = {subagent_type: "...", when_to_use: "..."}` and tell the user that a `subagent_type` other than `megamaid:` + a shipped agent name is foreign per the delivery contract: its run brief carries the authority sentence and a `Your lens:` line taken from `when_to_use`.
 - **"Allow Claude to run fix" / "let the model apply fixes"** → set `fix.model_invocation = true` in the project override (or globally if asked). Say that `/megamaid:fix` is still user-only; the opt-in routes natural-language requests through the model-only `fix-auto` skill (not a slash command), which runs the same workflow with the same questions and commits.
 
 Everything else is a direct key write: name the key from `defaults.json` (or the three absent-by-default keys above), set the value, and show the diff. Removing an `effort` key returns that lane to the session default.

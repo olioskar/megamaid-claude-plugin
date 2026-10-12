@@ -34,7 +34,7 @@ Run it — like every `comb.py` command line in this skill — from the project 
 From it, take:
 - `paths.patterns` — where the manifest is written/read (default `docs/combs/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
 - `models.patterns` — model for the scanner agents (default `opus`).
-- `agents.pattern-scanner` — the scanner role (`subagent_type`, default `comb:pattern-scanner`).
+- `agents.pattern-scanner` — the scanner role (`subagent_type`, default `megamaid:pattern-scanner`).
 - `directives` — the loaded directive set. Read each directive's name and its opening purpose line; you map directives to areas at the gate (Step 3) and dispatch each scanner only the directives relevant to its area (Step 5). **Authority is the user's call at the gate, never the scanner's** — every dispatched directive is authoritative unless the user down-weights it. If a directive's name or frontmatter self-marks as draft/WIP/superseded/non-authoritative, note it and pre-flag it at the gate as a *suggested* down-weight (the user confirms); a scanner is never told to disregard a directive on its own judgment.
 
 ## Step 2: Recon the codebase shape
@@ -339,7 +339,7 @@ and finish with `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --
 ## Ground rules
 
 - **Interactive before heavy work, but never naggy.** One hard stop per mode: the scan plan (Step 3) in generate mode, the shave gate in shave mode. In generate mode also confirm before overwriting an existing manifest (Steps 4, 8). Batch every gate into one prompt with safe "go"/"write" defaults — never drip questions one at a time, and never ask what recon already detected. The interactive steps that involve the user (3, 7, 8) only stop when there's a real decision to make: Step 7 fires only when dominant conflicts exist, Step 8's re-scan only when the user asks.
-- **Scanners never edit; shavers write one file.** `comb:pattern-scanner` never edits. `comb:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.comb/excerpts/`; nothing else.
+- **Scanners never edit; shavers write one file.** `megamaid:pattern-scanner` never edits. `megamaid:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.comb/excerpts/`; nothing else.
 - **Shave never rescans.** It reads code only to confirm two anchors pin one convention. In shave mode the orchestrator never reads the manifest; it reads the script's output and the shavers' replies.
 - **Facts, not principles.** Every entry cites real code. Omit empty lenses rather than padding.
 - **Full scan lives here only.** The consuming skills never re-scan the whole codebase; they read this manifest plus the files around their diff.

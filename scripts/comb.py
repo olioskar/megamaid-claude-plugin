@@ -28,7 +28,7 @@ CLI (output is fixed-format; scripts/test-comb.sh diffs it):
     L is a dotted path under models. model: agents.R.model, else models.the_desert when
     coercing, else models.<L>. effort: agents.R.effort, else effort.the_desert when
     coercing and set, else effort.<L>, else unset. native: yes iff subagent_type equals
-    "comb:" + the `name:` of some P/agents/*.md (literal equality).
+    "megamaid:" + the `name:` of some P/agents/*.md (literal equality).
     exit 2: role absent, lane absent, effort outside the five values.
 
   comb.py directives [--brief "<text>"] [config flags]
@@ -224,7 +224,7 @@ def role_spec(cfg, role):
 
 
 def is_native(spec, plugin_root):
-    return spec["subagent_type"] in {"comb:" + n for n in native_names(plugin_root)}
+    return spec["subagent_type"] in {"megamaid:" + n for n in native_names(plugin_root)}
 
 
 def resolve(cfg, role, lane, coerce, plugin_root):

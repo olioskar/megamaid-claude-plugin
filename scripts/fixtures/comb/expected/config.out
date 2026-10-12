@@ -3,11 +3,11 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
 {
  "agents": {
   "code-reviewer": {
-   "subagent_type": "comb:code-reviewer",
+   "subagent_type": "megamaid:code-reviewer",
    "when_to_use": "When the diff contains executable code. General correctness: bugs, logic, contracts, data flow, security. Anchor agent for code-shaped diffs."
   },
   "consistency-auditor": {
-   "subagent_type": "comb:consistency-auditor",
+   "subagent_type": "megamaid:consistency-auditor",
    "when_to_use": "When the diff touches an area with established patterns, follows a spec/plan, OR is itself a spec/design/prose artifact whose conformity to codebase patterns and directives needs to be assessed. Anchor agent for prose-only diffs."
   },
   "fast": {
@@ -16,7 +16,7 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
    "when_to_use": "fast lane"
   },
   "implementer": {
-   "subagent_type": "comb:implementer",
+   "subagent_type": "megamaid:implementer",
    "when_to_use": "Writer for /megamaid:fix and /megamaid:plan. Writes only inside the instruction's ## Where, never commits, stages, stashes, or dispatches agents, and reports every file it changed. Override per-project to plug in a specialist writer; the override inherits these boundaries through its run brief's `Your lens:` line. Not part of the review palette."
   },
   "ours": {
@@ -25,20 +25,20 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
    "when_to_use": "our writer"
   },
   "pattern-scanner": {
-   "subagent_type": "comb:pattern-scanner",
+   "subagent_type": "megamaid:pattern-scanner",
    "when_to_use": "Generation-only. Dispatched by /megamaid:patterns to scan one confirmed codebase area and extract concrete conventions with file:line references. Not part of the review/plan/fix palette."
   },
   "pattern-shaver": {
-   "subagent_type": "comb:pattern-shaver",
+   "subagent_type": "megamaid:pattern-shaver",
    "when_to_use": "Generation-only. Dispatched by /megamaid:patterns --shave to propose an edit script for one manifest section (secondary anchors, cross-section restatements, fixed drift lines). Not part of the review/plan/fix palette."
   },
   "silent-failure-hunter": {
-   "subagent_type": "comb:silent-failure-hunter",
+   "subagent_type": "megamaid:silent-failure-hunter",
    "when_to_use": "Diff contains try/catch, error handling, fallbacks, or async flows."
   },
   "test-auditor": {
    "model": "sonnet",
-   "subagent_type": "comb:test-auditor",
+   "subagent_type": "megamaid:test-auditor",
    "when_to_use": "tests"
   }
  },

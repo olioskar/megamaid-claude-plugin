@@ -98,7 +98,7 @@ In one measured review run, `medium` found the same bugs as `high` for about 8% 
 { "agents": { "implementer": { "subagent_type": "your-org:implementer" } } }
 ```
 
-The default writer, `comb:implementer`, edits only the files the instruction names, never commits, and reports every file it touched. A writer from outside this plugin gets an explicit instruction that the directives are authoritative. It also gets the same boundaries, and the same file and git checks after it returns.
+The default writer, `megamaid:implementer`, edits only the files the instruction names, never commits, and reports every file it touched. A writer from outside this plugin gets an explicit instruction that the directives are authoritative. It also gets the same boundaries, and the same file and git checks after it returns.
 
 ### Add or swap reviewers
 
@@ -142,11 +142,11 @@ Your directives in `directives.user_path` (default `docs/directives/`) apply on 
 
 Five read-only reviewers:
 
-- `comb:code-reviewer`: bugs, logic, contracts, security
-- `comb:simplifier`: overengineering, dead code, duplication
-- `comb:silent-failure-hunter`: swallowed errors, hidden fallbacks
-- `comb:test-auditor`: coverage and test quality
-- `comb:consistency-auditor`: fit with existing patterns and with the spec or plan
+- `megamaid:code-reviewer`: bugs, logic, contracts, security
+- `megamaid:simplifier`: overengineering, dead code, duplication
+- `megamaid:silent-failure-hunter`: swallowed errors, hidden fallbacks
+- `megamaid:test-auditor`: coverage and test quality
+- `megamaid:consistency-auditor`: fit with existing patterns and with the spec or plan
 
 Read-only is enforced by instruction. The edit tools are blocked, but Bash stays available for git.
 
@@ -156,9 +156,9 @@ Before a finding enters the report, `/megamaid:review` opens every cited line an
 
 Three more agents:
 
-- **`comb:implementer`** is the writer for `/megamaid:fix` and `/megamaid:plan`.
-- **`comb:pattern-scanner`** is used only by `/megamaid:patterns`.
-- **`comb:pattern-shaver`** is used only by `/megamaid:patterns --shave`.
+- **`megamaid:implementer`** is the writer for `/megamaid:fix` and `/megamaid:plan`.
+- **`megamaid:pattern-scanner`** is used only by `/megamaid:patterns`.
+- **`megamaid:pattern-shaver`** is used only by `/megamaid:patterns --shave`.
 
 ## How it works
 
