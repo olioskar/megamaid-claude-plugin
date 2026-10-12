@@ -176,6 +176,58 @@ if seen == 0:
 sys.exit(bad)
 PY
 
+# 10. Old-name guard: no identifier of the plugin this one was forked from, in tracked file
+#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/, and
+#     any line carrying the old repo URL. The pattern is built from fragments so this section does
+#     not match itself. GUARD=off skips the repo scan (the self-tests still run).
+w='co''mb'
+GUARD_WORDS="$w|${w}s|the-""desert|the_""desert"
+GUARD_FIXED="${w}_"
+GUARD_URL="github.com/olioskar/${w}-the-""desert-claude-plugin"
+GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/)'
+name_guard() {
+  local dir=$1 files a b rc line f rest n out=0
+  files=$(git -C "$dir" ls-files 2>/dev/null) || { echo "FAIL: $w guard could not run"; return 1; }
+  [ -n "$files" ] || { echo "FAIL: $w guard could not run"; return 1; }
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    [[ "$f" =~ $GUARD_EXEMPT ]] && continue
+    echo "FAIL: $w identifier at $f"; out=1
+  done < <({ printf '%s\n' "$files" | grep -iwE "$GUARD_WORDS"; printf '%s\n' "$files" | grep -iF "$GUARD_FIXED"; } | sort -u)
+  a=$(git -C "$dir" grep -nI -iwE "$GUARD_WORDS" 2>/dev/null); rc=$?
+  [ "$rc" -gt 1 ] && { echo "FAIL: $w guard could not run"; return 1; }
+  b=$(git -C "$dir" grep -nI -iF "$GUARD_FIXED" 2>/dev/null); rc=$?
+  [ "$rc" -gt 1 ] && { echo "FAIL: $w guard could not run"; return 1; }
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    f=${line%%:*}; rest=${line#*:}; n=${rest%%:*}
+    [[ "$f" =~ $GUARD_EXEMPT ]] && continue
+    [[ "$line" == *"$GUARD_URL"* ]] && continue
+    echo "FAIL: $w identifier at $f:$n"; out=1
+  done < <(printf '%s\n%s\n' "$a" "$b" | sort -u)
+  return $out
+}
+if [ "${GUARD:-on}" = off ]; then
+  echo "guard: skipped"
+else
+  name_guard . || fail=1
+fi
+
+# Self-tests: the guard fails closed outside a repo and reports exactly the identifier lines in a
+# scratch repo (word-boundary and `_` matches, a path hit, the exempt path and the URL skip).
+gt=$(mktemp -d "${TMPDIR:-/tmp}/guard.XXXXXX")
+# `|| true` inside the group: under `set -o pipefail` the pipeline would otherwise take name_guard's exit 1.
+if ! { name_guard "$gt" 2>/dev/null || true; } | grep -qF "guard could not run"; then
+  echo "FAIL: name guard does not fail closed outside a git repo"; fail=1
+fi
+git -C "$gt" init -q && mkdir -p "$gt/scripts" \
+ && printf 'see %s.py here\nsee %sined here\nx %s_dir\ny the-%s z\nhttps://%s\n' "$w" "$w" "$w" desert "$GUARD_URL" > "$gt/a.md" \
+ && printf '%s\n' "$w" > "$gt/scripts/migrate.py" && : > "$gt/$w-x.txt" && git -C "$gt" add -A
+gout=$(name_guard "$gt" 2>&1)
+want=$(printf 'FAIL: %s identifier at %s\n' "$w" "$w-x.txt" "$w" a.md:1 "$w" a.md:3 "$w" a.md:4)
+[ "$gout" = "$want" ] || { echo "FAIL: name guard self-test: expected:"; echo "$want"; echo "got: $gout"; fail=1; }
+rm -rf "$gt"
+
 if [ "$fail" -eq 0 ]; then
   echo "check-contract: OK"
 fi
