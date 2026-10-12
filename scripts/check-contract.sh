@@ -51,7 +51,7 @@ while IFS= read -r f; do
   fi
 done < <(grep -rl '\${CLAUDE_PLUGIN_ROOT}/skills/[a-z-]*/SKILL\.md' skills/ | sort -u)
 
-# 5. Scripts: manifest.py and comb.py ship, their fixture tests pass, and every consuming
+# 5. Scripts: manifest.py and megamaid.py ship, their fixture tests pass, and every consuming
 #    skill invokes it (the orchestrator never reads the manifest).
 if [ ! -f scripts/manifest.py ]; then
   echo "FAIL: scripts/manifest.py missing"
@@ -66,14 +66,14 @@ elif ! grep -qF 'Excerpt grammar' scripts/manifest.py; then
   echo "FAIL: scripts/manifest.py docstring lost the excerpt grammar that shared/manifest-slicing.md points at"
   fail=1
 fi
-if [ ! -f scripts/comb.py ]; then
-  echo "FAIL: scripts/comb.py missing"
+if [ ! -f scripts/megamaid.py ]; then
+  echo "FAIL: scripts/megamaid.py missing"
   fail=1
-elif ! python3 -I scripts/comb.py --help >/dev/null 2>&1; then
-  echo "FAIL: python3 -I scripts/comb.py --help exits non-zero"
+elif ! python3 -I scripts/megamaid.py --help >/dev/null 2>&1; then
+  echo "FAIL: python3 -I scripts/megamaid.py --help exits non-zero"
   fail=1
-elif ! bash scripts/test-comb.sh >/dev/null 2>&1; then
-  echo "FAIL: scripts/test-comb.sh failed (run it for the diff)"
+elif ! bash scripts/test-megamaid.sh >/dev/null 2>&1; then
+  echo "FAIL: scripts/test-megamaid.sh failed (run it for the diff)"
   fail=1
 fi
 if ! bash scripts/test-replay.sh >/dev/null 2>&1; then
@@ -93,14 +93,14 @@ for cmd in index anchors verify gate apply; do
   fi
 done
 for skill in review plan fix patterns the-desert fix-auto configure; do
-  grep -Fq 'comb.py" config' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke comb.py config"; fail=1; }
+  grep -Fq 'megamaid.py" config' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py config"; fail=1; }
 done
 for skill in review plan fix; do
-  grep -Fq 'comb.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke comb.py brief"; fail=1; }
+  grep -Fq 'megamaid.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py brief"; fail=1; }
 done
-grep -Fq 'comb.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke comb.py batches"; fail=1; }
-grep -Fq 'comb.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke comb.py report-name"; fail=1; }
-grep -Fq 'comb.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke comb.py findings"; fail=1; }
+grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
+grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
+grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
 for f in skills/patterns/SKILL.md agents/pattern-scanner.md; do
   grep -Fq 'shared/scan-rules.md' "$f" || { echo "FAIL: $f does not point at shared/scan-rules.md"; fail=1; }
 done

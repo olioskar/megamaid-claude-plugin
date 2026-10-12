@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Fixture test for scripts/comb.py. Runs every subcommand against the fixture
-# plugin root, home, and project under scripts/fixtures/comb/ from a temporary
-# cwd, normalises paths, and diffs the output against scripts/fixtures/comb/expected/.
+# Fixture test for scripts/megamaid.py. Runs every subcommand against the fixture
+# plugin root, home, and project under scripts/fixtures/megamaid/ from a temporary
+# cwd, normalises paths, and diffs the output against scripts/fixtures/megamaid/expected/.
 # Run with --update to regenerate the expected files.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
-S="$ROOT/scripts/comb.py"
-F="$ROOT/scripts/fixtures/comb"
+S="$ROOT/scripts/megamaid.py"
+F="$ROOT/scripts/fixtures/megamaid"
 E="$F/expected"
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
 export PYTHONUNBUFFERED=1   # stderr and stdout interleave in write order, so warnings come first by construction
@@ -107,6 +107,6 @@ for o in "$OUT"/*; do
   if [ ! -f "$E/$n" ]; then echo "FAIL: no expected file for $n"; fail=1; continue; fi
   if ! diff -u "$E/$n" "$o" > "$T/diff.txt"; then echo "FAIL: $n differs"; cat "$T/diff.txt"; fail=1; fi
 done
-[ "$UPDATE" = 1 ] && { echo "expected files updated in scripts/fixtures/comb/expected/"; exit 0; }
-[ "$fail" = 0 ] && echo "test-comb: OK ($(ls "$E" | wc -l | tr -d ' ') expectations)"
+[ "$UPDATE" = 1 ] && { echo "expected files updated in scripts/fixtures/megamaid/expected/"; exit 0; }
+[ "$fail" = 0 ] && echo "test-megamaid: OK ($(ls "$E" | wc -l | tr -d ' ') expectations)"
 exit $fail

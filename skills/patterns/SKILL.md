@@ -26,10 +26,10 @@ This is an **interactive** command. You do recon, propose scan areas, and wait f
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, take:
 - `paths.patterns` — where the manifest is written/read (default `docs/combs/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
@@ -108,7 +108,7 @@ For each confirmed area, dispatch one scanner. **Launch them in parallel** per t
 - **Role, model, effort, and form:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role pattern-scanner --lane patterns
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role pattern-scanner --lane patterns
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`; `native: no` means the prompt's directive list is preceded by the delivery contract's authority sentence.
@@ -286,7 +286,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" index --manifest <paths.p
 
 Run every `manifest.py` command from the project root. It prints `run: <stem>`, `index: <path>`, one line per section (`<kind> <START>-<END> <bytes>B [<n>] <heading> edits=<path>`), and the totals. Record `run` and `index`. Show the per-section lines and totals to the user as the size table. Do not read the manifest or the index file.
 
-**S2. Dispatch shavers.** If no area section is 4 KB or more (after any focus-brief narrowing), report `Nothing to shave: no area section is 4 KB or more` and stop with `clean`. Record the manifest's size before dispatch: `wc -c < <paths.patterns>`. Then one shaver per **area** section of 4 KB or more, at most five at a time, per `${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`. Role, model, and effort from `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role pattern-shaver --lane patterns` (`model:` as the Agent call's `model`, `effort:` as `effort` unless `unset`). Header and global sections are never dispatched or edited. Dispatch prompt:
+**S2. Dispatch shavers.** If no area section is 4 KB or more (after any focus-brief narrowing), report `Nothing to shave: no area section is 4 KB or more` and stop with `clean`. Record the manifest's size before dispatch: `wc -c < <paths.patterns>`. Then one shaver per **area** section of 4 KB or more, at most five at a time, per `${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`. Role, model, and effort from `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role pattern-shaver --lane patterns` (`model:` as the Agent call's `model`, `effort:` as `effort` unless `unset`). Header and global sections are never dispatched or edited. Dispatch prompt:
 
 ```
 You shave ONE section of a PATTERNS manifest. You edit nothing except the one edit-script file named below. Rules: read ${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md first and follow it exactly.

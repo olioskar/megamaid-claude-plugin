@@ -1,4 +1,4 @@
-# comb brief — plan / implementer (megamaid:implementer)
+# megamaid brief — fix / test-auditor (megamaid:test-auditor)
 
 ## Directives
 
@@ -13,3 +13,7 @@ The project's authoritative directives apply. Read these directive files and cit
 - FIX/plugin/directives/testing.md
 - FIX/project/docs/directives/simplicity.md
 - FIX/project/docs/directives/velocity-rules.md
+
+## User focus for this run
+
+tests

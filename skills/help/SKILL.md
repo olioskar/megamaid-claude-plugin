@@ -290,7 +290,7 @@ Consumed by
   and are removed at the end of the run. The excerpt falls back to
   the full manifest with a printed notice when the script fails.
   python3 is required for every comb command since 0.15.0: each
-  skill starts with scripts/comb.py config and stops if it fails.
+  skill starts with scripts/megamaid.py config and stops if it fails.
 
 Config knobs
   paths.patterns          (default: docs/combs/PATTERNS.md)  null disables consumption

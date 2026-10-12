@@ -1,4 +1,4 @@
-# comb brief — review / code-reviewer (megamaid:code-reviewer)
+# megamaid brief — review / code-reviewer (megamaid:code-reviewer)
 
 ## Directives
 

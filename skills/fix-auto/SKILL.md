@@ -19,10 +19,10 @@ You are the model-invocable entry to `/megamaid:fix`. `/megamaid:fix` itself is 
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 Read `fix.model_invocation` from its JSON (the value is already written as JSON). Keep the output; the fix workflow's own config step reuses it rather than running the command again.
 
@@ -38,6 +38,6 @@ Do not read or execute the fix workflow when the gate is off.
 
 ## Step 2: Run the fix workflow
 
-**Plugin root for the workflow.** The skill file you Read below is not variable-substituted, and the plugin-root placeholder is not a shell variable. In that file the placeholder is written as a dollar sign, an opening brace, the name CLAUDE_PLUGIN_ROOT, and a closing brace. Wherever you see it — in the `manifest.py` and `comb.py` command lines, and in every Read target under `shared/`, `directives/`, and `skills/` — replace it with this literal path: `${CLAUDE_PLUGIN_ROOT}`. A `manifest.py` or `comb.py` command run with the placeholder unexpanded fails; for `manifest.py` that would silently fall back to delivering the full manifest.
+**Plugin root for the workflow.** The skill file you Read below is not variable-substituted, and the plugin-root placeholder is not a shell variable. In that file the placeholder is written as a dollar sign, an opening brace, the name CLAUDE_PLUGIN_ROOT, and a closing brace. Wherever you see it — in the `manifest.py` and `megamaid.py` command lines, and in every Read target under `shared/`, `directives/`, and `skills/` — replace it with this literal path: `${CLAUDE_PLUGIN_ROOT}`. A `manifest.py` or `megamaid.py` command run with the placeholder unexpanded fails; for `manifest.py` that would silently fall back to delivering the full manifest.
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute that workflow exactly as written, with one override: its Step 1 reuses the `comb.py config` output from above instead of running it again. Its arguments placeholder, written as a dollar sign followed by the word ARGUMENTS, arrives literal because the file came through Read; wherever it appears, use this skill's own arguments, which are: `$ARGUMENTS`. If that is empty, the fix workflow runs with no folder named (its own default under `paths.plans`) and an empty focus brief. Every gate, question, pre-flight check, and commit rule in `/megamaid:fix` applies unchanged. Do not invoke the Skill tool for it (the model cannot; that is the point of this entry). The gate above is the only thing this skill adds.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute that workflow exactly as written, with one override: its Step 1 reuses the `megamaid.py config` output from above instead of running it again. Its arguments placeholder, written as a dollar sign followed by the word ARGUMENTS, arrives literal because the file came through Read; wherever it appears, use this skill's own arguments, which are: `$ARGUMENTS`. If that is empty, the fix workflow runs with no folder named (its own default under `paths.plans`) and an empty focus brief. Every gate, question, pre-flight check, and commit rule in `/megamaid:fix` applies unchanged. Do not invoke the Skill tool for it (the model cannot; that is the point of this entry). The gate above is the only thing this skill adds.

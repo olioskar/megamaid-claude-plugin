@@ -42,6 +42,6 @@ A branch with three seeded bugs in separate files: an off-by-one loop bound, a s
 | medium | code-reviewer, silent-failure-hunter, test-auditor (`medium` ×3) | 3 of 3 | 6 | NEEDS WORK | $1.10 | 118 s |
 | high | the same (`high` ×3) | 3 of 3 | 9 | NEEDS WORK | $1.19 | 127 s |
 
-**Outcome:** no recall difference on this fixture. `high` cost about 8% more and split the test gaps per file (four T items against one). The shipped default stays unset, as the user decided (D1): the session's effort applies, and `effort.review: medium` is a safe way to save a little on reviews of this size. The run also confirms the 0.15.0 effort path end to end: `comb.py resolve` printed the configured effort and every Agent call carried it.
+**Outcome:** no recall difference on this fixture. `high` cost about 8% more and split the test gaps per file (four T items against one). The shipped default stays unset, as the user decided (D1): the session's effort applies, and `effort.review: medium` is a safe way to save a little on reviews of this size. The run also confirms the 0.15.0 effort path end to end: `megamaid.py resolve` printed the configured effort and every Agent call carried it.
 
 Total spend for the three experiments: $4.88 (six runs).

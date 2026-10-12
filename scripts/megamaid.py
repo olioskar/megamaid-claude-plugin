@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""comb resolver: config, resolve, directives, brief, report-name, batches, findings.
+"""megamaid resolver: config, resolve, directives, brief, report-name, batches, findings.
 
 Deterministic resolution of what every comb skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
@@ -9,21 +9,21 @@ extraction. Stdlib only; run from the project root.
 Prose contracts this script implements: shared/config-loading.md,
 shared/directive-matching.md, shared/dispatch-delivery.md, shared/observed-baseline.md.
 
-CLI (output is fixed-format; scripts/test-comb.sh diffs it):
+CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
 
-  comb.py config [--plugin-root P] [--home H] [--project-root R]
+  megamaid.py config [--plugin-root P] [--home H] [--project-root R]
     stdout: merged config as JSON, keys sorted, indent 1.
     stderr: `warning: agents.<role> dropped — missing <subagent_type|when_to_use>`
             plus a warning when `agents` is not an object, `directives.include_plugin_defaults` is not a
             boolean, or `directives.user_path` exists but is not a directory. A config file may start with a BOM.
-    exit 2: `comb.py: invalid JSON in <path>: <msg>` (first bad layer) or `comb.py: <path>: <os error>`.
+    exit 2: `megamaid.py: invalid JSON in <path>: <msg>` (first bad layer) or `megamaid.py: <path>: <os error>`.
     Layers: P/config/defaults.json, H/.claude/comb.config.json, R/.claude/comb.config.json;
     missing override files are skipped. Dicts deep-merge, lists replace, null deletes
     at any depth; a role that is not a dict with string subagent_type and when_to_use
     is dropped with a warning.
     Defaults: P = parent of this script's directory; H = ~; R = git toplevel else cwd.
 
-  comb.py resolve --role R --lane L [--coerce the_desert] [config flags]
+  megamaid.py resolve --role R --lane L [--coerce the_desert] [config flags]
     stdout: subagent_type: / model: / effort: <low|medium|high|xhigh|max|unset> / native: yes|no
     L is a dotted path under models. model: agents.R.model, else models.the_desert when
     coercing, else models.<L>. effort: agents.R.effort, else effort.the_desert when
@@ -31,7 +31,7 @@ CLI (output is fixed-format; scripts/test-comb.sh diffs it):
     "megamaid:" + the `name:` of some P/agents/*.md (literal equality).
     exit 2: role absent, lane absent, effort outside the five values.
 
-  comb.py directives [--brief "<text>"] [config flags]
+  megamaid.py directives [--brief "<text>"] [config flags]
     stdout: plugin: <abs path> (sorted; none when include_plugin_defaults is false),
             user: <abs path> (sorted; none when R/<directives.user_path> is absent),
             primary: <abs path> … | primary: none
@@ -39,7 +39,7 @@ CLI (output is fixed-format; scripts/test-comb.sh diffs it):
     the brief as a substring; a word shorter than 4 characters must equal a whole
     hyphen-separated segment of the basename instead (so "it" flags nothing, "api" flags api.md).
 
-  comb.py brief --skill S --role R [--run <stem>] [--excerpt <path>] [--manifest <path>] [--brief "<text>"] [config flags]
+  megamaid.py brief --skill S --role R [--run <stem>] [--excerpt <path>] [--manifest <path>] [--brief "<text>"] [config flags]
     S in review|plan|fix|patterns. Writes .comb/excerpts/<run>.<S>.<R>.brief.md under the cwd
     (minting `<S>-<epoch>-<4 hex>` and printing `run: <stem>` first when --run is omitted;
     manifest.py clean --run removes it) and prints:
@@ -54,13 +54,13 @@ CLI (output is fixed-format; scripts/test-comb.sh diffs it):
     note), and `## User focus for this run` when --brief is given (framed for review, verbatim
     for the other skills).
 
-  comb.py report-name --reviews <dir> (--pr N | --branch <name>)
+  megamaid.py report-name --reviews <dir> (--pr N | --branch <name>)
     stdout: report: <dir>/<pr-N|branch-<slug>>-round<R>-report.md / round: <R>
     slug: `/`, whitespace, and `: ? * < > | "` and backslash become `-`; runs collapse; trailing `-` trimmed.
     R = 1 + the highest round parsed from files named <prefix>-round<digits>-report.md in
     <dir>; 1 when none match or the directory is missing. Files are never counted.
 
-  comb.py batches --folder <plan folder>
+  megamaid.py batches --folder <plan folder>
     stdout: shape: per-finding | single-revise-doc | empty
             write-set <code>: <path> … | (none)       one per item, folder (filename) order
             not-reproduced: <codes> | none
@@ -75,7 +75,7 @@ CLI (output is fixed-format; scripts/test-comb.sh diffs it):
     exit 2: missing or unreadable folder; a folder mixing per-finding files and revise-*.md; two files
     with the same code; more than one revise-*.md.
 
-  comb.py findings --report <path>
+  megamaid.py findings --report <path>
     stdout: {"count": N, "shape": "code-shaped|non-code|unknown", "findings": [{code, title,
     source, files, verified}]} from the report template (`**{code} — {title}**`, `*Source: …*`,
     `File(s): …`, `**Verified:** …`). Code-less bullets under a Deferred heading become D<n> after the
@@ -102,7 +102,7 @@ SHORT_WORD = 4
 
 def die(msg, code=2):
     sys.stdout.flush()
-    sys.stderr.write("comb.py: %s\n" % msg)
+    sys.stderr.write("megamaid.py: %s\n" % msg)
     sys.exit(code)
 
 
@@ -375,7 +375,7 @@ REVIEW_FOCUS_FRAMING = ("Findings matching this focus are highest priority. Surf
 SKILLS = ("review", "plan", "fix", "patterns")
 
 
-def comb_dir():
+def state_dir():
     d = os.path.join(os.getcwd(), ".comb")
     ex = os.path.join(d, "excerpts")
     os.makedirs(ex, exist_ok=True)
@@ -408,7 +408,7 @@ def existing(path, flag):
 
 
 def render_brief(skill, role, spec, native, plugin, user, prim, excerpt, manifest, brief):
-    out = ["# comb brief — %s / %s (%s)" % (skill, role, spec["subagent_type"]), "", "## Directives", ""]
+    out = ["# megamaid brief — %s / %s (%s)" % (skill, role, spec["subagent_type"]), "", "## Directives", ""]
     if not native:
         out += [AUTHORITY, "Your lens: %s" % spec["when_to_use"], ""]
     out.append(DIRECTIVES_INTRO_IMPLEMENTER if (skill == "fix" and role == "implementer") else DIRECTIVES_INTRO)
@@ -449,7 +449,7 @@ def cmd_brief(a):
         run = mint_stem(a.skill)
     elif not re.match(r"^[a-z][a-z-]*-[0-9]+-[0-9a-f]{4}$", run):
         die("--run %r is not a run stem (<skill>-<digits>-<hex>)" % run)
-    path = os.path.join(comb_dir(), "%s.%s.%s.brief.md" % (run, a.skill, a.role))
+    path = os.path.join(state_dir(), "%s.%s.%s.brief.md" % (run, a.skill, a.role))
     with open(path, "w", encoding="utf-8") as f:
         f.write(render_brief(a.skill, a.role, spec, native, plugin, user, prim, excerpt, manifest, brief))
     if minted:
@@ -735,7 +735,7 @@ def main(argv=None):
     common.add_argument("--home", default=os.path.expanduser("~"))
     common.add_argument("--project-root", default=None)
 
-    p = argparse.ArgumentParser(prog="comb.py", description=__doc__.split("\n")[0])
+    p = argparse.ArgumentParser(prog="megamaid.py", description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("config", parents=[common], help="print the merged three-layer config as JSON")

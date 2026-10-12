@@ -34,10 +34,10 @@ If scope is ambiguous, ask once. Otherwise derive it from the current branch and
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, you have:
 - `paths.reviews` — where to write the report
@@ -61,7 +61,7 @@ git merge-base origin/<base> <branch>   # record the SHA; agents and the report 
 
 Read these:
 - Project's `CLAUDE.md` for conventions and gotchas (do not read it for base-branch defaults — those come from `paths.base_branch` in merged config)
-- Do **not** read the directive files. Step 3 lists them (`comb.py directives`); the matcher and the Step 7 gate need names and paths only, and every agent reads them itself from the run brief.
+- Do **not** read the directive files. Step 3 lists them (`megamaid.py directives`); the matcher and the Step 7 gate need names and paths only, and every agent reads them itself from the run brief.
 - Any plan/design doc the user points to in the focus brief
 - A reference implementation, if the user names one or `CLAUDE.md` points to one
 
@@ -80,10 +80,10 @@ Record `run`, `excerpt`, the log line, and `stale` from its output for the dispa
 Apply the focus-brief matcher in `${CLAUDE_PLUGIN_ROOT}/shared/directive-matching.md`. It records the matched directive paths and flags them as **primary** in the run brief under "Directives most relevant to this run"; an empty focus brief flags nothing, and all directives still load normally.
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" directives --brief "<focus brief>"
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" directives --brief "<focus brief>"
 ```
 
-Record the `plugin:` and `user:` paths and the `primary:` lines; `comb.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
+Record the `plugin:` and `user:` paths and the `primary:` lines; `megamaid.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
 
 ## Step 3.5: Read the work
 
@@ -147,14 +147,14 @@ For each picked role, resolve and construct the dispatch prompt:
 - **Resolve the role:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role <role> --lane review
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role <role> --lane review
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless it is `unset`; `native:` is the form the brief takes (the script already chose it). Never hardcode a `subagent_type`.
 - **Write the run brief:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" brief --skill review --role <role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill review --role <role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 2 excerpt printed, so one `clean` removes both. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
@@ -193,7 +193,7 @@ For each picked role, resolve and construct the dispatch prompt:
    Bias guard: You are reviewing work produced in another session. Treat the artifact as the source of truth; do not assume intent you cannot verify from the text itself.
    ```
 
-3. **Read first:** the line `Read first: <brief: path from comb.py brief>`. The run brief carries the directive paths (native or foreign form, with the primaries), the observed-baseline block, and the focus brief; the prompt repeats none of them.
+3. **Read first:** the line `Read first: <brief: path from megamaid.py brief>`. The run brief carries the directive paths (native or foreign form, with the primaries), the observed-baseline block, and the focus brief; the prompt repeats none of them.
 
 4. **Agent-specific instructions:** for native `megamaid:*` agents this is already in the agent file body. For foreign agents the run brief's `Your lens:` line carries the role's `when_to_use`; add nothing else.
 
@@ -267,7 +267,7 @@ Carry each agent's `Confidence` line forward. Where an agent reported `Unverifie
 **Output path:**
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" report-name --reviews <paths.reviews> --pr <number>      # or: --branch <name>
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" report-name --reviews <paths.reviews> --pr <number>      # or: --branch <name>
 ```
 
 Its `report:` line is the path to write (`pr-{number}-round{N}-report.md`, or `branch-{slug}-round{N}-report.md` with the branch name made path-safe). The script parses `N` out of the existing filenames with the same prefix and never counts files — after a deletion, a count collides with a surviving later round.
@@ -415,7 +415,7 @@ Then, last of all, remove this run's excerpt and brief working files (they share
 - **The report's voice is authoritative.** Step 7's verification gate is what earns it. A particular that survived no check is marked, not stated.
 - **Project-aware.** Every agent gets the project's directives.
 - **Severity is honest.** Critical means production bugs.
-- **Round-aware.** The report filename includes round N, parsed from existing filenames by `comb.py report-name` (Step 8). Prior reports are not parsed for fixed-findings status — agents may flag items that already shipped in a prior round.
+- **Round-aware.** The report filename includes round N, parsed from existing filenames by `megamaid.py report-name` (Step 8). Prior reports are not parsed for fixed-findings status — agents may flag items that already shipped in a prior round.
 
 ## Edge case: focus brief contradicts shipped behavior
 

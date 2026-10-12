@@ -35,7 +35,7 @@ If the file doesn't exist, you'll create it. If `.claude/` doesn't exist for pro
 Run the merge per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
 Run it from the project root. Its JSON is the **merged effective config**; a `warning:` line names a role the merge dropped. Read the three layer files themselves only to say which layer each non-default key comes from. This is the "before" picture.
@@ -82,7 +82,7 @@ Write the new file. Format with 2-space indentation. Pretty-print top-level keys
 
 ## Step 6: Verify
 
-- Re-run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config`. A non-zero exit is a JSON error in the file you just wrote — fail loud. Each `warning:` line is a role the merge dropped (missing `subagent_type` or `when_to_use`): show it to the user, since at runtime that role is skipped.
+- Re-run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config`. A non-zero exit is a JSON error in the file you just wrote — fail loud. Each `warning:` line is a role the merge dropped (missing `subagent_type` or `when_to_use`): show it to the user, since at runtime that role is skipped.
 - Every `effort.*` and `agents.<role>.effort` value is one of `low`, `medium`, `high`, `xhigh`, `max`; warn on anything else (the Agent call rejects it).
 
 ## Step 7: Tell the user how to test

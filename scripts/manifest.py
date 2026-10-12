@@ -74,7 +74,7 @@ def repo_root():
         return os.getcwd()
 
 
-def comb_dir():
+def state_dir():
     d = os.path.join(os.getcwd(), ".comb")
     ex = os.path.join(d, "excerpts")
     os.makedirs(ex, exist_ok=True)
@@ -355,7 +355,7 @@ def cmd_excerpt(a):
     if not touched:
         die("touched set is empty: no file-shaped token in the input (an empty or failed diff?); no excerpt written", 3)
     included = {s["n"] for s in sections if relevant(s, touched)}
-    ex_dir = comb_dir()
+    ex_dir = state_dir()
     stem = mint_stem(a.skill)
     out_path = os.path.join(ex_dir, stem + ".md")
 
@@ -408,7 +408,7 @@ def cmd_excerpt(a):
 def cmd_index(a):
     lines = read_lines(a.manifest)
     header_end, sections = parse_manifest(lines)
-    ex_dir = comb_dir()
+    ex_dir = state_dir()
     stem = mint_stem(a.skill)
     idx_path = os.path.join(ex_dir, stem + ".index.json")
     for s in sections:

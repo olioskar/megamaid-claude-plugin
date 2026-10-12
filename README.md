@@ -162,7 +162,7 @@ Three more agents:
 
 ## How it works
 
-- **Scripts do the bookkeeping.** `scripts/comb.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.comb/`, which ignores itself in git and is cleaned at the end of each run.
+- **Scripts do the bookkeeping.** `scripts/megamaid.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.comb/`, which ignores itself in git and is cleaned at the end of each run.
 - **Agents get a manifest excerpt, not the whole file.** `scripts/manifest.py` cuts the PATTERNS manifest down to the sections whose scope matches the change, and lists the omitted sections by line range. The rules are in `shared/manifest-slicing.md`. Add a one-line `Home:` to a section if it is included too often.
 - **The skills are the contract.** `skills/*/SKILL.md` and `shared/*.md` define the behavior, and `CHANGELOG.md` records every change to it. Skills run in your session's model; agents get the model from config on each dispatch.
 

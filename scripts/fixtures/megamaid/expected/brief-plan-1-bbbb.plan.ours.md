@@ -1,4 +1,4 @@
-# comb brief — plan / ours (acme:writer)
+# megamaid brief — plan / ours (acme:writer)
 
 ## Directives
 

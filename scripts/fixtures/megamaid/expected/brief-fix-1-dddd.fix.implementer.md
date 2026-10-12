@@ -1,4 +1,4 @@
-# comb brief — fix / implementer (general-purpose)
+# megamaid brief — fix / implementer (general-purpose)
 
 ## Directives
 
