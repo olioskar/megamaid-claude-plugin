@@ -92,7 +92,7 @@ for cmd in index anchors verify gate apply; do
     fail=1
   fi
 done
-for skill in review plan fix patterns the-desert fix-auto configure; do
+for skill in review plan fix patterns vacu-suck fix-auto configure; do
   grep -Fq 'megamaid.py" config' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py config"; fail=1; }
 done
 for skill in review plan fix; do

@@ -48,14 +48,14 @@ Print a short summary of the effective config (not the full JSON dump unless the
 
 - `agents.<role>` set to `null` **deletes** the role from the palette via merge semantics.
 - `agents.<role>.model` and `agents.<role>.effort` are optional per-role overrides (strings) that beat the lane values.
-- `effort.<lane>` mirrors `models.*` key for key (`review`, `plan`, `patterns`, `fix.implementer_standard`, `fix.implementer_trivial`, `fix.reviewer`, `the_desert`), one of `low | medium | high | xhigh | max`. Absent by default: dispatched agents run at the session's effort. Needs a Claude Code that takes `effort` on the Agent call (2.1.292 or later).
+- `effort.<lane>` mirrors `models.*` key for key (`review`, `plan`, `patterns`, `fix.implementer_standard`, `fix.implementer_trivial`, `fix.reviewer`, `vacu_suck`), one of `low | medium | high | xhigh | max`. Absent by default: dispatched agents run at the session's effort. Needs a Claude Code that takes `effort` on the Agent call (2.1.292 or later).
 
 **Notes** (what the keys mean; paths are relative to the project root):
 
 - `paths.reviews`, `paths.plans`: where review reports and plan folders are written. `paths.base_branch`: the default base for diffs. `paths.patterns`: where the PATTERNS manifest is written and read; `null` disables manifest consumption across review/plan/fix.
 - `directives.include_plugin_defaults: false` stops loading the shipped directives; `directives.user_path` is the directory of the user's directive `.md` files.
 - `agents.<role>`: a reviewer or writer entry with required `subagent_type` and `when_to_use` strings; a role missing either is dropped at load with a warning.
-- `models.review`, `models.plan`, `models.patterns` (scanner and shaver), `models.fix.implementer_standard`, `models.fix.implementer_trivial`, `models.fix.reviewer`, `models.the_desert` (replaces every review/plan/fix lane in a sweep; `models.patterns` is untouched).
+- `models.review`, `models.plan`, `models.patterns` (scanner and shaver), `models.fix.implementer_standard`, `models.fix.implementer_trivial`, `models.fix.reviewer`, `models.vacu_suck` (replaces every review/plan/fix lane in a sweep; `models.patterns` is untouched).
 - `fix.commit_per_item`: commit each item on reviewer PASS. `fix.model_invocation`: let Claude start the fix workflow from a natural-language request through the model-only `fix-auto` skill (`/megamaid:fix` itself stays user-only).
 
 **Model values:** `sonnet`, `opus`, `haiku`, or `fable` — the Agent call's `model` parameter is that enum, so a full model id is rejected at dispatch. `best`, `inherit`, and `opusplan` are session or agent-frontmatter aliases, not values the Agent call accepts: refuse them and say so.

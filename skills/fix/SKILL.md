@@ -20,7 +20,7 @@ You're a team lead working through a stack of fix instructions. For each: hand i
 
 1. **Folder of instruction documents** — from `/megamaid:plan` or any structured fix instructions. User specifies, or default to most recent under `<paths.plans>`.
 2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or derive from filenames/categories (Critical → High → Medium → Low → Test gaps). Confirm with user. Exclude items the user marks deferred or out-of-scope.
-3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/megamaid:the-desert`.
+3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
 
@@ -61,13 +61,13 @@ Pick one:
   (d) Abort
 ```
 
-Honor the user's choice and proceed. In `/megamaid:the-desert`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
+Honor the user's choice and proceed. In `/megamaid:vacu-suck`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
 
 ## Step 1.6: Record the run baseline
 
 Three facts, recorded once here and compared against by Steps 4d.1, 4f.0, and 4f.1. Record them whether or not Step 1.5 ran.
 
-- **Verification baseline** — run the project's verification once, chosen the way `/megamaid:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); pipe stderr with `2>&1`. Record the exit code and the failing lines. When neither names a command, record `verification: none configured` and 4f.0 skips. When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/megamaid:the-desert` this is logged, not asked; the sweep proceeds.
+- **Verification baseline** — run the project's verification once, chosen the way `/megamaid:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); pipe stderr with `2>&1`. Record the exit code and the failing lines. When neither names a command, record `verification: none configured` and 4f.0 skips. When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/megamaid:vacu-suck` this is logged, not asked; the sweep proceeds.
 - **Dirty baseline `D0`** — `git status --porcelain` as the tree stands after that run (so artefacts the verification wrote are in it). Paths in `D0` are the user's and are never re-examined by this run's checks. An item whose write-set intersects `D0` is not dispatched: announce `{code} — not dispatched: ## Where overlaps uncommitted changes ({paths}); commit or stash them first` and move on, so the revert and the stage never touch a user's edit.
 - **`HEAD_expected`** — `git rev-parse HEAD`. Every commit this run makes (4f.1) advances it; any other movement is an implementer committing.
 
@@ -110,7 +110,7 @@ Instruction folder shape: {per-finding | single revise-doc}
 Say "queue {code}" to run one anyway.
 ```
 
-A file without the header predates this field and queues normally. In `/megamaid:the-desert` these items are skipped and reported in the final summary; nothing asks.
+A file without the header predates this field and queues normally. In `/megamaid:vacu-suck` these items are skipped and reported in the final summary; nothing asks.
 
 **Cut the manifest excerpt** (only when `paths.patterns` resolved), per `${CLAUDE_PLUGIN_ROOT}/shared/manifest-slicing.md`, with the instruction folder as the touched text (the script reads every `.md` in it, so this covers per-finding files and the single revise doc alike):
 

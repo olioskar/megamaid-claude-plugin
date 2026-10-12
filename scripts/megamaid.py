@@ -23,10 +23,10 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     is dropped with a warning.
     Defaults: P = parent of this script's directory; H = ~; R = git toplevel else cwd.
 
-  megamaid.py resolve --role R --lane L [--coerce the_desert] [config flags]
+  megamaid.py resolve --role R --lane L [--coerce vacu_suck] [config flags]
     stdout: subagent_type: / model: / effort: <low|medium|high|xhigh|max|unset> / native: yes|no
-    L is a dotted path under models. model: agents.R.model, else models.the_desert when
-    coercing, else models.<L>. effort: agents.R.effort, else effort.the_desert when
+    L is a dotted path under models. model: agents.R.model, else models.vacu_suck when
+    coercing, else models.<L>. effort: agents.R.effort, else effort.vacu_suck when
     coercing and set, else effort.<L>, else unset. native: yes iff subagent_type equals
     "megamaid:" + the `name:` of some P/agents/*.md (literal equality).
     exit 2: role absent, lane absent, effort outside the five values.
@@ -237,15 +237,15 @@ def resolve(cfg, role, lane, coerce, plugin_root):
     model = spec.get("model")
     if not isinstance(model, str):
         model = None
-        if coerce == "the_desert":
-            model = walk(cfg.get("models", {}), "the_desert")
+        if coerce == "vacu_suck":
+            model = walk(cfg.get("models", {}), "vacu_suck")
         if not isinstance(model, str):
             model = lane_model
     effort = spec.get("effort")
     if not isinstance(effort, str):
         effort = None
-        if coerce == "the_desert":
-            effort = walk(cfg.get("effort", {}), "the_desert")
+        if coerce == "vacu_suck":
+            effort = walk(cfg.get("effort", {}), "vacu_suck")
         if not isinstance(effort, str):
             effort = walk(cfg.get("effort", {}), lane)
         if not isinstance(effort, str):
@@ -744,7 +744,7 @@ def main(argv=None):
     s = sub.add_parser("resolve", parents=[common], help="resolve a role's subagent_type, model, effort, and native form")
     s.add_argument("--role", required=True)
     s.add_argument("--lane", required=True)
-    s.add_argument("--coerce", choices=["the_desert"], default=None)
+    s.add_argument("--coerce", choices=["vacu_suck"], default=None)
     s.set_defaults(fn=cmd_resolve)
 
     s = sub.add_parser("directives", parents=[common], help="list directive files and the primaries a focus brief flags")

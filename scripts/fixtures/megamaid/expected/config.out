@@ -48,7 +48,7 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
  },
  "effort": {
   "review": "high",
-  "the_desert": "max"
+  "vacu_suck": "max"
  },
  "extra": {
   "tags": [
@@ -68,7 +68,7 @@ warning: agents.nondict dropped — missing subagent_type, when_to_use
   "patterns": "opus",
   "plan": "sonnet",
   "review": "opus",
-  "the_desert": "opus"
+  "vacu_suck": "opus"
  },
  "paths": {
   "base_branch": "main",

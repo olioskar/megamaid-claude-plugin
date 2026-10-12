@@ -1,5 +1,5 @@
 ---
-name: the-desert
+name: vacu-suck
 description: Use when the user wants the full comb pipeline — review → plan → fix — run as one continuous sweep. The user must invoke this explicitly — it executes code changes.
 argument-hint: "[scope] [focus brief]"
 allowed-tools:
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-You're running the full comb pipeline as one continuous sweep. No pauses between steps, no confirmations requested, and no item skipped except one the planner could not reproduce. You comb the desert until it's clean.
+Commence Operation Vacu-Suck: review the code, plan the fixes, apply them. No pauses between steps, no confirmations requested, and no item skipped except one the planner could not reproduce.
 
 ## Inputs
 
@@ -37,7 +37,7 @@ Run it — like every `megamaid.py` command line in this skill — from the proj
 
 These apply to every sub-step. Where a sub-skill's text conflicts with them, these win. Everything else in `/megamaid:review`, `/megamaid:plan`, and `/megamaid:fix` applies unchanged — the consolidation gate, the fix reviewer rule and its fallback chain, write-set batching, the 3-failure escalation, the per-sub-step manifest excerpt (cut, recorded, and cleaned by each sub-step from its own touched text), the pre-commit verification and revert-on-FAIL, and the HEAD and tree checks.
 
-- **Models and effort.** `models.the_desert` replaces every lane default (`models.review`, `models.plan`, `models.fix.*`), including the trivial implementer; `effort.the_desert`, when set, replaces every `effort.*` lane the same way. Explicit `agents.<role>.model` / `agents.<role>.effort` overrides survive. `models.patterns` and `effort.patterns` are untouched: the scanner is never dispatched in a sweep. Mechanically: every `megamaid.py resolve` in a sweep carries `--coerce the_desert`, which applies exactly this rule.
+- **Models and effort.** `models.vacu_suck` replaces every lane default (`models.review`, `models.plan`, `models.fix.*`), including the trivial implementer; `effort.vacu_suck`, when set, replaces every `effort.*` lane the same way. Explicit `agents.<role>.model` / `agents.<role>.effort` overrides survive. `models.patterns` and `effort.patterns` are untouched: the scanner is never dispatched in a sweep. Mechanically: every `megamaid.py resolve` in a sweep carries `--coerce vacu_suck`, which applies exactly this rule.
 - **Config.** Step 1 runs `megamaid.py config` once; the sub-skills reuse its JSON and do not run it again.
 - **Directives.** The focus-brief matcher runs here once (Step 2) for the sweep's log; the sub-skills' own `megamaid.py directives` and `megamaid.py brief` calls run with the same brief and reproduce the same primaries.
 - **Deferral.** Every finding is planned and fixed, Deferred included. "Deferred" is not a category in this mode.
@@ -105,7 +105,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overri
 **Code-shaped:**
 
 ```
-[the-desert] Complete
+[vacu-suck] Complete
 
 Review: {verdict}, {N} findings
 Plan: {N} instruction files
@@ -130,7 +130,7 @@ Wait for the user's response. If yes, start again from review with the same scop
 **Non-code:**
 
 ```
-[the-desert] Complete (review-only — non-code artifact)
+[vacu-suck] Complete (review-only — non-code artifact)
 
 Review: {N} findings ({breakdown by label})
 Plan: skipped — non-code artifact

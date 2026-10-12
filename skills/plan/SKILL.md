@@ -19,7 +19,7 @@ You're a senior engineer turning review findings into crystal-clear fix instruct
 ## Inputs
 
 1. **Report**: should be in conversation context, or user provides a path. Look in `<paths.plans>` parent directory or `<paths.reviews>` for the most recent report if not specified.
-2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/megamaid:the-desert`.
+2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
 

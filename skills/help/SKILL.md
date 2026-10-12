@@ -13,8 +13,8 @@ You print help for the comb plugin.
 ## Behavior
 
 - If `$ARGUMENTS` is empty: print the **Overview** below verbatim.
-- If `$ARGUMENTS` names a command (`review`, `plan`, `fix`, `the-desert`, `patterns`, `configure`, `help`): print the matching **Per-command** entry verbatim.
-- If `$ARGUMENTS` is anything else: print the Overview and add a one-line note: `Note: "{argument}" isn't a comb command. Try one of: review, plan, fix, the-desert, patterns, configure.`
+- If `$ARGUMENTS` names a command (`review`, `plan`, `fix`, `vacu-suck`, `patterns`, `configure`, `help`): print the matching **Per-command** entry verbatim.
+- If `$ARGUMENTS` is anything else: print the Overview and add a one-line note: `Note: "{argument}" isn't a comb command. Try one of: review, plan, fix, vacu-suck, patterns, configure.`
 
 Don't paraphrase. The user is asking for the help text — give them the help text.
 
@@ -43,8 +43,8 @@ Commands
   /megamaid:fix          Execute fix instructions: implementer + reviewer
                      per item, parallel batching where safe.
 
-  /megamaid:the-desert   Run review → plan → fix as one continuous sweep.
-                     One model (models.the_desert) everywhere. No pauses,
+  /megamaid:vacu-suck   Run review → plan → fix as one continuous sweep.
+                     One model (models.vacu_suck) everywhere. No pauses,
                      nothing skipped but not-reproduced items. On non-code
                      artifacts, stops after
                      review — findings go back into your design
@@ -69,13 +69,13 @@ Focus brief
   agent picking and finding priority:
 
     /megamaid:review look for spec/plan misalignment
-    /megamaid:the-desert ensure simplicity, scope discipline, TDD coverage
+    /megamaid:vacu-suck ensure simplicity, scope discipline, TDD coverage
 
 Common workflows
 
   Iterative:    /megamaid:review → review the report → /megamaid:plan →
                 approve groupings → /megamaid:fix
-  Full sweep:   /megamaid:the-desert  (review + plan + fix in one pass)
+  Full sweep:   /megamaid:vacu-suck  (review + plan + fix in one pass)
 
 Config
 
@@ -139,7 +139,7 @@ Step 2 of the review → plan → fix workflow.
 Inputs
   report-path   Path to a review report. Defaults to the most recent
                 report in <paths.reviews>.
-  focus brief   Optional free text — passed through from /megamaid:the-desert.
+  focus brief   Optional free text — passed through from /megamaid:vacu-suck.
 
 What it does
   - Parses every finding (including Deferred).
@@ -207,13 +207,13 @@ Config knobs
   agents.implementer     (default: megamaid:implementer)  the writer agent
 ```
 
-### the-desert
+### vacu-suck
 
 ```
-/megamaid:the-desert [scope] [focus brief]
+/megamaid:vacu-suck [scope] [focus brief]
 
 Run review → plan → fix as one continuous sweep, one model
-(models.the_desert) everywhere, no pauses.
+(models.vacu_suck) everywhere, no pauses.
 
 Inputs
   scope         Same as /megamaid:review.
@@ -228,8 +228,8 @@ When not to use
   - When you want to hand-pick which findings get instructions.
 
 Config knobs
-  models.the_desert       (default: opus)   replaces every lane model in the sweep
-  effort.the_desert       (default: unset)  replaces every lane effort in the sweep
+  models.vacu_suck       (default: opus)   replaces every lane model in the sweep
+  effort.vacu_suck       (default: unset)  replaces every lane effort in the sweep
 ```
 
 ### patterns

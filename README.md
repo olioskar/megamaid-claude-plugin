@@ -1,6 +1,6 @@
 # megamaid
 
-A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamaid:plan` turns each one into a fix instruction, `/megamaid:fix` applies them, and `/megamaid:the-desert` runs all three in one go.
+A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamaid:plan` turns each one into a fix instruction, `/megamaid:fix` applies them, and `/megamaid:vacu-suck` runs all three in one go.
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
@@ -9,7 +9,7 @@ Reviewers follow eight shipped directives plus your own, and a layered config le
 - **`/megamaid:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
 - **`/megamaid:plan`** writes one self-contained fix instruction per finding.
 - **`/megamaid:fix`** applies the instructions. Each item gets an implementer and a reviewer, and items that touch different files run in parallel. Before each commit, the reviewer runs the plan's `Check:` line and the project's tests run. A failed attempt is reverted and recorded before the retry. Each passing item is committed as `<code>: <title>`. Only you can start it; see "Let Claude start fixes" below to change that.
-- **`/megamaid:the-desert`** runs review, plan, and fix without pauses. On a prose change it stops after review.
+- **`/megamaid:vacu-suck`** runs review, plan, and fix without pauses. On a prose change it stops after review.
 - **`/megamaid:patterns`** scans the codebase and writes a PATTERNS manifest: the project's actual conventions, with `file:line` references. Review, plan, and fix give agents the relevant excerpt as a baseline. `--shave` shrinks an existing manifest without changing what it says.
 - **`/megamaid:configure`** changes the config from a plain-language request.
 - **`/megamaid:help`** prints an overview. `/megamaid:help <command>` shows one command in detail.
@@ -18,7 +18,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ```
 /megamaid:review look for spec/plan misalignment
-/megamaid:the-desert ensure simplicity, scope discipline, and TDD coverage
+/megamaid:vacu-suck ensure simplicity, scope discipline, and TDD coverage
 ```
 
 ## Requirements
@@ -48,7 +48,7 @@ In a git repo with changes on a branch:
 /megamaid:review
 ```
 
-The report lands in `docs/megamaid/reviews/`. Run `/megamaid:plan` on it, then `/megamaid:fix`. Or run `/megamaid:the-desert` to do all three.
+The report lands in `docs/megamaid/reviews/`. Run `/megamaid:plan` on it, then `/megamaid:fix`. Or run `/megamaid:vacu-suck` to do all three.
 
 ## Configuration
 
