@@ -89,6 +89,8 @@ Defaults make "go" safe: the proposed areas, the exclusions, the mapping, and "a
 
 ## Step 4: Existing-manifest check
 
+If Step 1's `config` run printed `notice: PATTERNS manifest at … is not read`, first follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`; a manifest it moved or copied now exists at `paths.patterns` for the check below.
+
 If `paths.patterns` resolves to an existing file, ask how to proceed **before** dispatching:
 
 ```
@@ -276,7 +278,7 @@ Drift to fix ({count}) — the manifest keeps the directive's expectation; these
 
 ## Shave mode (`--shave`)
 
-Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /megamaid:patterns to generate one first.` and stop.
+Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. If `config` printed `notice: PATTERNS manifest at … is not read`, first follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /megamaid:patterns to generate one first.` and stop.
 
 **S1. Index.** Run:
 

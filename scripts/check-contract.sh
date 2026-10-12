@@ -104,6 +104,18 @@ grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/pl
 for f in skills/patterns/SKILL.md agents/pattern-scanner.md; do
   grep -Fq 'shared/scan-rules.md' "$f" || { echo "FAIL: $f does not point at shared/scan-rules.md"; fail=1; }
 done
+for skill in configure patterns; do
+  grep -Fq 'shared/manifest-migration.md' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not point at shared/manifest-migration.md"; fail=1; }
+done
+grep -Fq 'megamaid.py" migrate config' skills/configure/SKILL.md || { echo "FAIL: skills/configure does not invoke megamaid.py migrate config"; fail=1; }
+grep -Fq 'megamaid.py" migrate manifest' shared/manifest-migration.md 2>/dev/null || { echo "FAIL: shared/manifest-migration.md does not invoke megamaid.py migrate manifest"; fail=1; }
+# The skills quote the notices printed by scripts/migrate.py: the wording moves together.
+for f in scripts/migrate.py shared/manifest-migration.md skills/patterns/SKILL.md skills/configure/SKILL.md; do
+  grep -Fq 'notice: PATTERNS manifest at' "$f" 2>/dev/null || { echo "FAIL: $f does not carry the manifest notice wording"; fail=1; }
+done
+for f in scripts/migrate.py skills/configure/SKILL.md; do
+  grep -Fq 'is not read; run /megamaid:configure to migrate it' "$f" 2>/dev/null || { echo "FAIL: $f does not carry the config notice wording"; fail=1; }
+done
 grep -qF 'git diff HEAD -- <files reported by implementer>' shared/fix-reviewer-brief.md || { echo "FAIL: fix-reviewer-brief.md lost the 'git diff HEAD -- <files>' instruction (the HEAD~1 bug class)"; fail=1; }
 
 # 6. User-facing facts that have a machine source agree with it.

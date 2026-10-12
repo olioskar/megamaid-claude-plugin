@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user wants to configure megamaid, change megamaid settings, disable an agent, change which model megamaid uses, set the base branch, change where reviews are saved, point megamaid at their directives, or otherwise tweak `.claude/megamaid.config.json`.
+description: Use when the user wants to configure megamaid, change megamaid settings, disable an agent, change which model megamaid uses, set the base branch, change where reviews are saved, point megamaid at their directives, or otherwise tweak `.claude/megamaid.config.json`, or carry over settings or a PATTERNS manifest from an earlier install.
 argument-hint: "[scope] [change]"
 allowed-tools:
   - Bash
@@ -20,7 +20,7 @@ You need:
 1. **Scope** — `project` (`<project-root>/.claude/megamaid.config.json`) or `global` (`~/.claude/megamaid.config.json`).
 2. **Change(s)** — what the user wants different from the merged config they have now. The user may pass these in `$ARGUMENTS` or describe them in conversation. One invocation can apply multiple changes.
 
-If either is missing, ask once.
+If either is missing, ask once. When the user gave no change, run Step 2 first: if it prints `notice:` lines, handling them (Step 2a) is the request.
 
 ## Step 1: Resolve target file
 
@@ -41,6 +41,22 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 Run it from the project root. Its JSON is the **merged effective config**; a `warning:` line names a role the merge dropped. Read the three layer files themselves only to say which layer each non-default key comes from. This is the "before" picture.
 
 Print a short summary of the effective config (not the full JSON dump unless the user asks). Highlight which layer each non-default value is coming from.
+
+## Step 2a: Files from an earlier install
+
+If Step 2's `config` run printed `notice:` lines, handle them before the user's change, in the order printed:
+
+- **`notice: <path> is not read; run /megamaid:configure to migrate it`.** This is a config file from the plugin megamaid was forked from. Its layer is project when `<path>` is under `<project-root>/.claude/`, and home (global scope) otherwise. Run:
+
+  ```
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" migrate config --layer home
+  ```
+
+  Use `--layer project` for the project layer. Its stdout is the translated config. Each stderr `dropped: <key>` line is a key megamaid has no use for. Show both, and ask whether to write the result as `megamaid.config.json` at that layer. On yes, write it with Step 5's formatting and verify it with Step 6. Never change or delete the file named in the notice.
+- **After writing a migrated config,** re-run `config` and use its notices from here on.
+- **`notice: PATTERNS manifest at <path> is not read; …`:** follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`.
+
+Then go on to Step 3 with the user's change, or stop if the migration was the whole request.
 
 ## Step 3: Map the user's request to JSON
 
