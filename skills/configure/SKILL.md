@@ -52,7 +52,7 @@ If Step 2's `config` run printed `notice:` lines, handle them before the user's 
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" migrate config --layer home
   ```
 
-  Use `--layer project` for the project layer. Its stdout is the translated config. Each stderr `dropped: <key>` line is a key megamaid has no use for. Show both, and ask whether to write the result as `megamaid.config.json` at that layer. On yes, write it with Step 5's formatting and verify it with Step 6. Never change or delete the file named in the notice.
+  Use `--layer project` for the project layer. A non-zero exit prints why (missing, invalid JSON, not an object): show it, write nothing for that layer, and go on to the next notice. Otherwise its stdout is the translated config. Each stderr `dropped: <key>` line is a key megamaid has no use for. Show both, and ask whether to write the result as `megamaid.config.json` at that layer. On yes, write it with Step 5's formatting and verify it with Step 6. Never change or delete the file named in the notice.
 - **After writing a migrated config,** re-run `config` and use its notices from here on.
 - **`notice: PATTERNS manifest at <path> is not read; …`:** follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`.
 

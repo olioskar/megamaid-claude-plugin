@@ -116,6 +116,7 @@ done
 for f in scripts/migrate.py skills/configure/SKILL.md; do
   grep -Fq 'is not read; run /megamaid:configure to migrate it' "$f" 2>/dev/null || { echo "FAIL: $f does not carry the config notice wording"; fail=1; }
 done
+grep -Fq 'write nothing for that layer' skills/configure/SKILL.md || { echo "FAIL: skills/configure has no instruction for a failed migrate config"; fail=1; }
 grep -qF 'git diff HEAD -- <files reported by implementer>' shared/fix-reviewer-brief.md || { echo "FAIL: fix-reviewer-brief.md lost the 'git diff HEAD -- <files>' instruction (the HEAD~1 bug class)"; fail=1; }
 
 # 6. User-facing facts that have a machine source agree with it.

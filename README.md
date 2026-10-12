@@ -37,7 +37,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 claude --plugin-dir /path/to/megamaid-claude-plugin
 ```
 
-Coming from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin)? `/megamaid:configure` migrates its config and PATTERNS manifest; move old reports with `git mv docs/combs docs/megamaid`. An empty `{}` `megamaid.config.json` silences the config notice.
+Coming from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin)? Before your first megamaid run, and only while `docs/megamaid/` does not exist yet, move comb's output folder with `git mv docs/combs docs/megamaid` (plain `mv` if it is untracked); this also puts the PATTERNS manifest where megamaid reads it. Then run `/megamaid:configure` to migrate comb's config, and point any `paths.*` it copied from `docs/combs/` at `docs/megamaid/`. If you don't move the folder, `/megamaid:configure` offers to move or copy the manifest instead. An empty `{}` `megamaid.config.json` silences the config notice.
 
 ## Quick start
 
