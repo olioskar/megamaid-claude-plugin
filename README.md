@@ -4,6 +4,10 @@ A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamai
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
+Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) 0.15.3. From Phase 1 megamaid moves comb's rules into a hooks module and will require a mod-capable Claude Code; comb stays for builds without mods.
+
+With [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) also installed, both plugins' model-invocable skills trigger on the same phrases; install one, or use explicit `/megamaid:*` commands.
+
 ## Commands
 
 - **`/megamaid:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
@@ -29,16 +33,11 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ## Install
 
-```
-/plugin marketplace add olioskar/claude-plugins
-/plugin install megamaid@olioskar-marketplace
-```
-
-For local development:
-
 ```bash
 claude --plugin-dir /path/to/megamaid-claude-plugin
 ```
+
+Coming from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin)? `/megamaid:configure` migrates its config and PATTERNS manifest; move old reports with `git mv docs/combs docs/megamaid`. An empty `{}` `megamaid.config.json` silences the config notice.
 
 ## Quick start
 
