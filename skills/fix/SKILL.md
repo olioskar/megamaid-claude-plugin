@@ -1,6 +1,6 @@
 ---
 name: fix
-description: Use after /comb:plan has produced instruction files and the user wants them executed. The user must invoke this explicitly — Claude does not auto-trigger it because it edits code.
+description: Use after /megamaid:plan has produced instruction files and the user wants them executed. The user must invoke this explicitly — Claude does not auto-trigger it because it edits code.
 argument-hint: "[instruction-folder] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,25 +12,25 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-You are running step 3 of the comb workflow: review → plan → fix.
+You are running step 3 of the megamaid workflow: review → plan → fix.
 
 You're a team lead working through a stack of fix instructions. For each: hand it to an implementer, then hand the result to a reviewer. If it fails, adjust and retry. Track progress; don't let anything slip.
 
 ## Inputs
 
-1. **Folder of instruction documents** — from `/comb:plan` or any structured fix instructions. User specifies, or default to most recent under `<paths.plans>`.
+1. **Folder of instruction documents** — from `/megamaid:plan` or any structured fix instructions. User specifies, or default to most recent under `<paths.plans>`.
 2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or derive from filenames/categories (Critical → High → Medium → Low → Test gaps). Confirm with user. Exclude items the user marks deferred or out-of-scope.
-3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/comb:the-desert`.
+3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
 
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it:
 - `models.fix.implementer_standard`
@@ -51,7 +51,7 @@ Run `git status --porcelain`. If the output is empty, the tree is clean — proc
 If non-empty, surface a one-shot question with these options:
 
 ```
-Working tree has uncommitted changes before /comb:fix starts:
+Working tree has uncommitted changes before /megamaid:fix starts:
   <git status --porcelain output>
 
 Pick one:
@@ -61,13 +61,13 @@ Pick one:
   (d) Abort
 ```
 
-Honor the user's choice and proceed. In `/comb:the-desert`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
+Honor the user's choice and proceed. In `/megamaid:vacu-suck`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
 
 ## Step 1.6: Record the run baseline
 
 Three facts, recorded once here and compared against by Steps 4d.1, 4f.0, and 4f.1. Record them whether or not Step 1.5 ran.
 
-- **Verification baseline** — run the project's verification once, chosen the way `/comb:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); pipe stderr with `2>&1`. Record the exit code and the failing lines. When neither names a command, record `verification: none configured` and 4f.0 skips. When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/comb:the-desert` this is logged, not asked; the sweep proceeds.
+- **Verification baseline** — run the project's verification once, chosen the way `/megamaid:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); pipe stderr with `2>&1`. Record the exit code and the failing lines. When neither names a command, record `verification: none configured` and 4f.0 skips. When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/megamaid:vacu-suck` this is logged, not asked; the sweep proceeds.
 - **Dirty baseline `D0`** — `git status --porcelain` as the tree stands after that run (so artefacts the verification wrote are in it). Paths in `D0` are the user's and are never re-examined by this run's checks. An item whose write-set intersects `D0` is not dispatched: announce `{code} — not dispatched: ## Where overlaps uncommitted changes ({paths}); commit or stash them first` and move on, so the revert and the stage never touch a user's edit.
 - **`HEAD_expected`** — `git rev-parse HEAD`. Every commit this run makes (4f.1) advances it; any other movement is an implementer committing.
 
@@ -78,23 +78,23 @@ The **run's own paths** are everything under the instruction folder: `## Attempt
 Apply the focus-brief matcher in `${CLAUDE_PLUGIN_ROOT}/shared/directive-matching.md`. It records the matched directive paths and flags them as **primary** in the run brief under "Directives most relevant to this run"; an empty focus brief flags nothing, and all directives still load normally.
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" directives --brief "<focus brief>"
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" directives --brief "<focus brief>"
 ```
 
-Record the `plugin:` and `user:` paths and the `primary:` lines; `comb.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
+Record the `plugin:` and `user:` paths and the `primary:` lines; `megamaid.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
 
 ## Step 2.5: Detect folder shape
 
 Run:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" batches --folder <instruction folder>
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" batches --folder <instruction folder>
 ```
 
 Its `shape:` line is the folder shape below; its `write-set` lines are the items' write-sets (Step 4a); its `not-reproduced:` line is the list below; its `batch` lines are the ceiling Step 4a launches from — a batch may be split, never merged. The shapes:
 
 - **Per-finding folder** — multiple files matching the per-finding naming pattern (`{C|H|M|L|T|D|X}{n}-*.md`, optionally also `G{n}-*.md` for groups). This is the historical default. Use Steps 3–4 below as today.
-- **Single revise-doc folder** — the folder contains exactly one file matching `revise-*.md` (and no per-finding files). This means the upstream `/comb:plan` ran against a non-code review report. Use the single-revise flow described in Step 4 below.
+- **Single revise-doc folder** — the folder contains exactly one file matching `revise-*.md` (and no per-finding files). This means the upstream `/megamaid:plan` ran against a non-code review report. Use the single-revise flow described in Step 4 below.
 
 Surface the detection to the user before proceeding:
 
@@ -110,7 +110,7 @@ Instruction folder shape: {per-finding | single revise-doc}
 Say "queue {code}" to run one anyway.
 ```
 
-A file without the header predates this field and queues normally. In `/comb:the-desert` these items are skipped and reported in the final summary; nothing asks.
+A file without the header predates this field and queues normally. In `/megamaid:vacu-suck` these items are skipped and reported in the final summary; nothing asks.
 
 **Cut the manifest excerpt** (only when `paths.patterns` resolved), per `${CLAUDE_PLUGIN_ROOT}/shared/manifest-slicing.md`, with the instruction folder as the touched text (the script reads every `.md` in it, so this covers per-finding files and the single revise doc alike):
 
@@ -148,7 +148,7 @@ For each item (or group):
 
 ### 4a. Parallel execution policy (governs Step 4b–4f)
 
-An item's **write-set** is what `comb.py batches` (Step 2.5) prints for it: the file paths named in its instruction's `## Where`, line ranges dropped (a directory entry stands for everything under it); the `**File(s):**` paths when `## Where` names none; the `**Target spec:**` path for a revise doc. Two instructions overlap if their write-sets intersect — reads are free. Apply this policy to the execution loop below:
+An item's **write-set** is what `megamaid.py batches` (Step 2.5) prints for it: the file paths named in its instruction's `## Where`, line ranges dropped (a directory entry stands for everything under it); the `**File(s):**` paths when `## Where` names none; the `**Target spec:**` path for a revise doc. Two instructions overlap if their write-sets intersect — reads are free. Apply this policy to the execution loop below:
 
 - Same-file writes → sequential.
 - Different-file writes → parallel batch.
@@ -196,17 +196,17 @@ For trivial items: announce "(trivial — implementer `{resolved models.fix.impl
 
 **Agent config (resolved per item):**
 
-- **Resolve the writer role** (the shipped `comb:implementer` by default; the five review agents are read-only and cannot serve; the user's `agents.implementer` override is honored):
+- **Resolve the writer role** (the shipped `megamaid:implementer` by default; the five review agents are read-only and cannot serve; the user's `agents.implementer` override is honored):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role implementer --lane fix.implementer_standard      # fix.implementer_trivial for trivial items
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role implementer --lane fix.implementer_standard      # fix.implementer_trivial for trivial items
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`.
 - **Write the implementer run brief** once per run (every implementer shares it):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" brief --skill fix --role implementer --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill fix --role implementer --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 2.5 excerpt printed. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
@@ -226,7 +226,7 @@ Branch: {branch}
 Item: {reference_code} — {title}
 Instruction file: {instruction-path}
 
-Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.md, {run brief path printed by `comb.py brief` (skill fix, role implementer)}
+Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.md, {run brief path printed by `megamaid.py brief` (skill fix, role implementer)}
 ```
 
 ### 4d.1. When the implementer returns
@@ -251,14 +251,14 @@ Bound: these checks compare paths and one SHA. They do not read diffs; the revie
 - **Resolve the picked role:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role <picked role> --lane fix.reviewer
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role <picked role> --lane fix.reviewer
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`.
 - **Write the reviewer run brief**, one per distinct picked role per run:
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" brief --skill fix --role <picked role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill fix --role <picked role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 2.5 excerpt printed. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
@@ -278,7 +278,7 @@ Item: {reference_code} — {title}
 Instruction file: {instruction-path}
 Batch-mates' write-sets: {for each other in-flight item: "{code}: {paths}"; or "none — this item runs alone"}
 
-Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, {run brief path printed by `comb.py brief` (skill fix, role = the picked reviewer role)}
+Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, {run brief path printed by `megamaid.py brief` (skill fix, role = the picked reviewer role)}
 
 ### Implementer's report
 
@@ -300,7 +300,7 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, 
      ```
      The section is append-only. If the instruction is wrong, change `## How` and say so here; the next reviewer verifies against the changed How and can see it changed.
   3. **Retry.** Send a new implementer (Step 4d), then review again (4e). **After three FAILs on one item, stop and ask the user** — trivial or standard alike — printing the per-item status list from 4f.1 first, so the other in-flight items are not lost in the question. Three failures mean the instruction or the classification is wrong, and that is the user's call. A 4f.0 verification FAIL counts as one of the three.
-- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/comb:plan` Step 6 does for one finding. Resolve the writer with `comb.py resolve --role implementer --lane plan`, write a planner run brief with `comb.py brief --skill plan --role implementer --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other). Announce:
+- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/megamaid:plan` Step 6 does for one finding. Resolve the writer with `megamaid.py resolve --role implementer --lane plan`, write a planner run brief with `megamaid.py brief --skill plan --role implementer --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other). Announce:
   ```
   M3 — PASS (5/15 complete)
   Discovered issue added: X1 — {title} (planned by {planner model}; queue is now 16 items)
@@ -391,7 +391,7 @@ All {N} items complete:
   - M7: {title} — {planner's looked-for text, one line}
 ```
 
-**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /comb:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
+**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 
 ## Ground rules
 

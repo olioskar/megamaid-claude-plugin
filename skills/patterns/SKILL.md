@@ -1,6 +1,6 @@
 ---
 name: patterns
-description: Use when the user wants to set up, generate, or refresh comb's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /comb:review, /comb:plan, and /comb:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
+description: Use when the user wants to set up, generate, or refresh megamaid's PATTERNS manifest — the project-specific record of concrete conventions (structure, naming, closed sets, abstraction, reuse, error handling, testing) that /megamaid:review, /megamaid:plan, and /megamaid:fix consume as an observed baseline — or wants to shave, shrink, or compress an existing manifest (`--shave`).
 argument-hint: "[--shave] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You generate or refresh the **PATTERNS manifest** — a persisted, project-specific record of the codebase's *concrete, observed conventions with references to real code*. The manifest is the concrete instantiation of comb's directive principles: a directive says *use the codebase's vocabulary*; the manifest records *the vocabulary is `worksite`, `job`, `crew`, canonical at `src/domain/Worksite.ts:1`*.
+You generate or refresh the **PATTERNS manifest** — a persisted, project-specific record of the codebase's *concrete, observed conventions with references to real code*. The manifest is the concrete instantiation of megamaid's directive principles: a directive says *use the codebase's vocabulary*; the manifest records *the vocabulary is `worksite`, `job`, `crew`, canonical at `src/domain/Worksite.ts:1`*.
 
 This is an **interactive** command. You do recon, propose scan areas, and wait for the user to confirm before dispatching any agents.
 
@@ -26,15 +26,17 @@ This is an **interactive** command. You do recon, propose scan areas, and wait f
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, take:
-- `paths.patterns` — where the manifest is written/read (default `docs/combs/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
+- `paths.patterns` — where the manifest is written/read (default `docs/megamaid/PATTERNS.md`). If it is `null`, there is no write target (the key was deleted via merge semantics, so there is no default to fall back to): report that manifest consumption is disabled and stop. Do not generate to an undefined path.
+
+If `config` printed `notice: PATTERNS manifest at … is not read`, follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md` now, before any recon: a manifest it moved or copied exists at `paths.patterns` from here on, and Step 4 asks whether to regenerate it.
 - `models.patterns` — model for the scanner agents (default `opus`).
-- `agents.pattern-scanner` — the scanner role (`subagent_type`, default `comb:pattern-scanner`).
+- `agents.pattern-scanner` — the scanner role (`subagent_type`, default `megamaid:pattern-scanner`).
 - `directives` — the loaded directive set. Read each directive's name and its opening purpose line; you map directives to areas at the gate (Step 3) and dispatch each scanner only the directives relevant to its area (Step 5). **Authority is the user's call at the gate, never the scanner's** — every dispatched directive is authoritative unless the user down-weights it. If a directive's name or frontmatter self-marks as draft/WIP/superseded/non-authoritative, note it and pre-flag it at the gate as a *suggested* down-weight (the user confirms); a scanner is never told to disregard a directive on its own judgment.
 
 ## Step 2: Recon the codebase shape
@@ -108,7 +110,7 @@ For each confirmed area, dispatch one scanner. **Launch them in parallel** per t
 - **Role, model, effort, and form:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role pattern-scanner --lane patterns
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role pattern-scanner --lane patterns
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`; `native: no` means the prompt's directive list is preceded by the delivery contract's authority sentence.
@@ -125,7 +127,7 @@ You're a read-only convention scanner. Map ONE area and report its concrete, est
 Repository: {project-root}
 Area: {area label}
 Scope (paths/globs): {area path scope}
-comb version: {version}
+megamaid version: {version}
 
 ## 2. Directives for your area (your lenses AND your baseline)
 
@@ -154,21 +156,21 @@ Assemble the manifest **in memory** — writing happens in Step 9, after the int
 
 Assemble **area-major**: each area a top-level `##` section; within it the thematic `###` subsections returned (empty ones omitted). Deduplicate repeated entries within an area. The manifest body records only directive-conforming conventions.
 
-Read the comb version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`version` field) and the base commit from `git rev-parse HEAD`. Render the manifest text in memory using this template:
+Read the megamaid version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`version` field) and the base commit from `git rev-parse HEAD`. Render the manifest text in memory using this template:
 
 ```markdown
 # PATTERNS — {repo name}
 
 **Generated:** {YYYY-MM-DD}
 **Base commit:** {sha}
-**comb version:** {version}
+**megamaid version:** {version}
 **Scan areas:** {comma-separated confirmed area labels}
 
-> Observed baseline, not law. comb's reviewers reconcile this against live code
+> Observed baseline, not law. megamaid's reviewers reconcile this against live code
 > (live code wins), treat a silent area as a cue to read the code rather than
 > permission to do anything, and classify divergence (drift vs. deliberate
 > improvement vs. new canonical) before flagging. Project directives outrank
-> this manifest. Refresh with `/comb:patterns`.
+> this manifest. Refresh with `/megamaid:patterns`.
 
 ---
 
@@ -218,10 +220,10 @@ This is the headline of the interactive flow: it resolves the stale-directive-vs
 
 ## Step 8: Pre-write review (interactive)
 
-**Anchor check (mechanical).** Write the in-memory manifest text to `.comb/excerpts/patterns-draft.md` (the script's working directory; the script keeps it ignored by git), then run from the project root:
+**Anchor check (mechanical).** Write the in-memory manifest text to `.megamaid/excerpts/patterns-draft.md` (the script's working directory; the script keeps it ignored by git), then run from the project root:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" anchors --manifest .comb/excerpts/patterns-draft.md
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" anchors --manifest .megamaid/excerpts/patterns-draft.md
 ```
 
 It prints one line per anchor whose file does not exist or whose line is past the end of the file, one per basename anchor that resolves to more than one file, and a summary. **Bound:** it checks existence and line bounds only; it does not read the line or judge whether it supports the claim.
@@ -254,12 +256,12 @@ PATTERNS manifest written to {paths.patterns}
 
 Areas: {N} ({labels})   ·   Excluded: {count} non-authoritative regions
 Captured: {one-line summary, e.g. "structural + closed-set conventions for 3 areas, 27 entries"}
-Size: {total bytes}B ~{tokens} tokens; {area} area, {global} global sections{ · Large manifest — consider /comb:patterns --shave}
+Size: {total bytes}B ~{tokens} tokens; {area} area, {global} global sections{ · Large manifest — consider /megamaid:patterns --shave}
 
-Consumed automatically by /comb:review, /comb:plan, /comb:fix when present (as a per-run excerpt).
+Consumed automatically by /megamaid:review, /megamaid:plan, /megamaid:fix when present (as a per-run excerpt).
 ```
 
-Then `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>` for the index run, and remove the draft: `rm -f .comb/excerpts/patterns-draft.md`.
+Then `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>` for the index run, and remove the draft: `rm -f .megamaid/excerpts/patterns-draft.md`.
 
 **Reconciliation outcomes (only when Step 7 ran).** Append whichever apply — these turn the old dead-end warning into an actionable result:
 
@@ -276,7 +278,7 @@ Drift to fix ({count}) — the manifest keeps the directive's expectation; these
 
 ## Shave mode (`--shave`)
 
-Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /comb:patterns to generate one first.` and stop.
+Reduce the manifest's token cost without changing what it asserts. Rules for everyone involved: `${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md`. If `config` printed `notice: PATTERNS manifest at … is not read`, first follow `${CLAUDE_PLUGIN_ROOT}/shared/manifest-migration.md`. Requires an existing manifest at `paths.patterns`; otherwise report `No manifest at {paths.patterns} — run /megamaid:patterns to generate one first.` and stop.
 
 **S1. Index.** Run:
 
@@ -286,7 +288,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" index --manifest <paths.p
 
 Run every `manifest.py` command from the project root. It prints `run: <stem>`, `index: <path>`, one line per section (`<kind> <START>-<END> <bytes>B [<n>] <heading> edits=<path>`), and the totals. Record `run` and `index`. Show the per-section lines and totals to the user as the size table. Do not read the manifest or the index file.
 
-**S2. Dispatch shavers.** If no area section is 4 KB or more (after any focus-brief narrowing), report `Nothing to shave: no area section is 4 KB or more` and stop with `clean`. Record the manifest's size before dispatch: `wc -c < <paths.patterns>`. Then one shaver per **area** section of 4 KB or more, at most five at a time, per `${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`. Role, model, and effort from `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role pattern-shaver --lane patterns` (`model:` as the Agent call's `model`, `effort:` as `effort` unless `unset`). Header and global sections are never dispatched or edited. Dispatch prompt:
+**S2. Dispatch shavers.** If no area section is 4 KB or more (after any focus-brief narrowing), report `Nothing to shave: no area section is 4 KB or more` and stop with `clean`. Record the manifest's size before dispatch: `wc -c < <paths.patterns>`. Then one shaver per **area** section of 4 KB or more, at most five at a time, per `${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`. Role, model, and effort from `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role pattern-shaver --lane patterns` (`model:` as the Agent call's `model`, `effort:` as `effort` unless `unset`). Header and global sections are never dispatched or edited. Dispatch prompt:
 
 ```
 You shave ONE section of a PATTERNS manifest. You edit nothing except the one edit-script file named below. Rules: read ${CLAUDE_PLUGIN_ROOT}/shared/shave-rules.md first and follow it exactly.
@@ -308,7 +310,7 @@ A reply that names no file, or names a file that is missing, is recorded as `sec
 **S4. Verify.** Run, listing every edit file the shavers wrote:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" verify --manifest <paths.patterns> --index <index> --edits <edits-n.json ...> --out .comb/excerpts/<run>.passing.json
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" verify --manifest <paths.patterns> --index <index> --edits <edits-n.json ...> --out .megamaid/excerpts/<run>.passing.json
 ```
 
 It prints one line per edit (`ok` or `FAIL … : <check>`), one `UNUSABLE <file>: <why>` line per edit file it could not parse, and a summary, and writes the passing set. A non-zero exit means some edits or files were rejected, not that the run failed; the passing set is always written. **Bound:** verify checks the mechanical properties in the rules file only; it does not judge whether a surviving anchor still supports its claim, does not open the codebase, and does not evaluate the shaver's comparison.
@@ -316,10 +318,10 @@ It prints one line per edit (`ok` or `FAIL … : <check>`), one `UNUSABLE <file>
 **S5. Gate** (shave mode's one hard stop; no default). Run:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" gate --edits .comb/excerpts/<run>.passing.json
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" gate --edits .megamaid/excerpts/<run>.passing.json
 ```
 
-If it prints `Nothing to shave: the passing set is empty (…)`, report that line with the rejected and unusable counts and stop with `clean`; there is nothing to apply. Otherwise show its output verbatim: per section the counts by class and bytes removed, every `duplicate` in full (`old` → `new`, owner), every `anchor` as the dropped anchor and its line, every `fixed-drift` as the line, and the rejected edits with their checks; past 200 lines of full text the duplicates collapse to one line each. Replies: `apply`; `skip <class>` or `skip <section>` (run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" filter --edits <passing> --skip-class … --skip-section … --out .comb/excerpts/<run>.final.json`, then show the gate again for the final file); `show <section>` (run `gate … --show "<heading>"`). Nothing is applied until the user says `apply`.
+If it prints `Nothing to shave: the passing set is empty (…)`, report that line with the rejected and unusable counts and stop with `clean`; there is nothing to apply. Otherwise show its output verbatim: per section the counts by class and bytes removed, every `duplicate` in full (`old` → `new`, owner), every `anchor` as the dropped anchor and its line, every `fixed-drift` as the line, and the rejected edits with their checks; past 200 lines of full text the duplicates collapse to one line each. Replies: `apply`; `skip <class>` or `skip <section>` (run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" filter --edits <passing> --skip-class … --skip-section … --out .megamaid/excerpts/<run>.final.json`, then show the gate again for the final file); `show <section>` (run `gate … --show "<heading>"`). Nothing is applied until the user says `apply`.
 
 **S6. Write.** Run:
 
@@ -339,7 +341,7 @@ and finish with `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --
 ## Ground rules
 
 - **Interactive before heavy work, but never naggy.** One hard stop per mode: the scan plan (Step 3) in generate mode, the shave gate in shave mode. In generate mode also confirm before overwriting an existing manifest (Steps 4, 8). Batch every gate into one prompt with safe "go"/"write" defaults — never drip questions one at a time, and never ask what recon already detected. The interactive steps that involve the user (3, 7, 8) only stop when there's a real decision to make: Step 7 fires only when dominant conflicts exist, Step 8's re-scan only when the user asks.
-- **Scanners never edit; shavers write one file.** `comb:pattern-scanner` never edits. `comb:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.comb/excerpts/`; nothing else.
+- **Scanners never edit; shavers write one file.** `megamaid:pattern-scanner` never edits. `megamaid:pattern-shaver` writes only the one edit-script file it is told to write, with a Bash heredoc. This orchestrator writes the manifest and, through `scripts/manifest.py`, the run's working files under `.megamaid/excerpts/`; nothing else.
 - **Shave never rescans.** It reads code only to confirm two anchors pin one convention. In shave mode the orchestrator never reads the manifest; it reads the script's output and the shavers' replies.
 - **Facts, not principles.** Every entry cites real code. Omit empty lenses rather than padding.
 - **Full scan lives here only.** The consuming skills never re-scan the whole codebase; they read this manifest plus the files around their diff.

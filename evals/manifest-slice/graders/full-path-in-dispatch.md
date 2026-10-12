@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "docs/combs/PATTERNS\\.md \\(full manifest\\)"
+pattern: "docs/megamaid/PATTERNS\\.md \\(full manifest\\)"
 target: trace
 match: contains
 ---

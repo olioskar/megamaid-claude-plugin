@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "/comb:fix"
+pattern: "/megamaid:fix"
 target: last_message
 match: contains
 ---

@@ -12,7 +12,7 @@ Verify the implementation executed the plan. **The plan file is the contract** (
    - `git diff HEAD -- <files reported by implementer>` shows the item's changes, staged and unstaged, against `HEAD`. The orchestrator forms a parallel batch only from items with disjoint write-sets, so the path scope isolates this item from its batch-mates.
    - `git diff` never lists an untracked file, so a file the implementer created does not appear in it. Run `git status --porcelain -- <files reported by implementer>` and read any path marked `??` in full instead of diffing it.
    - When `fix.commit_per_item` is off, `HEAD` has not moved since the run started, so this diff accumulates the earlier items too. Lean on the implementer's reported file list and the plan's `## Where` section to scope your reading.
-4. **Run the `Check:` line** under `## Expected Outcome`, from the project root. A non-zero exit, or an observable that is absent, is a FAIL regardless of how faithfully the diff matches `## How` — the plan was wrong or the fix did not land. `Check: none — <why>` means nothing to run: name that on your `Unverified:` line. A plan with no `Check:` line predates this field; treat it as `none — not stated (pre-0.14.0 plan)`.
+4. **Run the `Check:` line** under `## Expected Outcome`, from the project root. A non-zero exit, or an observable that is absent, is a FAIL regardless of how faithfully the diff matches `## How` — the plan was wrong or the fix did not land. `Check: none — <why>` means nothing to run: name that on your `Unverified:` line. A plan with no `Check:` line predates this field; treat it as `none — not stated (plan predates the Check: field)`.
 
 ### Decision rule
 

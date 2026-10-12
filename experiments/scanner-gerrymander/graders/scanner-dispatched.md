@@ -1,6 +1,6 @@
 ---
 type: tool_used
 tool: Agent
-input_match: 'comb:pattern-scanner'
+input_match: 'megamaid:pattern-scanner'
 min: 1
 ---

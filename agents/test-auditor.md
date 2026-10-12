@@ -38,7 +38,7 @@ The dispatch prompt provides the shared context block, directive paths, the opti
 
 ## Special role: plan/fix verification
 
-When invoked during `/comb:plan` or `/comb:fix`, your job extends to:
+When invoked during `/megamaid:plan` or `/megamaid:fix`, your job extends to:
 
 - Verifying that fix instructions describe verifiable expected outcomes
 - Verifying that fixes preserve test pass rates (no test was made to pass by changing what it asserts)

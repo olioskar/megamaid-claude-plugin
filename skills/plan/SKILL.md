@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Use after a comb review when the user wants the findings translated into executable fix instructions.
+description: Use after a megamaid review when the user wants the findings translated into executable fix instructions.
 argument-hint: "[report-path] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,24 +12,24 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You are running step 2 of the comb workflow: review → plan → fix.
+You are running step 2 of the megamaid workflow: review → plan → fix.
 
 You're a senior engineer turning review findings into crystal-clear fix instructions. Each finding gets its own specialist who reads the actual code and writes instructions good enough for any developer to execute cold.
 
 ## Inputs
 
 1. **Report**: should be in conversation context, or user provides a path. Look in `<paths.plans>` parent directory or `<paths.reviews>` for the most recent report if not specified.
-2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/comb:the-desert`.
+2. **Focus brief**: `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
 
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, take:
 - `paths.plans` — output folder root
@@ -44,10 +44,10 @@ From it, take:
 Apply the focus-brief matcher in `${CLAUDE_PLUGIN_ROOT}/shared/directive-matching.md`. It records the matched directive paths and flags them as **primary** in the run brief under "Directives most relevant to this run"; an empty focus brief flags nothing, and all directives still load normally.
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" directives --brief "<focus brief>"
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" directives --brief "<focus brief>"
 ```
 
-Record the `plugin:` and `user:` paths and the `primary:` lines; `comb.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
+Record the `plugin:` and `user:` paths and the `primary:` lines; `megamaid.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
 
 ## Step 2.5: Detect report shape
 
@@ -70,7 +70,7 @@ The classification flows through the rest of this skill. Steps below note which 
 Run the parser first:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" findings --report <report path>
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" findings --report <report path>
 ```
 
 Its JSON lists every finding the template carries (`code`, `title`, `source`, `files`, `verified`) and its `shape` confirms Step 2.5. When its JSON has `"count": 0` or `"shape": "unknown"`, the report is not in the template shape: read it and extract by hand as below.
@@ -126,7 +126,7 @@ The user decides. Grouped items share one .md file but list each sub-item explic
 
 Default: `<paths.plans>/plan-for-{report-stem}/`
 
-For example, report at `docs/combs/reviews/pr-123-round1-report.md` → instructions at `docs/combs/plans/plan-for-pr-123-round1-report/`.
+For example, report at `docs/megamaid/reviews/pr-123-round1-report.md` → instructions at `docs/megamaid/plans/plan-for-pr-123-round1-report/`.
 
 User may override.
 
@@ -139,7 +139,7 @@ User may override.
 
 ### Non-code report — single consolidated revise-doc
 
-Dispatch one planner agent, resolved and briefed exactly as the code-shaped flow below resolves and briefs its planners (`comb.py resolve --role implementer --lane plan`, then `comb.py brief --skill plan --role implementer …`), with this prompt structure (shared context, the run brief, then its own job and output format):
+Dispatch one planner agent, resolved and briefed exactly as the code-shaped flow below resolves and briefs its planners (`megamaid.py resolve --role implementer --lane plan`, then `megamaid.py brief --skill plan --role implementer …`), with this prompt structure (shared context, the run brief, then its own job and output format):
 
 ````
 You're a senior reviewer translating a spec/design-doc review into a single consolidated revision-instructions file.
@@ -152,7 +152,7 @@ Spec under revision: {spec_path}
 Report: {report-path}
 Output file: {output_folder}/revise-{spec-stem}.md
 
-Read first: {run brief path printed by `comb.py brief` (skill plan, role implementer)}
+Read first: {run brief path printed by `megamaid.py brief` (skill plan, role implementer)}
 
 ## 2. Your job
 
@@ -211,17 +211,17 @@ Launch all in parallel per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/
 **Agent config (resolved per finding):**
 
 - **Pick a specialty lens.** For each finding, the orchestrator picks one role from `config.agents` whose `when_to_use` best matches the finding's specialty (general correctness → `code-reviewer`, simplification/abstraction concerns → `simplifier`, error-handling → `silent-failure-hunter`, test gaps → `test-auditor`, pattern/spec drift → `consistency-auditor`). When no role obviously matches, default to `code-reviewer`. The lens informs the dispatch prompt's framing and is recorded in the plan file's `**Specialty:**` header — it is **not** the subagent_type that runs.
-- **Resolve the writer role** (the planner needs Write access; the `comb:*` review roles cannot write, and the user's `agents.implementer` override is honored):
+- **Resolve the writer role** (the planner needs Write access; the `megamaid:*` review roles cannot write, and the user's `agents.implementer` override is honored):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role implementer --lane plan
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role implementer --lane plan
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`; `native:` is the brief's form.
 - **Write the run brief** once per run (every planner shares it):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" brief --skill plan --role implementer --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill plan --role implementer --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 3 excerpt printed. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
@@ -247,7 +247,7 @@ Output file: {output-folder}/{reference_code}-{title-slug}.md
 Files referenced by the finding: {file-paths}
 Adjacent files worth scanning: {2–3 nearest siblings the orchestrator picks}
 
-Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, {run brief path printed by `comb.py brief`}
+Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, {run brief path printed by `megamaid.py brief`}
 
 ## Finding
 
@@ -268,7 +268,7 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, {run bri
 All {N} instruction files ready:
 
 Critical ({count}):
-  - docs/combs/plans/plan-for-.../C1-stale-closure-in-hook.md
+  - docs/megamaid/plans/plan-for-.../C1-stale-closure-in-hook.md
   - ...
 
 High ({count}):
@@ -277,7 +277,7 @@ High ({count}):
 Medium ({count}):
   - ...
 
-Next: /comb:fix {output_folder}
+Next: /megamaid:fix {output_folder}
 ```
 
 **Non-code report — present the single revise-doc:**
@@ -287,12 +287,12 @@ Revision instructions ready: {output_folder}/revise-{spec-stem}.md
 
 {N} revisions targeting `{spec_path}`: {breakdown by label}
 
-Next: /comb:fix {output_folder}
+Next: /megamaid:fix {output_folder}
 ```
 
-The `Next:` line names `/comb:fix`, the command the user types. Never point the user at the `fix-auto` skill; it is model-only and cannot be typed.
+The `Next:` line names `/megamaid:fix`, the command the user types. Never point the user at the `fix-auto` skill; it is model-only and cannot be typed.
 
-**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /comb:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
+**Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 
 ## Ground rules
 
@@ -303,4 +303,4 @@ The `Next:` line names `/comb:fix`, the command the user types. Never point the 
 
 ## Edge case: focus brief contradicts shipped behavior
 
-Per `/comb:review`.
+Per `/megamaid:review`.

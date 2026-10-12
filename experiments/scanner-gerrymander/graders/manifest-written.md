@@ -1,4 +1,4 @@
 ---
 type: file_exists
-path: "docs/combs/PATTERNS.md"
+path: "docs/megamaid/PATTERNS.md"
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release-gate greps for the comb plugin's shipped contract.
+# Release-gate greps for the megamaid plugin's shipped contract.
 # Deterministic and offline; run from anywhere.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -51,7 +51,7 @@ while IFS= read -r f; do
   fi
 done < <(grep -rl '\${CLAUDE_PLUGIN_ROOT}/skills/[a-z-]*/SKILL\.md' skills/ | sort -u)
 
-# 5. Scripts: manifest.py and comb.py ship, their fixture tests pass, and every consuming
+# 5. Scripts: manifest.py and megamaid.py ship, their fixture tests pass, and every consuming
 #    skill invokes it (the orchestrator never reads the manifest).
 if [ ! -f scripts/manifest.py ]; then
   echo "FAIL: scripts/manifest.py missing"
@@ -66,14 +66,14 @@ elif ! grep -qF 'Excerpt grammar' scripts/manifest.py; then
   echo "FAIL: scripts/manifest.py docstring lost the excerpt grammar that shared/manifest-slicing.md points at"
   fail=1
 fi
-if [ ! -f scripts/comb.py ]; then
-  echo "FAIL: scripts/comb.py missing"
+if [ ! -f scripts/megamaid.py ]; then
+  echo "FAIL: scripts/megamaid.py missing"
   fail=1
-elif ! python3 -I scripts/comb.py --help >/dev/null 2>&1; then
-  echo "FAIL: python3 -I scripts/comb.py --help exits non-zero"
+elif ! python3 -I scripts/megamaid.py --help >/dev/null 2>&1; then
+  echo "FAIL: python3 -I scripts/megamaid.py --help exits non-zero"
   fail=1
-elif ! bash scripts/test-comb.sh >/dev/null 2>&1; then
-  echo "FAIL: scripts/test-comb.sh failed (run it for the diff)"
+elif ! bash scripts/test-megamaid.sh >/dev/null 2>&1; then
+  echo "FAIL: scripts/test-megamaid.sh failed (run it for the diff)"
   fail=1
 fi
 if ! bash scripts/test-replay.sh >/dev/null 2>&1; then
@@ -92,18 +92,31 @@ for cmd in index anchors verify gate apply; do
     fail=1
   fi
 done
-for skill in review plan fix patterns the-desert fix-auto configure; do
-  grep -Fq 'comb.py" config' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke comb.py config"; fail=1; }
+for skill in review plan fix patterns vacu-suck fix-auto configure; do
+  grep -Fq 'megamaid.py" config' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py config"; fail=1; }
 done
 for skill in review plan fix; do
-  grep -Fq 'comb.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke comb.py brief"; fail=1; }
+  grep -Fq 'megamaid.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py brief"; fail=1; }
 done
-grep -Fq 'comb.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke comb.py batches"; fail=1; }
-grep -Fq 'comb.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke comb.py report-name"; fail=1; }
-grep -Fq 'comb.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke comb.py findings"; fail=1; }
+grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
+grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
+grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
 for f in skills/patterns/SKILL.md agents/pattern-scanner.md; do
   grep -Fq 'shared/scan-rules.md' "$f" || { echo "FAIL: $f does not point at shared/scan-rules.md"; fail=1; }
 done
+for skill in configure patterns; do
+  grep -Fq 'shared/manifest-migration.md' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not point at shared/manifest-migration.md"; fail=1; }
+done
+grep -Fq 'megamaid.py" migrate config' skills/configure/SKILL.md || { echo "FAIL: skills/configure does not invoke megamaid.py migrate config"; fail=1; }
+grep -Fq 'megamaid.py" migrate manifest' shared/manifest-migration.md 2>/dev/null || { echo "FAIL: shared/manifest-migration.md does not invoke megamaid.py migrate manifest"; fail=1; }
+# The skills quote the notices printed by scripts/migrate.py: the wording moves together.
+for f in scripts/migrate.py shared/manifest-migration.md skills/patterns/SKILL.md skills/configure/SKILL.md; do
+  grep -Fq 'notice: PATTERNS manifest at' "$f" 2>/dev/null || { echo "FAIL: $f does not carry the manifest notice wording"; fail=1; }
+done
+for f in scripts/migrate.py skills/configure/SKILL.md; do
+  grep -Fq 'is not read; run /megamaid:configure to migrate it' "$f" 2>/dev/null || { echo "FAIL: $f does not carry the config notice wording"; fail=1; }
+done
+grep -Fq 'write nothing for that layer' skills/configure/SKILL.md || { echo "FAIL: skills/configure has no instruction for a failed migrate config"; fail=1; }
 grep -qF 'git diff HEAD -- <files reported by implementer>' shared/fix-reviewer-brief.md || { echo "FAIL: fix-reviewer-brief.md lost the 'git diff HEAD -- <files>' instruction (the HEAD~1 bug class)"; fail=1; }
 
 # 6. User-facing facts that have a machine source agree with it.
@@ -119,27 +132,27 @@ if git ls-files | grep -q '\.DS_Store'; then
   fail=1
 fi
 
-# 8. Every comb:* subagent_type in defaults.json has an agent file; every agent file's
+# 8. Every megamaid:* subagent_type in defaults.json has an agent file; every agent file's
 #    frontmatter name equals its filename (the native rule in dispatch-delivery.md compares
-#    `comb:` + name) and is a default subagent_type somewhere.
+#    `megamaid:` + name) and is a default subagent_type somewhere.
 while IFS= read -r t; do
   case "$t" in MISSING*) echo "FAIL: defaults.json role(s) without subagent_type: ${t#MISSING }"; fail=1; continue;; esac
-  n="${t#comb:}"
+  n="${t#megamaid:}"
   [ -f "agents/$n.md" ] || { echo "FAIL: defaults.json names $t but agents/$n.md is missing"; fail=1; }
 done < <(python3 -I -c 'import json,sys
 a=json.load(open("config/defaults.json"))["agents"]
 bad=[k for k,v in a.items() if not (isinstance(v,dict) and isinstance(v.get("subagent_type"),str))]
 if bad: print("MISSING " + " ".join(bad))
-[print(v["subagent_type"]) for k,v in a.items() if k not in bad and v["subagent_type"].startswith("comb:")]')
+[print(v["subagent_type"]) for k,v in a.items() if k not in bad and v["subagent_type"].startswith("megamaid:")]')
 for f in agents/*.md; do
   n=$(basename "$f" .md)
   [ "$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -n 1 | sed 's/[[:space:]]*$//')" = "$n" ] || { echo "FAIL: agents/$n.md frontmatter name does not equal its filename"; fail=1; }
-  grep -qF "\"comb:$n\"" config/defaults.json || { echo "FAIL: agents/$n.md is not a default subagent_type in config/defaults.json"; fail=1; }
+  grep -qF "\"megamaid:$n\"" config/defaults.json || { echo "FAIL: agents/$n.md is not a default subagent_type in config/defaults.json"; fail=1; }
 done
 for n in code-reviewer simplifier silent-failure-hunter test-auditor consistency-auditor; do
   grep -qF "**Confidence**" "agents/$n.md" || { echo "FAIL: agents/$n.md has no Confidence line; review Step 7 treats an omitted field as unverified"; fail=1; }
 done
-if grep -qF -- "- \`comb:" shared/dispatch-delivery.md; then
+if grep -qF -- "- \`megamaid:" shared/dispatch-delivery.md; then
   echo "FAIL: dispatch-delivery.md carries a native allowlist; the native rule is by agent name"
   fail=1
 fi
@@ -175,6 +188,90 @@ if seen == 0:
     print("FAIL: help-defaults gate matched no '(default: X)' line; the help wording changed"); bad = 1
 sys.exit(bad)
 PY
+
+# 10. Old-name guard: no identifier of the plugin this one was forked from, in tracked file
+#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/, and
+#     any line carrying the old repo URL. The pattern is built from fragments so this section does
+#     not match itself. GUARD=off skips the repo scan (the self-tests still run).
+w='co''mb'
+GUARD_WORDS="$w|${w}s|the-""desert|the_""desert"
+GUARD_CAMEL="[a-z]Co""mb|[Cc]o""mb[A-Z]"
+GUARD_URL="github.com/olioskar/${w}-the-""desert-claude-plugin"
+GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/)'
+# Three shapes: the word (case-insensitive, whole word), `_`-joined forms, and camelCase forms.
+guard_grep() {  # $1: "files" to filter stdin paths with grep, or "git" to search contents of repo $2
+  if [ "$1" = files ]; then
+    local in; in=$(cat)
+    printf '%s\n' "$in" | grep -iwE "$GUARD_WORDS" || [ $? -eq 1 ] || return 2
+    printf '%s\n' "$in" | grep -iF -e "${w}_" -e "_$w" -e "${w}s_" || [ $? -eq 1 ] || return 2
+    printf '%s\n' "$in" | grep -E "$GUARD_CAMEL" || [ $? -eq 1 ] || return 2
+  else
+    git -C "$2" grep --no-color -nI -iwE "$GUARD_WORDS" || [ $? -eq 1 ] || return 2
+    git -C "$2" grep --no-color -nI -iF -e "${w}_" -e "_$w" -e "${w}s_" || [ $? -eq 1 ] || return 2
+    git -C "$2" grep --no-color -nI -E "$GUARD_CAMEL" || [ $? -eq 1 ] || return 2
+  fi
+  return 0
+}
+name_guard() {
+  local dir=$1 files hits gerr line f rest n out=0
+  files=$(git -C "$dir" ls-files 2>/dev/null) || { echo "FAIL: $w guard could not run"; return 1; }
+  [ -n "$files" ] || { echo "FAIL: $w guard could not run"; return 1; }
+  gerr=$(mktemp "${TMPDIR:-/tmp}/guard-err.XXXXXX")
+  # Any error text counts as a failed run: git grep exits 1 (same as "no match") on an unreadable file.
+  if ! hits=$(printf '%s\n' "$files" | guard_grep files 2>"$gerr") || [ -s "$gerr" ]; then
+    rm -f "$gerr"; echo "FAIL: $w guard could not run"; return 1
+  fi
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    [[ "$f" =~ $GUARD_EXEMPT ]] && continue
+    echo "FAIL: $w identifier at $f"; out=1
+  done < <(printf '%s\n' "$hits" | sort -u)
+  if ! hits=$(guard_grep git "$dir" 2>"$gerr") || [ -s "$gerr" ]; then
+    rm -f "$gerr"; echo "FAIL: $w guard could not run"; return 1
+  fi
+  rm -f "$gerr"
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    f=${line%%:*}; rest=${line#*:}; n=${rest%%:*}
+    [[ "$f" =~ $GUARD_EXEMPT ]] && continue
+    [[ "$line" == *"$GUARD_URL"* ]] && continue
+    echo "FAIL: $w identifier at $f:$n"; out=1
+  done < <(printf '%s\n' "$hits" | sort -u)
+  return $out
+}
+if [ "${GUARD:-on}" = off ]; then
+  echo "guard: skipped"
+else
+  name_guard . || fail=1
+fi
+
+# Self-tests: the guard fails closed outside a repo and reports exactly the identifier lines in a
+# scratch repo (word-boundary and `_` matches, a path hit, the exempt path and the URL skip).
+gt=$(mktemp -d "${TMPDIR:-/tmp}/guard.XXXXXX")
+# `|| true` inside the group: under `set -o pipefail` the pipeline would otherwise take name_guard's exit 1.
+if ! { name_guard "$gt" 2>/dev/null || true; } | grep -qF "guard could not run"; then
+  echo "FAIL: name guard does not fail closed outside a git repo"; fail=1
+fi
+W='Co''mb'
+git -C "$gt" init -q && mkdir -p "$gt/scripts" \
+ && printf 'see %s.py here\nsee %sined here\nx %s_dir\ny the-%s z\nhttps://%s\nis_%s=1\n%ss_dir\n%sConfig\nis%s\n' \
+      "$w" "$w" "$w" desert "$GUARD_URL" "$w" "$w" "$W" "$W" > "$gt/a.md" \
+ && printf '%s\n' "$w" > "$gt/scripts/migrate.py" && : > "$gt/$w-x.txt" && git -C "$gt" add -A
+want=$(printf 'FAIL: %s identifier at %s\n' "$w" "$w-x.txt" "$w" a.md:1 "$w" a.md:3 "$w" a.md:4 "$w" a.md:6 "$w" a.md:7 "$w" a.md:8 "$w" a.md:9)
+gout=$(name_guard "$gt" 2>&1)
+[ "$gout" = "$want" ] || { echo "FAIL: name guard self-test: expected:"; echo "$want"; echo "got: $gout"; fail=1; }
+# A colour-forcing git config must not hide exemptions or break line parsing.
+gout=$(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=always name_guard "$gt" 2>&1)
+[ "$gout" = "$want" ] || { echo "FAIL: name guard self-test with color.ui=always: got: $gout"; fail=1; }
+# An unreadable tracked file makes git grep print an error but exit 1 ("no match"): that must not pass.
+if [ "$(id -u)" != 0 ]; then
+  chmod 000 "$gt/a.md"
+  if ! { name_guard "$gt" 2>/dev/null || true; } | grep -qF "guard could not run"; then
+    echo "FAIL: name guard passes when git grep cannot read a tracked file"; fail=1
+  fi
+  chmod 644 "$gt/a.md"
+fi
+rm -rf "$gt"
 
 if [ "$fail" -eq 0 ]; then
   echo "check-contract: OK"

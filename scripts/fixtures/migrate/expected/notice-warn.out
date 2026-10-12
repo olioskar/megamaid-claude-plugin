@@ -1,0 +1,3 @@
+warning: agents.x dropped — missing subagent_type
+notice: TMP/L/warn/home/.claude/comb.config.json is not read; run /megamaid:configure to migrate it
+exit=0

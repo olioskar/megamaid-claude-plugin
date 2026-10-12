@@ -3,7 +3,7 @@ PATTERNS excerpt: 2 of 6 area sections included (12. PDF / reporting; Appendix);
 stale: no (no cited file in the touched set)
 base_commit: BASECOMMIT0
 --- excerpt body ---
-> comb excerpt of docs/combs/PATTERNS.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/combs/PATTERNS.md`:
+> megamaid excerpt of docs/megamaid/PATTERNS.md for this run. Omitted sections, readable by line range with `sed -n START,ENDp docs/megamaid/PATTERNS.md`:
 > - 1. Entity Page — lines 17–32
 > - 3. SidePanel / PanelHost — lines 33–43
 > - 9. Design system / primitives — lines 44–57
@@ -53,4 +53,4 @@ Notes with no code references: naming history, retired vocabulary, and the reaso
 
 ## Maintenance
 
-Refresh a section when its canonical pattern changes. Consumed automatically by `/comb:review|plan|fix` when present.
+Refresh a section when its canonical pattern changes. Consumed automatically by `/megamaid:review|plan|fix` when present.

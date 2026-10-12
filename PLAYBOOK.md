@@ -1,32 +1,35 @@
 # Playbook
 
-How this plugin is developed. It describes the current process, not its history. When the process changes, edit this file.
+How megamaid is developed and how we work together. It describes the current practice. When a practice changes, rewrite its passage in place; the ledger keeps the history. Cut what a fresh session no longer needs.
+
+## Working together
+
+- **Approach first.** Non-trivial work starts with the approach (a spec or a short proposal), agreed before any code.
+- **Approved plan + "go"** authorizes the plan's per-task commits. Confirm the commit policy once at the start of execution, then don't ask again.
+- **Push only on the maintainer's go.** The maintainer merges PRs (`gh pr merge` is blocked for Claude).
+- **Scope.** Make the change asked for. Flag other opportunities (what, where, why, how) and leave them for the maintainer to choose.
+- **Prose.** Plain and grounded. No marketing language, and no fields, knobs or sections nobody asked for.
+- **Spend.** Say the cost before a paid run. If a tool or runner outside the plugin fails, report it and stop.
 
 ## Where things live
 
-- `skills/*/SKILL.md` and `shared/*.md` are the runtime contract. A behavior change is a change to one of these.
-- `agents/*.md` holds the reviewers, the writer, and the two manifest agents.
-- `directives/` holds the shipped policy.
-- `config/defaults.json` holds the config keys and their defaults.
-- `scripts/manifest.py` and `scripts/comb.py` are the helpers the skills call. `scripts/test-manifest.sh` and `scripts/test-comb.sh` pin their output, so change a script and its fixtures together.
-- `evals/` holds the behavioral suite and `experiments/` the two-arm runs.
-- `CHANGELOG.md` is the only version history users see.
-- `docs/` is gitignored. It holds specs, plans, review reports, and the session-continuity files described below.
+- `skills/*/SKILL.md` and `shared/*.md`: the prose runtime contract. `shared/manifest-migration.md` is the manifest-migration offer used by configure and patterns.
+- `hooks/`: the hooks module (from Phase 1), the code half of the runtime contract. `types/` holds its `$.state` contract.
+- `agents/*.md`, `directives/`, `config/defaults.json`: agents, shipped policy, config keys and defaults.
+- `scripts/`: the helpers the skills call and their fixture tests. Change a script and its fixtures together. `scripts/migrate.py` holds every name of the plugin megamaid was forked from (the old-name guard exempts it).
+- `evals/` (the suite) and `experiments/` (two-arm runs).
+- `CHANGELOG.md`: the only version history users see.
+- `docs/` is gitignored: specs and plans in `docs/superpowers/`, review reports in `docs/megamaid/reviews/`, and `docs/handover/` (plan, ledger, state). This playbook is tracked at the repo root.
 
 ## The loop
 
-1. **Design.** Non-trivial work starts with a dated spec in `docs/superpowers/specs/`. Agree on it before planning.
-2. **Plan.** Turn the spec into a plan in `docs/superpowers/plans/` with one task per commit. Each task's test or check is written before the change and seen to fail.
-3. **Branch.** Work on a feature branch. `main` changes only through pull requests.
-4. **Execute.** Make one commit per task. An approved plan plus "go" authorizes those commits. Record any deviation from the plan, with its reason, in the execution ledger.
-5. **Review.** Before execution, independent subagents on the strongest available model review the spec and the plan. Before release, they review the branch.
-   - Brief each reviewer with the files, not with conclusions.
-   - Give each lens its own reviewer. A code change gets two lenses: the contract, and the scripts and tests. A prose change gets one.
-   - Reports go to `docs/combs/reviews/`.
-   - Never review the plugin with its own `/comb:*` commands.
-   - Fix the Critical and Important findings in one pass, each fix proven by a check that failed first. Fix Minor findings, or record them as deferred.
-6. **Gate.** Run the release gate. Fix what it finds and skip nothing.
-7. **Release.** Add the changelog entry. Bump `version` in `.claude-plugin/plugin.json` and the README Status line together; the gate checks they match. Push only on the maintainer's go. Then open the PR; the maintainer merges.
+1. **Design.** A dated spec in `docs/superpowers/specs/`, agreed before planning.
+2. **Plan.** A plan in `docs/superpowers/plans/` with one task per commit. Each task's test or check is written first and seen to fail.
+3. **Branch.** A feature branch per phase. `main` changes only through PRs.
+4. **Execute.** One commit per task. Record each deviation from the plan, with its reason, in the ledger.
+5. **Review.** Independent subagents on the strongest available model review the spec and plan before execution, and the branch before release. Brief them with the files, not with conclusions. Give each lens its own reviewer: contract, and code and tests. Never review the plugin with its own commands. Fix Critical and Important findings, each proven by a check that failed first. Fix Minor findings or record them as deferred.
+6. **Gate.** Run the release gate and skip nothing.
+7. **Release.** Changelog entry, then bump `version` and the README Status line together. Push on go, then open the PR.
 
 Small fixes skip steps 1 and 2, never 3 to 7.
 
@@ -34,58 +37,49 @@ Small fixes skip steps 1 and 2, never 3 to 7.
 
 1. `claude plugin validate .`
 2. `scripts/check-contract.sh`
-3. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit`. On macOS it needs a standalone git, such as Homebrew's, first on the `PATH`. `evals/README.md` explains the flags.
+3. From Phase 1: `tsc -p .` and `claude plugin test .`
+4. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit --no-publish --trust-plugin`. On macOS put Homebrew git first on the `PATH` and pass `--keep-temp`.
 
-`scripts/smoke.sh` is the offline structural check. CI runs gates 1 and 2 on every push and PR. Evals run on manual dispatch.
+`scripts/smoke.sh` runs once before a PR: the free gates plus two short `claude -p` help checks (a few cents).
+
+CI runs the free gates on every push and PR. Evals run on manual dispatch.
 
 ### Eval cadence
 
-The suite costs money, so it runs only when behavior can have changed.
-
-| Situation | What to run | Cost |
+| Situation | Run | Cost |
 |---|---|---|
-| Every commit | Gates 1 and 2, plus `scripts/smoke.sh` | Free |
-| Every PR that can change behavior, before merge | The full suite (gate 3) | About 5 USD |
-| A change confined to one area | That area's case, with `--case <name>` | About 1 USD |
-| A prose-only edit | No eval | Free |
-| Debugging something outside the plugin | No eval | Free |
-| A grader that looks wrong | See below | Near free |
-| Removing a guard passage from a prompt | A two-arm run in `experiments/`; see below | A few USD |
+| Every commit | the free gates | free |
+| A PR that can change behaviour, before merge | the full suite | about 5 USD |
+| A change confined to one area | that case, `--case <name>` | about 1 USD |
+| Prose-only edits; debugging outside the plugin | nothing | free |
+| A grader that looks wrong | one `--keep-temp` run, then `python3 -I scripts/replay-graders.py evals/<case> <kept dir>` offline | near free |
+| Removing a guard passage | a two-arm run in `experiments/` | a few USD |
 
-**A grader that looks wrong:** run that case once with `--keep-temp`. Then fix the grader offline with `python3 -I scripts/replay-graders.py evals/<case> <kept dir>`. Never re-run a paid case to test a grader edit.
-
-**Removing a guard passage:** the control arm runs the plugin as shipped, and the treatment arm runs it with only that passage removed (`--eval-dir experiments`). The passage goes only if the treatment shows the failure does not recur. `experiments/README.md` records each result.
-
-If the eval runner itself fails, report it and stop. Do not spend tokens debugging the runner.
+Never re-run a paid case to test a grader edit.
 
 ## Design rules
 
-Each rule came out of a past review. Check them when changing the contract.
-
-- **Single source.** A block shared across skills lives in `shared/`. Never copy one back into a skill; the contract check catches it.
-- **Every tier that produces an artifact a later tier trusts also verifies it.** Agent output, the consolidated report, plan instructions, and fix verdicts each have their own gate.
-- **A gate states its bound.** If a gate doesn't say what it skips, it turns into a second review.
-- **Correctness properties get no config knobs.** Config covers paths, models, agents, and commit behavior. A correctness gate that can be switched off fails silently.
-- **Moving text moves its checks.** When a passage moves (prompt to brief, prose to script), update every grader, gate needle, and pointer that matched it.
-- **Trust the model.** Prompts state concepts, not per-language catalogues. A fix that adds thirty lines of examples is the wrong fix.
-- **Domain-neutral examples.** Shipped files name no specific product, team, or codebase.
-- **No dead citations.** Shipped files never cite a document that does not ship.
-- **Descriptions carry triggers.** A skill description says when to invoke the skill; the body says what to do.
-- **Generation-only roles say so in `when_to_use`.** Review and plan pick roles by reading that field, so it is the one place a role opts out of the review, plan, and fix palette.
+- **Single source.** A block shared across skills lives in `shared/`. A rule enforced by a hook lives in the hook, and the prose it replaced is removed.
+- **Every tier that produces an artifact a later tier trusts also verifies it.**
+- **A gate states its bound**, or it turns into a second review.
+- **Correctness properties get no config knobs.**
+- **Guards fail closed.** Every hook that can refuse something is written with `.catch(($, e, next) => next.called ? next(e) : { deny: '…' })`. A guard that throws without a handler lets the call through.
+- **Moving text moves its checks.** When a passage moves (prose → brief → script → hook), update every grader, gate needle and pointer that matched it.
+- **Trust the model.** Prompts state concepts, not per-language catalogues.
+- **Domain-neutral examples. No dead citations. Descriptions carry triggers.**
 
 ## Writing conventions
 
-- **Changelog.** Keep a Changelog and SemVer, newest first. Each entry leads with what changed, then why.
-- **Commits.** `type(scope): summary`. Release commits are `docs(release): vX.Y.Z — <theme>`.
-- **Prose.** Plain and grounded, with no marketing language and no fields, knobs, or sections nobody asked for.
-- **Scope.** Make the change asked for. Flag other opportunities without acting on them.
+- **Changelog:** Keep a Changelog and SemVer, newest first. Each entry leads with what changed, then why.
+- **Commits:** `type(scope): summary`. Release commits are `docs(release): vX.Y.Z — <theme>`.
 
 ## Session continuity
 
-Work spans many sessions. Three untracked stores under `docs/` let the next session pick up where the last one stopped:
+Session state is in `docs/handover/`; the playbook is tracked at the repo root:
 
-- **`docs/handover/<session-name>.md`** is a snapshot of one line of work: what is in progress, done, next, and unresolved. Rewrite it at each milestone and before the session ends.
-- **`docs/handover/ledger.md`** is append-only, with one dated line per event.
-- **`docs/memory/`** holds one durable fact per file, indexed by `docs/memory/README.md`.
+- `PLAYBOOK.md` (repo root): this file.
+- `docs/handover/plan.md`: the phase roadmap. Edit it when order or scope changes.
+- `docs/handover/<line-of-work>.md` (now `megamaid-dev.md`): a snapshot of state, next steps, decisions and open questions. Rewrite it at each milestone and before a session ends.
+- `docs/handover/ledger.md`: append-only, one dated line per event.
 
-At session start, read the handover, the tail of the ledger, and the memory index. The handover file takes the session's name. If the session has no name, stop: suggest a name, or list the existing handovers. Never guess.
+At session start, read the handover, the tail of the ledger, `plan.md`, and this playbook. If it is unclear which line of work a session belongs to, ask; never guess.

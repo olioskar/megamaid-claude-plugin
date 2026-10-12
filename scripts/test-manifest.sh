@@ -10,12 +10,12 @@ S="$ROOT/scripts/manifest.py"
 F="$ROOT/scripts/fixtures"
 E="$F/expected"
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
-T=$(mktemp -d "${TMPDIR:-/tmp}/comb-manifest-test.XXXXXX")
+T=$(mktemp -d "${TMPDIR:-/tmp}/megamaid-manifest-test.XXXXXX")
 trap 'rm -rf "$T"' EXIT
 OUT="$T/out"; mkdir -p "$OUT" "$E"
 
 cd "$T"
-git init -q -b main . && git config user.email test@example.com && git config user.name "comb test"
+git init -q -b main . && git config user.email test@example.com && git config user.name "megamaid test"
 while read -r f; do mkdir -p "$(dirname "$f")"; echo "// $f" > "$f"; done < "$F/cited-files.txt"
 # anchors fixture: a 50-line file for line-bound checks and a second Button.tsx for ambiguity
 seq 1 50 | sed 's/^/\/\/ line /' > src/web/pages/HomePage.tsx
@@ -27,9 +27,9 @@ SHA=$(git rev-parse --short=8 HEAD)
 while ! echo "$SHA" | grep -q '[a-f]'; do
   echo "// retry" >> src/setupTests.ts && git commit -qam base-retry && SHA=$(git rev-parse --short=8 HEAD)
 done
-mkdir -p docs/combs
-sed "s/BASECOMMIT0/$SHA/" "$F/curated.md" > docs/combs/PATTERNS.md
-sed "s/BASECOMMIT0/$SHA/" "$F/template.md" > docs/combs/TEMPLATE.md
+mkdir -p docs/megamaid
+sed "s/BASECOMMIT0/$SHA/" "$F/curated.md" > docs/megamaid/PATTERNS.md
+sed "s/BASECOMMIT0/$SHA/" "$F/template.md" > docs/megamaid/TEMPLATE.md
 echo "// changed" >> src/pages/entity/contact/ContactsPage.tsx
 git commit -qam change
 
@@ -43,63 +43,63 @@ run_excerpt() { # name skill manifest touched
   echo "--- excerpt body ---" >> "$OUT/$1.out"
   norm < "$ex" >> "$OUT/$1.out"
 }
-run_excerpt curated-page   review docs/combs/PATTERNS.md curated.page.touched
-run_excerpt curated-pdf    review docs/combs/PATTERNS.md curated.pdf.touched
-run_excerpt curated-root   review docs/combs/PATTERNS.md curated.root.touched
-run_excerpt curated-stale  review docs/combs/PATTERNS.md curated.stale.touched
-run_excerpt curated-test   review docs/combs/PATTERNS.md curated.test.touched
-run_excerpt curated-prefix review docs/combs/PATTERNS.md curated.prefixed.touched
-run_excerpt curated-primitive review docs/combs/PATTERNS.md curated.primitive.touched
-run_excerpt curated-rootfiles review docs/combs/PATTERNS.md curated.rootfiles.touched
-run_excerpt curated-realprefix review docs/combs/PATTERNS.md curated.realprefix.touched
-run_excerpt template-web   review docs/combs/TEMPLATE.md template.web.touched
-run_excerpt template-types plan   docs/combs/TEMPLATE.md template.types.touched
-run_excerpt template-report plan  docs/combs/TEMPLATE.md template.report.touched
-run_excerpt template-instr fix    docs/combs/TEMPLATE.md template.instruction.touched
+run_excerpt curated-page   review docs/megamaid/PATTERNS.md curated.page.touched
+run_excerpt curated-pdf    review docs/megamaid/PATTERNS.md curated.pdf.touched
+run_excerpt curated-root   review docs/megamaid/PATTERNS.md curated.root.touched
+run_excerpt curated-stale  review docs/megamaid/PATTERNS.md curated.stale.touched
+run_excerpt curated-test   review docs/megamaid/PATTERNS.md curated.test.touched
+run_excerpt curated-prefix review docs/megamaid/PATTERNS.md curated.prefixed.touched
+run_excerpt curated-primitive review docs/megamaid/PATTERNS.md curated.primitive.touched
+run_excerpt curated-rootfiles review docs/megamaid/PATTERNS.md curated.rootfiles.touched
+run_excerpt curated-realprefix review docs/megamaid/PATTERNS.md curated.realprefix.touched
+run_excerpt template-web   review docs/megamaid/TEMPLATE.md template.web.touched
+run_excerpt template-types plan   docs/megamaid/TEMPLATE.md template.types.touched
+run_excerpt template-report plan  docs/megamaid/TEMPLATE.md template.report.touched
+run_excerpt template-instr fix    docs/megamaid/TEMPLATE.md template.instruction.touched
 
-# git must not see .comb
-if [ -n "$(git status --porcelain -- .comb)" ]; then echo "FAIL: .comb/ visible to git status"; exit 1; fi
+# git must not see .megamaid
+if [ -n "$(git status --porcelain -- .megamaid)" ]; then echo "FAIL: .megamaid/ visible to git status"; exit 1; fi
 
-python3 -I "$S" index --manifest docs/combs/PATTERNS.md > "$OUT/index.log" 2>&1
+python3 -I "$S" index --manifest docs/megamaid/PATTERNS.md > "$OUT/index.log" 2>&1
 IDX=$(sed -n 's/^index: //p' "$OUT/index.log")
 norm < "$OUT/index.log" | grep -v '^index: ' > "$OUT/index.out"
 # anchors: existence and line bounds of every line-carrying anchor in area sections
-sed "s/BASECOMMIT0/$SHA/" "$F/anchors.md" > docs/combs/ANCHORS.md
+sed "s/BASECOMMIT0/$SHA/" "$F/anchors.md" > docs/megamaid/ANCHORS.md
 set +e
-python3 -I "$S" anchors --manifest docs/combs/ANCHORS.md 2>&1 | norm > "$OUT/anchors.out"
+python3 -I "$S" anchors --manifest docs/megamaid/ANCHORS.md 2>&1 | norm > "$OUT/anchors.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/anchors.out"
 set -e
 
 set +e
-python3 -I "$S" verify --manifest docs/combs/PATTERNS.md --index "$IDX" --edits "$F/edits-pass.json" --out "$T/pass.json" 2>&1 | norm > "$OUT/verify-pass.out"
+python3 -I "$S" verify --manifest docs/megamaid/PATTERNS.md --index "$IDX" --edits "$F/edits-pass.json" --out "$T/pass.json" 2>&1 | norm > "$OUT/verify-pass.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/verify-pass.out"
 set -e
 for f in "$F"/edits-fail-*.json "$F"/edits-unusable-*.json "$F"/edits-pass-prose-fence.json "$F"/edits-pass-canonical.json; do
   n=$(basename "$f" .json)
   set +e
-  python3 -I "$S" verify --manifest docs/combs/PATTERNS.md --index "$IDX" --edits "$f" --out "$T/$n.json" 2>&1 | norm > "$OUT/$n.out"
+  python3 -I "$S" verify --manifest docs/megamaid/PATTERNS.md --index "$IDX" --edits "$f" --out "$T/$n.json" 2>&1 | norm > "$OUT/$n.out"
   echo "exit=${PIPESTATUS[0]}" >> "$OUT/$n.out"
   set -e
 done
 # the same restated convention may be shaved in two sections in one run (the owner keeps it)
 set +e
-python3 -I "$S" verify --manifest docs/combs/PATTERNS.md --index "$IDX" --edits "$F/edits-pass-two-dups.json" --out "$T/twodups.json" 2>&1 | norm > "$OUT/verify-two-dups.out"
+python3 -I "$S" verify --manifest docs/megamaid/PATTERNS.md --index "$IDX" --edits "$F/edits-pass-two-dups.json" --out "$T/twodups.json" 2>&1 | norm > "$OUT/verify-two-dups.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/verify-two-dups.out"
 set -e
 # a cycle rejects every duplicate; an anchor edit whose other occurrences those duplicates
 # would have removed still passes (remaining is counted after the cycle filter)
 set +e
-python3 -I "$S" verify --manifest docs/combs/PATTERNS.md --index "$IDX" --edits "$F/edits-mixed-cycle-anchor.json" --out "$T/cycle-anchor.json" 2>&1 | norm > "$OUT/verify-mixed-cycle-anchor.out"
+python3 -I "$S" verify --manifest docs/megamaid/PATTERNS.md --index "$IDX" --edits "$F/edits-mixed-cycle-anchor.json" --out "$T/cycle-anchor.json" 2>&1 | norm > "$OUT/verify-mixed-cycle-anchor.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/verify-mixed-cycle-anchor.out"
 # an all-rejected run leaves an empty passing set: gate says so, apply refuses and writes nothing
-python3 -I "$S" gate --manifest docs/combs/PATTERNS.md --edits "$T/edits-fail-cycle.json" > "$OUT/gate-empty.out" 2>&1
+python3 -I "$S" gate --manifest docs/megamaid/PATTERNS.md --edits "$T/edits-fail-cycle.json" > "$OUT/gate-empty.out" 2>&1
 echo "exit=$?" >> "$OUT/gate-empty.out"
-cp docs/combs/PATTERNS.md "$T/empty-apply.md"
+cp docs/megamaid/PATTERNS.md "$T/empty-apply.md"
 python3 -I "$S" apply --manifest "$T/empty-apply.md" --index "$IDX" --edits "$T/edits-fail-cycle.json" --stamp > "$OUT/apply-empty.out" 2>&1
 echo "exit=$?" >> "$OUT/apply-empty.out"
-cmp -s docs/combs/PATTERNS.md "$T/empty-apply.md" && echo "manifest=unchanged" >> "$OUT/apply-empty.out" || echo "manifest=CHANGED" >> "$OUT/apply-empty.out"
+cmp -s docs/megamaid/PATTERNS.md "$T/empty-apply.md" && echo "manifest=unchanged" >> "$OUT/apply-empty.out" || echo "manifest=CHANGED" >> "$OUT/apply-empty.out"
 # the wrong file for a flag is refused by shape, not by traceback
-python3 -I "$S" gate --manifest docs/combs/PATTERNS.md --edits "$IDX" 2>&1 | norm > "$OUT/gate-wrong-file.out"
+python3 -I "$S" gate --manifest docs/megamaid/PATTERNS.md --edits "$IDX" 2>&1 | norm > "$OUT/gate-wrong-file.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/gate-wrong-file.out"
 # clean takes a run stem only; an empty id (a failed index run) must not sweep the directory
 python3 -I "$S" clean --run "" > "$OUT/clean-bad-run.out" 2>&1
@@ -107,24 +107,24 @@ echo "exit=$?" >> "$OUT/clean-bad-run.out"
 set -e
 # an empty touched set is refused (fallback condition), not a silent 0-area excerpt
 set +e
-python3 -I "$S" excerpt --skill review --manifest docs/combs/PATTERNS.md --touched-from "$F/curated.empty.touched" > "$OUT/curated-empty.out" 2>&1
+python3 -I "$S" excerpt --skill review --manifest docs/megamaid/PATTERNS.md --touched-from "$F/curated.empty.touched" > "$OUT/curated-empty.out" 2>&1
 echo "exit=$?" >> "$OUT/curated-empty.out"
 set -e
 # stdin touched text
-git diff --name-only HEAD~1 HEAD | python3 -I "$S" excerpt --skill review --manifest docs/combs/PATTERNS.md --touched-from - 2>&1 | norm | grep -v '^excerpt: ' > "$OUT/curated-stdin.out"
+git diff --name-only HEAD~1 HEAD | python3 -I "$S" excerpt --skill review --manifest docs/megamaid/PATTERNS.md --touched-from - 2>&1 | norm | grep -v '^excerpt: ' > "$OUT/curated-stdin.out"
 # a good file beside an unusable one still yields the good file's passing set
 set +e
-python3 -I "$S" verify --manifest docs/combs/PATTERNS.md --index "$IDX" --edits "$F/edits-pass.json" "$F/edits-unusable-broken.json" --out "$T/mixed.json" 2>&1 | norm > "$OUT/verify-mixed.out"
+python3 -I "$S" verify --manifest docs/megamaid/PATTERNS.md --index "$IDX" --edits "$F/edits-pass.json" "$F/edits-unusable-broken.json" --out "$T/mixed.json" 2>&1 | norm > "$OUT/verify-mixed.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/verify-mixed.out"
 set -e
 # ambiguous headings are rejected; CRLF manifests round-trip with CRLF sizes
-{ cat docs/combs/PATTERNS.md; printf '\n## 1. Entity Page\n\n- dup\n'; } > "$T/dup.md"
+{ cat docs/megamaid/PATTERNS.md; printf '\n## 1. Entity Page\n\n- dup\n'; } > "$T/dup.md"
 python3 -I "$S" index --manifest "$T/dup.md" > "$T/dup-index.log" 2>&1; DIDX=$(sed -n 's/^index: //p' "$T/dup-index.log")
 set +e
 python3 -I "$S" verify --manifest "$T/dup.md" --index "$DIDX" --edits "$F/edits-pass.json" --out "$T/dup-pass.json" 2>&1 | norm | grep -E 'Entity Page' > "$OUT/ambiguous-heading.out"
 set -e
 python3 -I "$S" clean --run "$(sed -n 's/^run: //p' "$T/dup-index.log")" > /dev/null
-sed 's/$/\r/' docs/combs/PATTERNS.md > "$T/crlf.md"
+sed 's/$/\r/' docs/megamaid/PATTERNS.md > "$T/crlf.md"
 python3 -I "$S" index --manifest "$T/crlf.md" > "$T/crlf-index.log" 2>&1; CIDX=$(sed -n 's/^index: //p' "$T/crlf-index.log")
 set +e
 python3 -I "$S" verify --manifest "$T/crlf.md" --index "$CIDX" --edits "$F/edits-pass.json" --out "$T/crlf-pass.json" > /dev/null 2>&1
@@ -134,11 +134,11 @@ set -e
 python3 -I "$S" clean --run "$(sed -n 's/^run: //p' "$T/crlf-index.log")" > /dev/null
 # touched text may be a directory of instruction files
 mkdir -p "$T/plan" && cp "$F/template.instruction.touched" "$T/plan/M1-x.md" && cp "$F/template.report.touched" "$T/plan/M2-y.md"
-python3 -I "$S" excerpt --skill fix --manifest docs/combs/TEMPLATE.md --touched-from "$T/plan" 2>&1 | norm | grep -v '^excerpt: ' > "$OUT/template-dir.out"
-python3 -I "$S" gate --manifest docs/combs/PATTERNS.md --edits "$T/pass.json" > "$OUT/gate.out" 2>&1
-python3 -I "$S" gate --manifest docs/combs/PATTERNS.md --edits "$T/pass.json" --show "14. Testing conventions" > "$OUT/gate-show.out" 2>&1
+python3 -I "$S" excerpt --skill fix --manifest docs/megamaid/TEMPLATE.md --touched-from "$T/plan" 2>&1 | norm | grep -v '^excerpt: ' > "$OUT/template-dir.out"
+python3 -I "$S" gate --manifest docs/megamaid/PATTERNS.md --edits "$T/pass.json" > "$OUT/gate.out" 2>&1
+python3 -I "$S" gate --manifest docs/megamaid/PATTERNS.md --edits "$T/pass.json" --show "14. Testing conventions" > "$OUT/gate-show.out" 2>&1
 python3 -I "$S" filter --edits "$T/pass.json" --skip-class fixed-drift --out "$T/filtered.json" 2>&1 | norm > "$OUT/filter.out"
-cp docs/combs/PATTERNS.md "$T/applied.md"
+cp docs/megamaid/PATTERNS.md "$T/applied.md"
 set +e
 python3 -I "$S" apply --manifest "$T/applied.md" --index "$IDX" --edits "$T/pass.json" --stamp 2>&1 | norm > "$OUT/apply.out"
 echo "exit=${PIPESTATUS[0]}" >> "$OUT/apply.out"
@@ -159,10 +159,10 @@ set -e
 RUN2=$(sed -n 's/^run: //p' "$OUT/index2.log"); python3 -I "$S" clean --run "$RUN2" > /dev/null
 RUN=$(sed -n 's/^run: //p' "$OUT/index.log")
 python3 -I "$S" clean --run "$RUN" | norm > "$OUT/clean.out"
-{ ls .comb/excerpts | grep -c "$RUN" || true; } | sed 's/^/leftover=/' >> "$OUT/clean.out"
+{ ls .megamaid/excerpts | grep -c "$RUN" || true; } | sed 's/^/leftover=/' >> "$OUT/clean.out"
 
 # measured size for the changelog
-ex=$(sed -n 's/^excerpt: //p' "$OUT/curated-page.log"); echo "curated page-diff excerpt: $(wc -c < "$ex" | tr -d ' ') bytes (manifest $(wc -c < docs/combs/PATTERNS.md | tr -d ' ') bytes)"
+ex=$(sed -n 's/^excerpt: //p' "$OUT/curated-page.log"); echo "curated page-diff excerpt: $(wc -c < "$ex" | tr -d ' ') bytes (manifest $(wc -c < docs/megamaid/PATTERNS.md | tr -d ' ') bytes)"
 
 fail=0
 for o in "$OUT"/*.out "$OUT"/applied.md; do

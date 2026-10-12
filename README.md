@@ -1,24 +1,28 @@
-# comb-the-desert
+# megamaid
 
-A Claude Code plugin for code review. `/comb:review` finds issues, `/comb:plan` turns each one into a fix instruction, `/comb:fix` applies them, and `/comb:the-desert` runs all three in one go.
+A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamaid:plan` turns each one into a fix instruction, `/megamaid:fix` applies them, and `/megamaid:vacu-suck` runs all three in one go.
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
+Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) 0.15.3. From Phase 1 megamaid moves comb's rules into a hooks module and will require a mod-capable Claude Code; comb stays for builds without mods.
+
+With [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) also installed, both plugins' model-invocable skills trigger on the same phrases; install one, or use explicit `/megamaid:*` commands.
+
 ## Commands
 
-- **`/comb:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
-- **`/comb:plan`** writes one self-contained fix instruction per finding.
-- **`/comb:fix`** applies the instructions. Each item gets an implementer and a reviewer, and items that touch different files run in parallel. Before each commit, the reviewer runs the plan's `Check:` line and the project's tests run. A failed attempt is reverted and recorded before the retry. Each passing item is committed as `<code>: <title>`. Only you can start it; see "Let Claude start fixes" below to change that.
-- **`/comb:the-desert`** runs review, plan, and fix without pauses. On a prose change it stops after review.
-- **`/comb:patterns`** scans the codebase and writes a PATTERNS manifest: the project's actual conventions, with `file:line` references. Review, plan, and fix give agents the relevant excerpt as a baseline. `--shave` shrinks an existing manifest without changing what it says.
-- **`/comb:configure`** changes the config from a plain-language request.
-- **`/comb:help`** prints an overview. `/comb:help <command>` shows one command in detail.
+- **`/megamaid:review`** runs 1–5 reviewer agents over a PR, branch, file list, or spec. A code change gets a severity-ranked report with a verdict. A prose change (spec, design doc) gets a shorter report with labelled findings.
+- **`/megamaid:plan`** writes one self-contained fix instruction per finding.
+- **`/megamaid:fix`** applies the instructions. Each item gets an implementer and a reviewer, and items that touch different files run in parallel. Before each commit, the reviewer runs the plan's `Check:` line and the project's tests run. A failed attempt is reverted and recorded before the retry. Each passing item is committed as `<code>: <title>`. Only you can start it; see "Let Claude start fixes" below to change that.
+- **`/megamaid:vacu-suck`** runs review, plan, and fix without pauses. On a prose change it stops after review.
+- **`/megamaid:patterns`** scans the codebase and writes a PATTERNS manifest: the project's actual conventions, with `file:line` references. Review, plan, and fix give agents the relevant excerpt as a baseline. `--shave` shrinks an existing manifest without changing what it says.
+- **`/megamaid:configure`** changes the config from a plain-language request.
+- **`/megamaid:help`** prints an overview. `/megamaid:help <command>` shows one command in detail.
 
 Every command takes a free-form focus brief that steers which agents run and what they prioritize:
 
 ```
-/comb:review look for spec/plan misalignment
-/comb:the-desert ensure simplicity, scope discipline, and TDD coverage
+/megamaid:review look for spec/plan misalignment
+/megamaid:vacu-suck ensure simplicity, scope discipline, and TDD coverage
 ```
 
 ## Requirements
@@ -29,36 +33,31 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ## Install
 
-```
-/plugin marketplace add olioskar/claude-plugins
-/plugin install comb@olioskar-marketplace
-```
-
-For local development:
-
 ```bash
-claude --plugin-dir /path/to/comb-the-desert-claude-plugin
+claude --plugin-dir /path/to/megamaid-claude-plugin
 ```
+
+Coming from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin)? Before your first megamaid run, and only while `docs/megamaid/` does not exist yet, move comb's output folder with `git mv docs/combs docs/megamaid` (plain `mv` if it is untracked); this also puts the PATTERNS manifest where megamaid reads it. Then run `/megamaid:configure` to migrate comb's config, and point any `paths.*` it copied from `docs/combs/` at `docs/megamaid/`. If you don't move the folder, `/megamaid:configure` offers to move or copy the manifest instead. An empty `{}` `megamaid.config.json` silences the config notice.
 
 ## Quick start
 
 In a git repo with changes on a branch:
 
 ```
-/comb:review
+/megamaid:review
 ```
 
-The report lands in `docs/combs/reviews/`. Run `/comb:plan` on it, then `/comb:fix`. Or run `/comb:the-desert` to do all three.
+The report lands in `docs/megamaid/reviews/`. Run `/megamaid:plan` on it, then `/megamaid:fix`. Or run `/megamaid:vacu-suck` to do all three.
 
 ## Configuration
 
 Three layers are deep-merged, with later layers winning:
 
 1. `config/defaults.json` in the plugin
-2. `~/.claude/comb.config.json` (global)
-3. `<project-root>/.claude/comb.config.json` (project)
+2. `~/.claude/megamaid.config.json` (global)
+3. `<project-root>/.claude/megamaid.config.json` (project)
 
-`/comb:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for plan". It shows a diff, then writes the change to the global or project file.
+`/megamaid:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for plan". It shows a diff, then writes the change to the global or project file.
 
 `config/defaults.json` lists every key with its default. Three kinds of setting are absent by default: `effort.<lane>`, and the per-role `agents.<role>.model` and `agents.<role>.effort`.
 
@@ -90,7 +89,7 @@ In one measured review run, `medium` found the same bugs as `high` for about 8% 
 { "fix": { "model_invocation": true } }
 ```
 
-`/comb:fix` is user-only by default because it edits code and commits. With this flag, asking in your own words ("apply the fixes") runs the same workflow, with the same questions and commits. Without the flag, such a request gets a short reply naming `/comb:fix` and the flag.
+`/megamaid:fix` is user-only by default because it edits code and commits. With this flag, asking in your own words ("apply the fixes") runs the same workflow, with the same questions and commits. Without the flag, such a request gets a short reply naming `/megamaid:fix` and the flag.
 
 ### Use your own writer
 
@@ -98,7 +97,7 @@ In one measured review run, `medium` found the same bugs as `high` for about 8% 
 { "agents": { "implementer": { "subagent_type": "your-org:implementer" } } }
 ```
 
-The default writer, `comb:implementer`, edits only the files the instruction names, never commits, and reports every file it touched. A writer from outside this plugin gets an explicit instruction that the directives are authoritative. It also gets the same boundaries, and the same file and git checks after it returns.
+The default writer, `megamaid:implementer`, edits only the files the instruction names, never commits, and reports every file it touched. A writer from outside this plugin gets an explicit instruction that the directives are authoritative. It also gets the same boundaries, and the same file and git checks after it returns.
 
 ### Add or swap reviewers
 
@@ -142,27 +141,27 @@ Your directives in `directives.user_path` (default `docs/directives/`) apply on 
 
 Five read-only reviewers:
 
-- `comb:code-reviewer`: bugs, logic, contracts, security
-- `comb:simplifier`: overengineering, dead code, duplication
-- `comb:silent-failure-hunter`: swallowed errors, hidden fallbacks
-- `comb:test-auditor`: coverage and test quality
-- `comb:consistency-auditor`: fit with existing patterns and with the spec or plan
+- `megamaid:code-reviewer`: bugs, logic, contracts, security
+- `megamaid:simplifier`: overengineering, dead code, duplication
+- `megamaid:silent-failure-hunter`: swallowed errors, hidden fallbacks
+- `megamaid:test-auditor`: coverage and test quality
+- `megamaid:consistency-auditor`: fit with existing patterns and with the spec or plan
 
 Read-only is enforced by instruction. The edit tools are blocked, but Bash stays available for git.
 
 Each finding must name a real cost, such as a failure mode, a coverage gap, or a maintenance burden. A clean diff should come back with few or no findings. `simplifier`, `silent-failure-hunter`, and `consistency-auditor` re-check their findings in a final step. `code-reviewer` and `test-auditor` dropped that step after an experiment showed it changed nothing.
 
-Before a finding enters the report, `/comb:review` opens every cited line and recomputes every count. Each finding carries a `Verified:` line stating what was checked and what was not. `/comb:plan` re-checks anything marked unchecked.
+Before a finding enters the report, `/megamaid:review` opens every cited line and recomputes every count. Each finding carries a `Verified:` line stating what was checked and what was not. `/megamaid:plan` re-checks anything marked unchecked.
 
 Three more agents:
 
-- **`comb:implementer`** is the writer for `/comb:fix` and `/comb:plan`.
-- **`comb:pattern-scanner`** is used only by `/comb:patterns`.
-- **`comb:pattern-shaver`** is used only by `/comb:patterns --shave`.
+- **`megamaid:implementer`** is the writer for `/megamaid:fix` and `/megamaid:plan`.
+- **`megamaid:pattern-scanner`** is used only by `/megamaid:patterns`.
+- **`megamaid:pattern-shaver`** is used only by `/megamaid:patterns --shave`.
 
 ## How it works
 
-- **Scripts do the bookkeeping.** `scripts/comb.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.comb/`, which ignores itself in git and is cleaned at the end of each run.
+- **Scripts do the bookkeeping.** `scripts/megamaid.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.megamaid/`, which ignores itself in git and is cleaned at the end of each run.
 - **Agents get a manifest excerpt, not the whole file.** `scripts/manifest.py` cuts the PATTERNS manifest down to the sections whose scope matches the change, and lists the omitted sections by line range. The rules are in `shared/manifest-slicing.md`. Add a one-line `Home:` to a section if it is included too often.
 - **The skills are the contract.** `skills/*/SKILL.md` and `shared/*.md` define the behavior, and `CHANGELOG.md` records every change to it. Skills run in your session's model; agents get the model from config on each dispatch.
 
@@ -180,13 +179,13 @@ Release gate, in order:
    - The fixture tests for both scripts and the grader replay pass.
 3. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit` runs the eight behavioral cases in `evals/`, at about 5 USD per pass. On macOS it needs a standalone git, such as Homebrew's. `evals/README.md` explains the flags.
 
-`scripts/smoke.sh` is the offline check. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
+`scripts/smoke.sh` runs the free gates plus two short `claude -p` help checks (a few cents); run it once before a PR. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
 
 CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 
 ## Status
 
-v0.15.3. See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+v0.1.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
 
 ## License
 

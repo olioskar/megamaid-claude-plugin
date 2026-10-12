@@ -1,6 +1,8 @@
-# comb eval suite
+# megamaid eval suite
 
-Behavioral regression tests for the comb plugin, in the `claude plugin eval` format
+Results and version numbers below were recorded on [comb](https://github.com/olioskar/comb-the-desert-claude-plugin); command and file names are updated to megamaid.
+
+Behavioral regression tests for the megamaid plugin, in the `claude plugin eval` format
 (`<case>/prompt.md` + `<case>/graders/*.md`, optional `scaffold.sh` per case).
 
 ## Status
@@ -16,7 +18,7 @@ First live run on 2026-10-11 (Claude Code 2.1.296). What it established:
   unless the run passes `--allow-tools Bash Write Edit`; a case cannot grant them.
 - **Graders.** Facts about tool calls (what was dispatched, with what prompt, what was
   read) are checked by `tool_used`, `file_exists`, and `regex` graders. The LLM judge's
-  `trace` view is the first and last 12 messages only, so a comb run of 40 to 100
+  `trace` view is the first and last 12 messages only, so a megamaid run of 40 to 100
   messages cannot be judged on its middle; every `llm` grader here reads `last_message`
   and confirms the final report, nothing more. Exact-text checks are `regex`, not a
   judge. Report contents are graded with `target: { source: file, path: … }`.
@@ -71,15 +73,15 @@ python3 -I scripts/replay-graders.py evals/<name> /private/tmp/e-XXXX
 |---|---|
 | `help-overview` | Help text drift; paraphrased instead of verbatim output |
 | `config-null-delete` | `null`-as-delete merge semantics regressing (deleted role still dispatched) |
-| `noncode-shortcircuit` | `/comb:the-desert` running plan/fix on a prose artifact |
+| `noncode-shortcircuit` | `/megamaid:vacu-suck` running plan/fix on a prose artifact |
 | `fix-reviewer-diff-scope` | The fix reviewer reading the wrong diff (`HEAD~1` bug class, v0.9.0; since 0.15.0 the `git diff HEAD -- <files>` instruction lives in `shared/fix-reviewer-brief.md`, gated by check-contract, so the trace grader checks the reviewer prompt carries that brief and never says `HEAD~1`); a commit landing without the project's test run (0.14.0); HEAD and tree checks skipped around the implementer |
-| `dispatch-delivery` | Directive embedding returning for foreign agents (paths-only contract); the scaffold overrides the writer with `general-purpose` because the shipped default is native since 0.14.0. Since 0.15.0 the authority sentence and the directive paths live in the run brief, not the Agent prompt, so `authority-sentence` and `directive-paths-listed` read the `form:` and `directives:` lines `comb.py brief` prints into the trace (the brief's content is fixture-tested by `scripts/test-comb.sh`), and `brief-delivered` checks the Agent prompt carries the brief path |
-| `manifest-slice` | Whole-manifest delivery returning: agents must get a per-run excerpt (entity-page section in, pdf and theme out) and the orchestrator must never print the manifest body; also `Verified:` lines in the report, `.comb/excerpts` cleaned, `model` passed on dispatch. Since 0.15.0 the excerpt and manifest paths live in the run brief, so `excerpt-path-in-dispatch` and `full-path-in-dispatch` read the `baseline:` line `comb.py brief` prints, and `brief-delivered` checks the Agent prompt carries the brief path; briefs share the excerpt's run stem, so `excerpts-cleaned` covers them |
-| `fix-auto-off` | The model-only fix entry running without `fix.model_invocation: true` (must refuse, naming the observed value and `/comb:fix`, with no edits) |
+| `dispatch-delivery` | Directive embedding returning for foreign agents (paths-only contract); the scaffold overrides the writer with `general-purpose` because the shipped default is native since 0.14.0. Since 0.15.0 the authority sentence and the directive paths live in the run brief, not the Agent prompt, so `authority-sentence` and `directive-paths-listed` read the `form:` and `directives:` lines `megamaid.py brief` prints into the trace (the brief's content is fixture-tested by `scripts/test-megamaid.sh`), and `brief-delivered` checks the Agent prompt carries the brief path |
+| `manifest-slice` | Whole-manifest delivery returning: agents must get a per-run excerpt (entity-page section in, pdf and theme out) and the orchestrator must never print the manifest body; also `Verified:` lines in the report, `.megamaid/excerpts` cleaned, `model` passed on dispatch. Since 0.15.0 the excerpt and manifest paths live in the run brief, so `excerpt-path-in-dispatch` and `full-path-in-dispatch` read the `baseline:` line `megamaid.py brief` prints, and `brief-delivered` checks the Agent prompt carries the brief path; briefs share the excerpt's run stem, so `excerpts-cleaned` covers them |
+| `fix-auto-off` | The model-only fix entry running without `fix.model_invocation: true` (must refuse, naming the observed value and `/megamaid:fix`, with no edits) |
 | `fix-auto-on` | The model-only fix entry refusing or stalling when the flag is set (must run the fix workflow and apply the plan) |
 
-`dispatch-delivery` also asserts the plan summary ends with `Next: /comb:fix …` (the model may wrap the command in backticks; the grader allows one) and never
-names `fix-auto`. Still uncovered, by cost: a code-shaped `/comb:the-desert` run past
+`dispatch-delivery` also asserts the plan summary ends with `Next: /megamaid:fix …` (the model may wrap the command in backticks; the grader allows one) and never
+names `fix-auto`. Still uncovered, by cost: a code-shaped `/megamaid:vacu-suck` run past
 review (the 0.10.0 hardcoded-reviewer class), `--shave` end to end, review round numbering
 with a deleted earlier round, revert-on-FAIL and `## Attempts` (needs a FAILing reviewer on
 demand), and the python3-missing stop at Step 1 (PATH is inherited; since 0.15.0 every skill needs python3).

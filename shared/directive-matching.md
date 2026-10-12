@@ -8,4 +8,4 @@ A brief word shorter than four characters (`it`, `a`, `and`) matches only when i
 
 If the focus brief is empty, no directives are flagged primary; all directives still load normally.
 
-`scripts/comb.py directives --brief "<text>"` performs the match and prints the `plugin:`, `user:`, and `primary:` lists; `comb.py brief` renders them into the run brief.
+`scripts/megamaid.py directives --brief "<text>"` performs the match and prints the `plugin:`, `user:`, and `primary:` lists; `megamaid.py brief` renders them into the run brief.

@@ -26,7 +26,7 @@ Your output is a single markdown file at the output file named in your shared co
 
 **Severity:** {Critical | High | Medium | Low | Test gap | Deferred}
 **File(s):** {primary repo-relative path(s), with line ranges}
-**Specialty:** {source agent(s) from the review report's `*Source: <agent>*` line — comma-separated if multiple. For grouped findings, list the union across the group's source agents. /comb:fix uses this to route the fix-reviewer to the matching specialty.}
+**Specialty:** {source agent(s) from the review report's `*Source: <agent>*` line — comma-separated if multiple. For grouped findings, list the union across the group's source agents. /megamaid:fix uses this to route the fix-reviewer to the matching specialty.}
 **Finding status:** {confirmed — <what you observed, with file:line> | not reproduced — <what you looked for and where>}
 {For grouped items, also: }**Consolidates:** {comma-separated finding codes the group covers}
 
@@ -60,13 +60,13 @@ Every directive (plugin or user) and any project-level authoritative doc (CLAUDE
 - `CLAUDE.md` "<section heading>" — one-line reason
 
 ## Considered alternatives  *(optional — include only when meaningful alternatives were rejected)*
-ADR-style: list alternatives you considered but rejected, one bullet each, with a one-line "rejected because…" rationale. The main body is the single executable path; this section is documentation, not a decision gate. /comb:fix never reads from this section.
+ADR-style: list alternatives you considered but rejected, one bullet each, with a one-line "rejected because…" rationale. The main body is the single executable path; this section is documentation, not a decision gate. /megamaid:fix never reads from this section.
 
 - **<Alternative title>** — Rejected because <one-line rationale>
 - **<Alternative title>** — Rejected because <one-line rationale>
 ```
 
-**Not reproduced.** When `**Finding status:**` is `not reproduced`, `## What` states what the finding claimed and what you found instead, `## How` is the single line `No change — finding not reproduced (see Finding status).`, and `## Expected Outcome` has `Check: none — no change proposed`. `/comb:fix` lists such items separately and queues one only when the user asks.
+**Not reproduced.** When `**Finding status:**` is `not reproduced`, `## What` states what the finding claimed and what you found instead, `## How` is the single line `No change — finding not reproduced (see Finding status).`, and `## Expected Outcome` has `Check: none — no change proposed`. `/megamaid:fix` lists such items separately and queues one only when the user asks.
 
 Be concise and precise. No fluff. These instructions are the single source of truth for this fix.
 

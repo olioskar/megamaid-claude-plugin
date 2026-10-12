@@ -1,6 +1,6 @@
 # Shared block: manifest excerpts
 
-Every consuming skill (`/comb:review`, `/comb:plan`, `/comb:fix`, and `/comb:the-desert` through them) delivers the PATTERNS manifest to agents as a **per-run excerpt**, not as the whole file. The excerpt is cut by the plugin's `scripts/manifest.py`; nobody reads the manifest to produce it. The command line lives in each skill body (the plugin-root variable is substituted there, not here); this block says what the `excerpt` subcommand does and what the skill does with its output. Every `manifest.py` command is run from the project root, because `.comb/` is keyed to the working directory.
+Every consuming skill (`/megamaid:review`, `/megamaid:plan`, `/megamaid:fix`, and `/megamaid:vacu-suck` through them) delivers the PATTERNS manifest to agents as a **per-run excerpt**, not as the whole file. The excerpt is cut by the plugin's `scripts/manifest.py`; nobody reads the manifest to produce it. The command line lives in each skill body (the plugin-root variable is substituted there, not here); this block says what the `excerpt` subcommand does and what the skill does with its output. Every `manifest.py` command is run from the project root, because `.megamaid/` is keyed to the working directory.
 
 ## What `excerpt` does
 
@@ -10,14 +10,14 @@ Section classification, scope-line and anchor parsing, touched-path extraction, 
 
 - The header and every **global** section (headings that begin `how to read`, `cross-reference`, `drift register`, `known drift`, or `maintenance`, or equal `patterns` or `index`) always travel; an **area** section travels when a touched path matches one of its `Scope:`/`Home:` globs or equals one of its `file:line` anchors, or — only when it has no scope line — sits in the directory of one of its anchors; a section with neither scope line nor anchors always travels.
 - Touched paths are extracted by the script from the raw touched text (a piped diff name list, a review report, an instruction folder, a revise doc). No skill parses paths itself.
-- The excerpt lands under `.comb/excerpts/` in the current working directory (`.comb/` is created with a `.gitignore` of `*`, so nothing under it ever appears in `git status`) and opens with a banner listing the omitted sections and their line ranges, so an agent can read one with `sed -n START,ENDp <manifest>`.
+- The excerpt lands under `.megamaid/excerpts/` in the current working directory (`.megamaid/` is created with a `.gitignore` of `*`, so nothing under it ever appears in `git status`) and opens with a banner listing the omitted sections and their line ranges, so an agent can read one with `sed -n START,ENDp <manifest>`.
 - Staleness compares the manifest's base commit (its `**Base commit:**` line, else the last hex token with a letter in the header) against the touched paths the manifest cites; a git failure or a missing base commit gives `unknown`.
 
 It prints, and nothing more:
 
 ```
 run: <stem>
-excerpt: <absolute path under .comb/excerpts/>
+excerpt: <absolute path under .megamaid/excerpts/>
 PATTERNS excerpt: <n> of <m> area sections included (<headings>); <g> global; omitted: <headings or none>
 stale: yes|no|unknown (<detail>)
 base_commit: <sha or none>
@@ -33,7 +33,7 @@ base_commit: <sha or none>
   | plan | the review report | Step 3 has parsed it |
   | fix | the instruction folder (every `.md` in it: per-finding files or the revise doc) | Step 2.5 has listed the folder (and so after the pre-flight) |
 
-- **Record `run`, `excerpt`, the log line, and `stale` once** and use the excerpt path in every dispatch of this run. `/comb:the-desert` records them afresh in each sub-step.
+- **Record `run`, `excerpt`, the log line, and `stale` once** and use the excerpt path in every dispatch of this run. `/megamaid:vacu-suck` records them afresh in each sub-step.
 - **Deliver per `${CLAUDE_PLUGIN_ROOT}/shared/observed-baseline.md`**: the excerpt path and the full manifest path, with the excerpt sentences.
 - **Echo the log line** in the presentation's manifest notes. When `stale` is `yes`, add the staleness note; when `unknown`, add `PATTERNS staleness unknown (<detail>)`.
 - **Clean up last**: `manifest.py clean --run <stem>`. Best-effort; a leftover is ignored by git and harmless.

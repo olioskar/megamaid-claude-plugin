@@ -1,6 +1,6 @@
 # Shared block: shave rules
 
-`/comb:patterns --shave` reduces a PATTERNS manifest's token cost by removing what is redundant or finished, without changing what the manifest asserts. These rules bind the shaver agent (`comb:pattern-shaver`, or any foreign agent dispatched in its role) and the orchestrator alike. Shave never rescans the codebase. It reads code only to confirm that two anchors pin the same convention.
+`/megamaid:patterns --shave` reduces a PATTERNS manifest's token cost by removing what is redundant or finished, without changing what the manifest asserts. These rules bind the shaver agent (`megamaid:pattern-shaver`, or any foreign agent dispatched in its role) and the orchestrator alike. Shave never rescans the codebase. It reads code only to confirm that two anchors pin the same convention.
 
 ## What you receive
 

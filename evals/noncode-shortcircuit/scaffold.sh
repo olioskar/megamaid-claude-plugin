@@ -3,7 +3,7 @@
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com
-git config user.name "comb eval"
+git config user.name "megamaid eval"
 mkdir -p docs
 cat > docs/design.md <<'EOF'
 # Widget service — design

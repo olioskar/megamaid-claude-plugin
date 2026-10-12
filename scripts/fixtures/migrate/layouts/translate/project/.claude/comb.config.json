@@ -1,0 +1,15 @@
+{
+  "paths": {"reviews": "docs/combs/reviews", "nope": 1, "nope2": null},
+  "directives": {"bogus": 1},
+  "agents": {
+    "simplifier": null,
+    "code-reviewer": {"subagent_type": "comb:code-reviewer", "when_to_use": "Run comb:code-reviewer first.", "model": "opus"},
+    "ours": {"subagent_type": "acme:reviewer", "when_to_use": "Custom lens."},
+    "broken": {"when_to_use": "no type"}
+  },
+  "models": {"the_desert": "sonnet", "review": null, "fix": {"reviewer": "haiku", "unknown": "x"}},
+  "effort": {"the_desert": "high", "review": "low", "nope": "max", "fix": {"implementer_trivial": "low"}},
+  "fix": {"commit_per_item": true},
+  "legacy": {"x": 1},
+  "dropped": null
+}

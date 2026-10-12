@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "/comb:review[\\s\\S]*/comb:plan[\\s\\S]*/comb:fix[\\s\\S]*/comb:the-desert[\\s\\S]*/comb:patterns[\\s\\S]*/comb:configure"
+pattern: "/megamaid:review[\\s\\S]*/megamaid:plan[\\s\\S]*/megamaid:fix[\\s\\S]*/megamaid:vacu-suck[\\s\\S]*/megamaid:patterns[\\s\\S]*/megamaid:configure"
 target: last_message
 match: contains
 ---

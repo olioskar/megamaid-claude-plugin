@@ -1,5 +1,7 @@
 # Re-baseline experiments
 
+Results and version numbers below were recorded on [comb](https://github.com/olioskar/comb-the-desert-claude-plugin); command and file names are updated to megamaid.
+
 Paid, two-arm runs that decide whether a prompt passage still earns its tokens. A passage is removed only when the treatment arm, with the passage removed, shows that the failure it guards against does not recur. Each case here has the same shape as `evals/` but stays out of the per-PR suite. Run one arm with:
 
 ```
@@ -31,7 +33,7 @@ This is the 0.8.0 scenario. A directive requires BEM `--` modifiers; five compon
 | control | none | left out of the BEM modifier sets | $0.52 |
 | treatment | none | named in the BEM entry as "a minority across the area" | $0.48 |
 
-**Decision:** the rule stated once is enough for this scenario, so the restatements are removed. The orchestrator's Step 6 backstops in `/comb:patterns`, which drop self-identified minorities and gerrymandered denominators, are a separate tier and stay. Each arm's dispatch prompt named its own `scan-rules.md`, which confirms the treatment text was the one under test.
+**Decision:** the rule stated once is enough for this scenario, so the restatements are removed. The orchestrator's Step 6 backstops in `/megamaid:patterns`, which drop self-identified minorities and gerrymandered denominators, are a separate tier and stay. Each arm's dispatch prompt named its own `scan-rules.md`, which confirms the treatment text was the one under test.
 
 ### E3: effort `medium` vs `high` (`effort-medium`, `effort-high`)
 
@@ -42,6 +44,6 @@ A branch with three seeded bugs in separate files: an off-by-one loop bound, a s
 | medium | code-reviewer, silent-failure-hunter, test-auditor (`medium` ×3) | 3 of 3 | 6 | NEEDS WORK | $1.10 | 118 s |
 | high | the same (`high` ×3) | 3 of 3 | 9 | NEEDS WORK | $1.19 | 127 s |
 
-**Outcome:** no recall difference on this fixture. `high` cost about 8% more and split the test gaps per file (four T items against one). The shipped default stays unset, as the user decided (D1): the session's effort applies, and `effort.review: medium` is a safe way to save a little on reviews of this size. The run also confirms the 0.15.0 effort path end to end: `comb.py resolve` printed the configured effort and every Agent call carried it.
+**Outcome:** no recall difference on this fixture. `high` cost about 8% more and split the test gaps per file (four T items against one). The shipped default stays unset, as the user decided (D1): the session's effort applies, and `effort.review: medium` is a safe way to save a little on reviews of this size. The run also confirms the 0.15.0 effort path end to end: `megamaid.py resolve` printed the configured effort and every Agent call carried it.
 
 Total spend for the three experiments: $4.88 (six runs).

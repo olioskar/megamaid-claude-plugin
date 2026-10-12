@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, comb through changes, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/comb:review look for ambiguities and inconsistencies").
+description: Use when the user wants to review code for issues, audit a PR or branch, find bugs in a diff, or check a spec/plan against existing patterns. The user may provide a focus brief after the command (e.g., "/megamaid:review look for ambiguities and inconsistencies").
 argument-hint: "[scope] [focus brief]"
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-You are running step 1 of the comb workflow: review → plan → fix.
+You are running step 1 of the megamaid workflow: review → plan → fix.
 
 You're a senior tech lead. You pick the right experts for the job, give them clear scope, and pull their findings into one honest report.
 
@@ -34,14 +34,14 @@ If scope is ambiguous, ask once. Otherwise derive it from the current branch and
 Load the merged config per `${CLAUDE_PLUGIN_ROOT}/shared/config-loading.md`:
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" config
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" config
 ```
 
-Run it — like every `comb.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
+Run it — like every `megamaid.py` command line in this skill — from the project root, and read its JSON output; it is the merged config. A non-zero exit names the bad file — stop and show it.
 
 From it, you have:
 - `paths.reviews` — where to write the report
-- `paths.plans` — (used by /comb:plan, not now)
+- `paths.plans` — (used by /megamaid:plan, not now)
 - `directives.include_plugin_defaults` (boolean) and `directives.user_path` (string)
 - `agents.<role>` — palette of available reviewers
 - `models.review` — model for reviewer agents in this step
@@ -61,7 +61,7 @@ git merge-base origin/<base> <branch>   # record the SHA; agents and the report 
 
 Read these:
 - Project's `CLAUDE.md` for conventions and gotchas (do not read it for base-branch defaults — those come from `paths.base_branch` in merged config)
-- Do **not** read the directive files. Step 3 lists them (`comb.py directives`); the matcher and the Step 7 gate need names and paths only, and every agent reads them itself from the run brief.
+- Do **not** read the directive files. Step 3 lists them (`megamaid.py directives`); the matcher and the Step 7 gate need names and paths only, and every agent reads them itself from the run brief.
 - Any plan/design doc the user points to in the focus brief
 - A reference implementation, if the user names one or `CLAUDE.md` points to one
 
@@ -80,10 +80,10 @@ Record `run`, `excerpt`, the log line, and `stale` from its output for the dispa
 Apply the focus-brief matcher in `${CLAUDE_PLUGIN_ROOT}/shared/directive-matching.md`. It records the matched directive paths and flags them as **primary** in the run brief under "Directives most relevant to this run"; an empty focus brief flags nothing, and all directives still load normally.
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" directives --brief "<focus brief>"
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" directives --brief "<focus brief>"
 ```
 
-Record the `plugin:` and `user:` paths and the `primary:` lines; `comb.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
+Record the `plugin:` and `user:` paths and the `primary:` lines; `megamaid.py brief` renders them into every run brief. Quote the brief for the shell here and in every `brief` call (single quotes, or escape `"`, `$`, and backticks).
 
 ## Step 3.5: Read the work
 
@@ -126,7 +126,7 @@ Pick 1–5 agents from `config.agents` based on:
 - The focus brief (required-include any agent matching it)
 
 **Hard cap:** 5 agents — never dispatch more than 5 in one run, even if both diff content and focus brief argue for more. If forced to choose, drop lower-priority required-includes by judgment.
-**`pattern-scanner`, `pattern-shaver`, and `implementer` are never eligible.** The first two are generation-only (dispatched by `/comb:patterns`); the third is the writer role, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
+**`pattern-scanner`, `pattern-shaver`, and `implementer` are never eligible.** The first two are generation-only (dispatched by `/megamaid:patterns`); the third is the writer role, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
 **Soft floor:** 1 — the orchestrator always dispatches at least one agent for objectivity (self-review by the session that produced the artifact is biased). The anchor agent shifts with the Step 3.5 classification:
 
 - **code-shaped** → `code-reviewer` is the anchor.
@@ -147,14 +147,14 @@ For each picked role, resolve and construct the dispatch prompt:
 - **Resolve the role:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" resolve --role <role> --lane review
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role <role> --lane review
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless it is `unset`; `native:` is the form the brief takes (the script already chose it). Never hardcode a `subagent_type`.
 - **Write the run brief:**
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" brief --skill review --role <role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill review --role <role> --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 2 excerpt printed, so one `clean` removes both. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
@@ -193,9 +193,9 @@ For each picked role, resolve and construct the dispatch prompt:
    Bias guard: You are reviewing work produced in another session. Treat the artifact as the source of truth; do not assume intent you cannot verify from the text itself.
    ```
 
-3. **Read first:** the line `Read first: <brief: path from comb.py brief>`. The run brief carries the directive paths (native or foreign form, with the primaries), the observed-baseline block, and the focus brief; the prompt repeats none of them.
+3. **Read first:** the line `Read first: <brief: path from megamaid.py brief>`. The run brief carries the directive paths (native or foreign form, with the primaries), the observed-baseline block, and the focus brief; the prompt repeats none of them.
 
-4. **Agent-specific instructions:** for native `comb:*` agents this is already in the agent file body. For foreign agents the run brief's `Your lens:` line carries the role's `when_to_use`; add nothing else.
+4. **Agent-specific instructions:** for native `megamaid:*` agents this is already in the agent file body. For foreign agents the run brief's `Your lens:` line carries the role's `when_to_use`; add nothing else.
 
 5. **Output format spec:**
    - **Native agents:** `Output format per your agent definition; finding codes are placeholders the orchestrator renumbers; include the Confidence line on every finding.`
@@ -231,7 +231,7 @@ Monitor agent completion. Don't consolidate until all agents report back. If one
 2. **Quantities.** Recompute every count, every ratio, and every all/none/only claim against the code — yours and the agents' alike.
 3. **Suggested fixes.** A fix shape you have not traced is a proposal, not a recommendation. Trace it, or mark it unverified. Never promote an agent's untraced fix shape into the report's voice.
 4. **Your own syntheses.** A merged description, a cross-agent count, or a combined severity rationale is new content that no agent wrote. It gets the same treatment.
-5. **Directive citations.** For each `file.md §N` or `§N.N` a finding cites, confirm the file is among the loaded directives and has a heading numbered `N`. Correct or drop a citation that does not resolve; `/comb:plan` copies these into `## Directive citations` as policy.
+5. **Directive citations.** For each `file.md §N` or `§N.N` a finding cites, confirm the file is among the loaded directives and has a heading numbered `N`. Correct or drop a citation that does not resolve; `/megamaid:plan` copies these into `## Directive citations` as policy.
 
 Carry each agent's `Confidence` line forward. Where an agent reported `Unverified` and you did not close the gap yourself, the report says so. An agent that omitted the field confirmed nothing you can rely on — treat its particulars as unconfirmed until you check them.
 
@@ -258,7 +258,7 @@ Carry each agent's `Confidence` line forward. Where an agent reported `Unverifie
 | Test gaps | Missing or weak coverage |
 | Deferred | Noted, explicitly out of scope |
 
-**Finding codes:** sequential by severity. C1, C2 / H1, H2 / M1, M2 / L1, L2 / T1, T2 / D1, D2. Every Deferred item gets a code too — `/comb:plan` plans them by code, so unnumbered bullets get dropped.
+**Finding codes:** sequential by severity. C1, C2 / H1, H2 / M1, M2 / L1, L2 / T1, T2 / D1, D2. Every Deferred item gets a code too — `/megamaid:plan` plans them by code, so unnumbered bullets get dropped.
 
 **Semantic refresh signal.** If any agent flagged a divergence as a *deliberate improvement / migration* or a *new canonical* pattern, record that the semantic refresh note should fire in the presentation. This is distinct from the commit-based staleness note.
 
@@ -267,7 +267,7 @@ Carry each agent's `Confidence` line forward. Where an agent reported `Unverifie
 **Output path:**
 
 ```
-python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/comb.py" report-name --reviews <paths.reviews> --pr <number>      # or: --branch <name>
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" report-name --reviews <paths.reviews> --pr <number>      # or: --branch <name>
 ```
 
 Its `report:` line is the path to write (`pr-{number}-round{N}-report.md`, or `branch-{slug}-round{N}-report.md` with the branch name made path-safe). The script parses `N` out of the existing filenames with the same prefix and never counts files — after a deletion, a count collides with a surviving later round.
@@ -403,19 +403,19 @@ Agents used: {list}
 
 **Manifest notes (non-blocking).** Append, when recorded:
 - The excerpt log line (`PATTERNS excerpt: …`) verbatim.
-- Commit-based staleness (`stale: yes`): `PATTERNS manifest may be stale — consider re-running /comb:patterns.` When `stale: unknown`: `PATTERNS staleness unknown (<detail>).`
-- Semantic refresh: `This diff evolves a convention not in the manifest — consider re-running /comb:patterns to capture it.`
+- Commit-based staleness (`stale: yes`): `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.` When `stale: unknown`: `PATTERNS staleness unknown (<detail>).`
+- Semantic refresh: `This diff evolves a convention not in the manifest — consider re-running /megamaid:patterns to capture it.`
 
 Then, last of all, remove this run's excerpt and brief working files (they share the stem): `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 
 ## Ground rules
 
-- **Read-only.** Nobody edits code. The only files created are the report and this run's excerpt and brief working files under `.comb/excerpts/`, which are removed at the end.
+- **Read-only.** Nobody edits code. The only files created are the report and this run's excerpt and brief working files under `.megamaid/excerpts/`, which are removed at the end.
 - **Agents read actual source code.** Not just filenames.
 - **The report's voice is authoritative.** Step 7's verification gate is what earns it. A particular that survived no check is marked, not stated.
 - **Project-aware.** Every agent gets the project's directives.
 - **Severity is honest.** Critical means production bugs.
-- **Round-aware.** The report filename includes round N, parsed from existing filenames by `comb.py report-name` (Step 8). Prior reports are not parsed for fixed-findings status — agents may flag items that already shipped in a prior round.
+- **Round-aware.** The report filename includes round N, parsed from existing filenames by `megamaid.py report-name` (Step 8). Prior reports are not parsed for fixed-findings status — agents may flag items that already shipped in a prior round.
 
 ## Edge case: focus brief contradicts shipped behavior
 

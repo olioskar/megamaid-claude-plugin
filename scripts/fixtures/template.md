@@ -2,14 +2,14 @@
 
 **Generated:** 2026-10-01
 **Base commit:** BASECOMMIT0
-**comb version:** 0.10.0
+**megamaid version:** 0.10.0
 **Scan areas:** React frontend, API, Shared types
 
-> Observed baseline, not law. comb's reviewers reconcile this against live code
+> Observed baseline, not law. megamaid's reviewers reconcile this against live code
 > (live code wins), treat a silent area as a cue to read the code rather than
 > permission to do anything, and classify divergence (drift vs. deliberate
 > improvement vs. new canonical) before flagging. Project directives outrank
-> this manifest. Refresh with `/comb:patterns`.
+> this manifest. Refresh with `/megamaid:patterns`.
 
 ---
 
