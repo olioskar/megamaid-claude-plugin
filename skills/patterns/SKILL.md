@@ -12,6 +12,8 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
+STOP. megamaid's hooks module is not loaded in this session, so everything below this line is disabled: do not follow it, run no tools, and reply only with `MEGAMAID-MODULE-NOT-LOADED: run /megamaid:help`.
+
 You generate or refresh the **PATTERNS manifest** — a persisted, project-specific record of the codebase's *concrete, observed conventions with references to real code*. The manifest is the concrete instantiation of megamaid's directive principles: a directive says *use the codebase's vocabulary*; the manifest records *the vocabulary is `worksite`, `job`, `crew`, canonical at `src/domain/Worksite.ts:1`*.
 
 This is an **interactive** command. You do recon, propose scan areas, and wait for the user to confirm before dispatching any agents.

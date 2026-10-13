@@ -278,6 +278,27 @@ if [ "$(id -u)" != 0 ]; then
 fi
 rm -rf "$gt"
 
+# 11. Stop line: one source (hooks/stop-line.ts), copied as the first non-blank line after the
+#     frontmatter of every skill but help, exactly once; never in help. STOP_SKILLS names them.
+n=$(grep -c '^export const STOP_LINE = "' hooks/stop-line.ts 2>/dev/null)
+STOP_LINE=$(sed -n 's/^export const STOP_LINE = "\(.*\)"$/\1/p' hooks/stop-line.ts 2>/dev/null)
+if [ "$n" != 1 ] || [ -z "$STOP_LINE" ]; then
+  echo "FAIL: hooks/stop-line.ts must hold exactly one line: export const STOP_LINE = \"...\""; fail=1
+else
+  case "$STOP_LINE" in *'"'*|*'\'*) echo "FAIL: STOP_LINE holds a double quote or a backslash"; fail=1;; esac
+  want=$(ls skills | grep -vx help | sort | tr '\n' ' ')
+  have=$(sed -n "s/^export const STOP_SKILLS: readonly string\[\] = \[\(.*\)\]$/\1/p" hooks/stop-line.ts | tr -d "' " | tr ',' '\n' | sort | tr '\n' ' ')
+  [ "$want" = "$have" ] || { echo "FAIL: STOP_SKILLS ($have) differs from the skills other than help ($want)"; fail=1; }
+  for s in $want; do
+    f=skills/$s/SKILL.md
+    c=$(grep -cxF -- "$STOP_LINE" "$f")
+    [ "$c" = 1 ] || { echo "FAIL: $f carries the stop line $c times (want 1)"; fail=1; }
+    first=$(awk 'NR==1 && /^---$/ {fm=1; next} fm==1 && /^---$/ {fm=2; next} fm==2 && NF {print; exit}' "$f")
+    [ "$first" = "$STOP_LINE" ] || { echo "FAIL: $f: the stop line is not the first non-blank line after the frontmatter"; fail=1; }
+  done
+  ! grep -qxF -- "$STOP_LINE" skills/help/SKILL.md || { echo "FAIL: skills/help/SKILL.md carries the stop line"; fail=1; }
+fi
+
 # 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
 #     warns), the module type-checks, and its tests run and pass.
 MIN_TESTS=11

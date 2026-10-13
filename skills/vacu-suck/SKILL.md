@@ -12,6 +12,8 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
+STOP. megamaid's hooks module is not loaded in this session, so everything below this line is disabled: do not follow it, run no tools, and reply only with `MEGAMAID-MODULE-NOT-LOADED: run /megamaid:help`.
+
 Commence Operation Vacu-Suck: review the code, plan the fixes, apply them. No pauses between steps, no confirmations requested, and no item skipped except one the planner could not reproduce.
 
 ## Inputs
