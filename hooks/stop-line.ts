@@ -7,5 +7,5 @@ export const SKIP_NOTE = "megamaid's hooks module is loaded; the STOP line at th
 export const STOP_SKILLS: readonly string[] = ['configure', 'fix', 'fix-auto', 'patterns', 'plan', 'review', 'vacu-suck']
 
 export function stripStopLine(text: string): string {
-  return text
+  return text.split('\n').filter(line => line.replace(/\r$/, '') !== STOP_LINE).join('\n')
 }
