@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Release-gate greps for the megamaid plugin's shipped contract.
-# Deterministic and offline; run from anywhere.
+# Needs claude and node (npx) on PATH; the first npx run needs network. Run from anywhere.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
+for tool in claude node npx; do
+  command -v "$tool" >/dev/null 2>&1 || { echo "FAIL: $tool is not on PATH (check-contract needs claude, node and npx)"; exit 1; }
+done
 
 # 1. No dead spec citations in shipped files (the design spec does not ship).
 if grep -rn "spec §\|decision §" skills/ agents/ shared/ directives/ README.md 2>/dev/null; then
@@ -80,6 +83,7 @@ if ! bash scripts/test-replay.sh >/dev/null 2>&1; then
   echo "FAIL: scripts/test-replay.sh failed (run it for the diff)"
   fail=1
 fi
+bash scripts/test-sync-types.sh >/dev/null 2>&1 || { echo "FAIL: scripts/test-sync-types.sh failed (run it for the diff)"; fail=1; }
 for skill in review plan fix; do
   if ! grep -Eq 'manifest\.py"? excerpt' "skills/$skill/SKILL.md"; then
     echo "FAIL: skills/$skill does not invoke manifest.py excerpt"
@@ -190,14 +194,15 @@ sys.exit(bad)
 PY
 
 # 10. Old-name guard: no identifier of the plugin this one was forked from, in tracked file
-#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/, and
+#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/,
+#     vendor/claude-code-types/ (engine text), and
 #     any line carrying the old repo URL. The pattern is built from fragments so this section does
 #     not match itself. GUARD=off skips the repo scan (the self-tests still run).
 w='co''mb'
 GUARD_WORDS="$w|${w}s|the-""desert|the_""desert"
 GUARD_CAMEL="[a-z]Co""mb|[Cc]o""mb[A-Z]"
 GUARD_URL="github.com/olioskar/${w}-the-""desert-claude-plugin"
-GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/)'
+GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/|vendor/claude-code-types/)'
 # Three shapes: the word (case-insensitive, whole word), `_`-joined forms, and camelCase forms.
 guard_grep() {  # $1: "files" to filter stdin paths with grep, or "git" to search contents of repo $2
   if [ "$1" = files ]; then
@@ -272,6 +277,31 @@ if [ "$(id -u)" != 0 ]; then
   chmod 644 "$gt/a.md"
 fi
 rm -rf "$gt"
+
+# 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
+#     warns), the module type-checks, and its tests run and pass.
+MIN_TESTS=1
+tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
+cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
+if [ -z "$tv" ]; then
+  echo "FAIL: vendor/claude-code-types/claude-code/index.d.ts names no Claude Code version"; fail=1
+elif [ "$tv" != "$cv" ]; then
+  if [ -n "${CI:-}" ]; then
+    echo "FAIL: vendored types are Claude Code $tv, claude --version is '$cv'"; fail=1
+  else
+    echo "WARN: vendored types are Claude Code $tv, this claude is '$cv'. To refresh: run 'claude --plugin-dir .' once, exit, then scripts/sync-types.sh, and commit as 'chore(types): Claude Code <version>'."
+  fi
+fi
+if ! out=$(npx -y -p typescript@5.9.3 tsc -p . 2>&1); then echo "$out"; echo "FAIL: tsc -p ."; fail=1; fi
+cfg=$(mktemp -d "${TMPDIR:-/tmp}/plugin-test.XXXXXX")
+out=$(CLAUDE_CONFIG_DIR="$cfg" claude plugin test . 2>&1); rc=$?
+rm -rf "$cfg"
+ran=$(printf '%s\n' "$out" | sed -nE 's/^Ran ([0-9]+) tests? across [0-9]+ files?\..*/\1/p')
+if printf '%s\n' "$out" | grep -q '^claude plugin test:'; then
+  printf '%s\n' "$out" | grep '^claude plugin test:'; echo "FAIL: claude plugin test refused"; fail=1
+elif [ "$rc" != 0 ] || [ -z "$ran" ] || [ "$ran" -lt "$MIN_TESTS" ] || ! printf '%s\n' "$out" | grep -qx ' 0 fail'; then
+  printf '%s\n' "$out" | grep -v '^(pass)'; echo "FAIL: claude plugin test (exit $rc, ran '${ran:-?}', want >= $MIN_TESTS and 0 fail)"; fail=1
+fi
 
 if [ "$fail" -eq 0 ]; then
   echo "check-contract: OK"

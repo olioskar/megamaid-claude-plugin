@@ -16,5 +16,6 @@
     "review-pipeline",
     "agents",
     "directives"
-  ]
+  ],
+  "types": "./types/index.d.ts"
 }
