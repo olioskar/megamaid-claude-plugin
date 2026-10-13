@@ -76,6 +76,10 @@ Requirements
     "hooks modules are turned off …     start claude once with network
      rollout switch"                    access; if it stays, hooks
                                         modules are off for your account
+    fix-auto or vacu-suck run inside a  run it from the main conversation
+     subagent                           (the module is loaded, but a
+                                        subagent's Read of a sub-skill
+                                        gets no note, so it stops)
     anything else                       run claude --debug-file <file>
                                         and read the line naming megamaid
 
