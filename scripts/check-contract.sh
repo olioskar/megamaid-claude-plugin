@@ -301,7 +301,7 @@ fi
 
 # 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
 #     warns), the module type-checks, and its tests run and pass.
-MIN_TESTS=11
+MIN_TESTS=15
 tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
 cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
 if [ -z "$tv" ]; then

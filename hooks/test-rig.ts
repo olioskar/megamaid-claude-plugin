@@ -37,3 +37,27 @@ export function endInput(): SessionEndInput {
 export function briefPath(stem: string, lane: string, role: string): string {
   return `/w/.megamaid/excerpts/${stem}.${lane}.${role}.brief.md`
 }
+
+// Read-note tests. The kit's $.plugin.root is the plugin folder; fs.stat answers map spellings to
+// real paths. Any other path (the plugin root among them) resolves to REAL, so in every Read test
+// the root is reached through a different spelling, as a linked root or marketplace cache would be.
+// LINK_FILE is a symlinked spelling of review's skill file.
+export const REAL = '/real/megamaid'
+export const LINK_FILE = '/link/skills/review/SKILL.md'
+export function answerStat(on: On): void {
+  on('fs.stat', (_$, e) => {
+    const realPath = e.path === LINK_FILE ? REAL + '/skills/review/SKILL.md'
+      : e.path.startsWith(REAL + '/') || e.path.startsWith('/other/') ? e.path
+      : REAL
+    return { value: { kind: 'file' as const, size: 1, mtimeMs: 0, isLink: e.path === LINK_FILE, realPath } }
+  })
+}
+export type ReadAnswer = 'ok' | 'deny' | 'error'
+export function answerRead(on: On, how: () => ReadAnswer = () => 'ok'): void {
+  on('tool.call', { tool: 'Read' }, (_$, e) => {
+    const h = how()
+    if (h === 'deny') return { deny: 'no' }
+    if (h === 'error') return { isError: true as const, result: 'boom', text: 'boom' }
+    return { result: { type: 'text' as const, file: { filePath: String(e.file_path), content: 'x', numLines: 1, startLine: 1, totalLines: 1 } } }
+  })
+}
