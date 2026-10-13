@@ -301,7 +301,12 @@ fi
 
 # 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
 #     warns), the module type-checks, and its tests run and pass.
-MIN_TESTS=25
+# The state ref is a literal const in each file that uses it (validate reads no imported ref); the copies must agree.
+runs=$(grep -h '^const RUN = ' hooks/*.ts | sort -u)
+[ "$runs" = "const RUN = { plugin: 'megamaid', key: 'run' } as const" ] || { echo "FAIL: hooks/*.ts declare RUN differently: $runs"; fail=1; }
+have=$(grep -l '^const RUN = ' hooks/*.ts | sort | tr '\n' ' ')
+[ "$have" = "hooks/agents.ts hooks/session.ts hooks/skill-prompt.ts " ] || { echo "FAIL: want RUN in exactly hooks/agents.ts, hooks/session.ts, hooks/skill-prompt.ts; found: $have"; fail=1; }
+MIN_TESTS=27
 tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
 cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
 if [ -z "$tv" ]; then
