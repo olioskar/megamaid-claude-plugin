@@ -49,7 +49,8 @@ export function answerStat(on: On): void {
     const realPath = e.path === LINK_FILE ? REAL + '/skills/review/SKILL.md'
       : e.path.startsWith(REAL + '/') || e.path.startsWith('/other/') ? e.path
       : REAL
-    return { value: { kind: 'file' as const, size: 1, mtimeMs: 0, isLink: e.path === LINK_FILE, realPath } }
+    // The engine fills realPath only when the caller asks to resolve; so does this answer.
+    return { value: { kind: 'file' as const, size: 1, mtimeMs: 0, isLink: e.path === LINK_FILE, ...(e.resolve ? { realPath } : {}) } }
   })
 }
 export type ReadAnswer = 'ok' | 'deny' | 'error'
