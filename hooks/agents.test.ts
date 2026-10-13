@@ -1,7 +1,7 @@
 import { test, expect } from 'claude-code/testing'
 import type { On } from 'claude-code'
 import { parseBrief } from './run'
-import { FOREIGN, briefPath, rig, spawnInput } from './test-rig'
+import { FOREIGN, briefPath, endInput, rig, spawnInput } from './test-rig'
 
 const STEM = 'review-1760000000-ab12'
 const FIX_STEM = 'fix-1760000100-cd34'
@@ -82,6 +82,16 @@ test('a result without agentId records nothing (control: with one it records)', 
 
 test('a brief spawn with no stored run starts a "none" run', async ($, on) => {
   const { writes } = rig(on); answerSpawns(on, () => 'a1')
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'test-auditor')) }))
+  expect(writes.at(-1)).toMatchObject({ skill: 'none', agents: { a1: { role: 'test-auditor', lane: 'review' } } })
+})
+
+test('a brief spawn after session end (stored null) starts a "none" run', async ($, on) => {
+  const { writes } = rig(on); answerSkills(on); answerSpawns(on, () => 'a1')
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
+  await $.session.end(endInput())
+  expect(writes.at(-1)).toBeNull()
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'test-auditor')) }))
   expect(writes.at(-1)).toMatchObject({ skill: 'none', agents: { a1: { role: 'test-auditor', lane: 'review' } } })
 })
