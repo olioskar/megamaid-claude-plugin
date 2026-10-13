@@ -299,6 +299,16 @@ else
   ! grep -qxF -- "$STOP_LINE" skills/help/SKILL.md || { echo "FAIL: skills/help/SKILL.md carries the stop line"; fail=1; }
 fi
 
+# Every eval case but help-overview fails when its run stopped on the token (a module that did not
+# load would otherwise pass every negative grader). help is exempt: its Requirements block names it.
+for d in evals/*/; do
+  d=${d%/}; c=$(basename "$d"); [ -d "$d/graders" ] || continue; [ "$c" = help-overview ] && continue
+  g="$d/graders/module-loaded.md"
+  if [ ! -f "$g" ] || ! grep -qx 'pattern: "MEGAMAID-MODULE-NOT-LOADED"' "$g" || ! grep -qx 'match: not_contains' "$g"; then
+    echo "FAIL: $g missing or not a not_contains grader for MEGAMAID-MODULE-NOT-LOADED"; fail=1
+  fi
+done
+
 # 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
 #     warns), the module type-checks, and its tests run and pass.
 # The state ref is a literal const in each file that uses it (validate reads no imported ref); the copies must agree.
