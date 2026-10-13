@@ -64,6 +64,21 @@ Commands
 
   /megamaid:help       This message. Pass a command name for details.
 
+Requirements
+
+  megamaid needs a Claude Code build with hooks modules, and its hooks
+  module loaded. If a command replies MEGAMAID-MODULE-NOT-LOADED, the
+  module did not load:
+
+    Claude Code without hooks modules   update Claude Code (an old build
+                                        may refuse the plugin outright)
+    disableAllHooks in settings         remove it or set it to false
+    "hooks modules are turned off …     start claude once with network
+     rollout switch"                    access; if it stays, hooks
+                                        modules are off for your account
+    anything else                       run claude --debug-file <file>
+                                        and read the line naming megamaid
+
 Focus brief
 
   Every command accepts free text after the slash. The brief biases
