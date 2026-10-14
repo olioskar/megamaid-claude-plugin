@@ -43,11 +43,14 @@ test('a megamaid-provider spawn without a brief counts only during a patterns ru
   expect(writes.at(-1)?.agents).toMatchObject({ a2: { role: 'unknown', lane: null, runStem: null } })
 })
 
-test('a provider spelled without @ is still megamaid during a patterns run', async ($, on) => {
-  const { writes } = rig(on); answerSkills(on); answerSpawns(on, () => 'a1')
+test('a provider spelled without @ is still megamaid during a patterns run (control: megamaid-extras is not)', async ($, on) => {
+  const { writes } = rig(on); answerSkills(on)
+  let n = 0; answerSpawns(on, () => 'a' + ++n)
   await $.skill.prompt({ skill: 'megamaid:patterns', text: 'x' })
   await $.agent.spawn(spawnInput({ subagentType: 'megamaid:pattern-shaver', provider: { plugin: 'megamaid', tier: 'user' } }))
   expect(writes.at(-1)?.agents).toMatchObject({ a1: { role: 'unknown' } })
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid-extras:scanner', provider: { plugin: 'megamaid-extras@x', tier: 'user' } }))
+  expect(Object.keys(writes.at(-1)?.agents ?? {})).toEqual(['a1'])
 })
 
 test('a foreign spawn without a brief is ignored (control: with a brief it is recorded)', async ($, on) => {
