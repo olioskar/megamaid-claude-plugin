@@ -34,6 +34,14 @@ test('a denied or errored Read is returned unchanged (control: a good one gains 
   expect(errored.context).toBeUndefined()
 })
 
+test('a path outside the root gets no note, even one the length of the root or sharing its prefix (control: review under the root does)', async ($, on) => {
+  rig(on); answerStat(on); answerRead(on)
+  expect((await $.tool.call({ tool: 'Read', file_path: REAL + '/skills/review/SKILL.md' })).context).toEqual([SKIP_NOTE])
+  expect('/fake/megamaid'.length).toBe(REAL.length)
+  expect((await $.tool.call({ tool: 'Read', file_path: '/fake/megamaid/skills/review/SKILL.md' })).context).toBeUndefined()
+  expect((await $.tool.call({ tool: 'Read', file_path: REAL + '2/skills/review/SKILL.md' })).context).toBeUndefined()
+})
+
 test('another stop-line skill (vacu-suck) gets the note too', async ($, on) => {
   rig(on); answerStat(on); answerRead(on)
   expect((await $.tool.call({ tool: 'Read', file_path: REAL + '/skills/vacu-suck/SKILL.md' })).context).toEqual([SKIP_NOTE])

@@ -39,7 +39,8 @@ export function briefPath(stem: string, lane: string, role: string): string {
 }
 
 // Read-note tests. The kit's $.plugin.root is the plugin folder; fs.stat answers map spellings to
-// real paths. Any other path (the plugin root among them) resolves to REAL, so in every Read test
+// real paths; paths under REAL (a sibling like REAL + '2' too), /other/ and /fake/ resolve to
+// themselves. Any other path (the plugin root among them) resolves to REAL, so in every Read test
 // the root is reached through a different spelling, as a linked root or marketplace cache would be.
 // LINK_FILE is a symlinked spelling of review's skill file.
 export const REAL = '/real/megamaid'
@@ -47,7 +48,7 @@ export const LINK_FILE = '/link/skills/review/SKILL.md'
 export function answerStat(on: On): void {
   on('fs.stat', (_$, e) => {
     const realPath = e.path === LINK_FILE ? REAL + '/skills/review/SKILL.md'
-      : e.path.startsWith(REAL + '/') || e.path.startsWith('/other/') ? e.path
+      : e.path.startsWith(REAL) || e.path.startsWith('/other/') || e.path.startsWith('/fake/') ? e.path
       : REAL
     // The engine fills realPath only when the caller asks to resolve; so does this answer.
     return { value: { kind: 'file' as const, size: 1, mtimeMs: 0, isLink: e.path === LINK_FILE, ...(e.resolve ? { realPath } : {}) } }
