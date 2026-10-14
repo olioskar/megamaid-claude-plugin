@@ -164,9 +164,14 @@ for f in agents/*.md; do
 done
 # The fixture plugin's defaults are the shipped defaults: the brief fixtures prove the shipped text.
 cmp -s config/defaults.json scripts/fixtures/megamaid/plugin/config/defaults.json || { echo "FAIL: scripts/fixtures/megamaid/plugin/config/defaults.json drifted from config/defaults.json"; fail=1; }
-# The writer roles' tool restrictions are exact lines: validate accepts any text in disallowedTools.
-grep -qxF 'disallowedTools: Agent, Edit, NotebookEdit' agents/planner.md 2>/dev/null || { echo "FAIL: agents/planner.md must carry exactly 'disallowedTools: Agent, Edit, NotebookEdit'"; fail=1; }
-grep -qxF 'disallowedTools: Agent, NotebookEdit' agents/implementer.md || { echo "FAIL: agents/implementer.md must carry exactly 'disallowedTools: Agent, NotebookEdit'"; fail=1; }
+# The writer roles' tool restrictions are exact frontmatter lines: validate accepts any text in
+# disallowedTools, and a `tools:` allowlist could drop Write. Only the frontmatter counts.
+frontmatter() { awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {exit} f' "$1" 2>/dev/null; }
+frontmatter agents/planner.md | grep -qxF 'disallowedTools: Agent, Edit, NotebookEdit' || { echo "FAIL: agents/planner.md frontmatter must carry exactly 'disallowedTools: Agent, Edit, NotebookEdit'"; fail=1; }
+frontmatter agents/implementer.md | grep -qxF 'disallowedTools: Agent, NotebookEdit' || { echo "FAIL: agents/implementer.md frontmatter must carry exactly 'disallowedTools: Agent, NotebookEdit'"; fail=1; }
+for f in agents/planner.md agents/implementer.md; do
+  frontmatter "$f" | grep -q '^tools:' && { echo "FAIL: $f has a tools: allowlist; the writer roles restrict with disallowedTools only"; fail=1; }
+done
 for n in code-reviewer simplifier silent-failure-hunter test-auditor consistency-auditor; do
   grep -qF "**Confidence**" "agents/$n.md" || { echo "FAIL: agents/$n.md has no Confidence line; review Step 7 treats an omitted field as unverified"; fail=1; }
 done
