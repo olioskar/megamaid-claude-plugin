@@ -105,6 +105,14 @@ done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
 grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
 grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
+# Planning resolves the planner role, never the fix writer. Patterns start with "--", so each goes
+# through -e; flag order is part of the pattern (a reordered flag pair would slip past; accepted).
+if grep -rqF -e '--role implementer --lane plan' -e '--skill plan --role implementer' skills/; then
+  echo "FAIL: a skill plans with the implementer role; planning uses --role planner"; fail=1
+fi
+for skill in plan fix; do
+  grep -qF -e '--role planner --lane plan' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill/SKILL.md does not resolve the planner with --role planner --lane plan"; fail=1; }
+done
 for f in skills/patterns/SKILL.md agents/pattern-scanner.md; do
   grep -Fq 'shared/scan-rules.md' "$f" || { echo "FAIL: $f does not point at shared/scan-rules.md"; fail=1; }
 done

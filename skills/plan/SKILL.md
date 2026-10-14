@@ -141,7 +141,7 @@ User may override.
 
 ### Non-code report — single consolidated revise-doc
 
-Dispatch one planner agent, resolved and briefed exactly as the code-shaped flow below resolves and briefs its planners (`megamaid.py resolve --role implementer --lane plan`, then `megamaid.py brief --skill plan --role implementer …`), with this prompt structure (shared context, the run brief, then its own job and output format):
+Dispatch one planner agent, resolved and briefed exactly as the code-shaped flow below resolves and briefs its planners (`megamaid.py resolve --role planner --lane plan`, then `megamaid.py brief --skill plan --role planner …`), with this prompt structure (shared context, the run brief, then its own job and output format):
 
 ````
 You're a senior reviewer translating a spec/design-doc review into a single consolidated revision-instructions file.
@@ -154,7 +154,7 @@ Spec under revision: {spec_path}
 Report: {report-path}
 Output file: {output_folder}/revise-{spec-stem}.md
 
-Read first: {run brief path printed by `megamaid.py brief` (skill plan, role implementer)}
+Read first: {run brief path printed by `megamaid.py brief` (skill plan, role planner)}
 
 ## 2. Your job
 
@@ -212,18 +212,18 @@ Launch all in parallel per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/
 
 **Agent config (resolved per finding):**
 
-- **Pick a specialty lens.** For each finding, the orchestrator picks one role from `config.agents` whose `when_to_use` best matches the finding's specialty (general correctness → `code-reviewer`, simplification/abstraction concerns → `simplifier`, error-handling → `silent-failure-hunter`, test gaps → `test-auditor`, pattern/spec drift → `consistency-auditor`). When no role obviously matches, default to `code-reviewer`. The lens informs the dispatch prompt's framing and is recorded in the plan file's `**Specialty:**` header — it is **not** the subagent_type that runs.
-- **Resolve the writer role** (the planner needs Write access; the `megamaid:*` review roles cannot write, and the user's `agents.implementer` override is honored):
+- **Pick a specialty lens.** For each finding, the orchestrator picks one role from `config.agents` whose `when_to_use` best matches the finding's specialty (general correctness → `code-reviewer`, simplification/abstraction concerns → `simplifier`, error-handling → `silent-failure-hunter`, test gaps → `test-auditor`, pattern/spec drift → `consistency-auditor`). When no role obviously matches, default to `code-reviewer`. Never a writer role (`implementer`, `planner`). The lens informs the dispatch prompt's framing and is recorded in the plan file's `**Specialty:**` header — it is **not** the subagent_type that runs.
+- **Resolve the planner role** (the planner needs Write access; the `megamaid:*` review roles cannot write, and the user's `agents.planner` override is honored):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role implementer --lane plan
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role planner --lane plan
   ```
 
   Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`; `native:` is the brief's form.
 - **Write the run brief** once per run (every planner shares it):
 
   ```
-  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill plan --role implementer --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
+  python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" brief --skill plan --role planner --run <run> --excerpt <excerpt> --manifest <paths.patterns> --brief "<focus brief>"
   ```
 
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 3 excerpt printed. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
