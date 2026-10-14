@@ -13,12 +13,20 @@ if claude plugin list --json 2>/dev/null | python3 -I -c '
 import json, sys
 d = json.load(sys.stdin)
 rows = d if isinstance(d, list) else d.get("plugins", [])
-sys.exit(0 if any(str(r.get("id", "")).startswith("megamaid@") and r.get("enabled") for r in rows) else 1)'; then
+sys.exit(0 if any(str(r.get("id", "")).startswith("megamaid@") and (r.get("enabled") or r.get("projectEnabled")) for r in rows) else 1)'; then
   echo "WARN: an installed megamaid is enabled; it can load ahead of --plugin-dir . and be what this smoke tests."
 fi
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/megamaid-smoke.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
+
+TOKEN_LINE="$(sed -n "s/^export const TOKEN_LINE = '\(.*\)'$/\1/p" hooks/stop-line.ts)"
+STOP_TOKEN="$(sed -n "s/^export const STOP_TOKEN = '\(.*\)'$/\1/p" hooks/stop-line.ts)"
+[ -n "$TOKEN_LINE" ] && [ -n "$STOP_TOKEN" ] || { echo "FAIL: no TOKEN_LINE or STOP_TOKEN in hooks/stop-line.ts"; exit 1; }
+
+loaded() {  # $1: debug file. True when megamaid's own module logged its load line.
+  grep -F '[megamaid]' "$1" | grep -F 'module loaded (Claude Code ' >/dev/null  # no -q: see not_loaded
+}
 
 not_loaded() {  # $1: stderr file. True when the engine said megamaid's module did not load.
   grep -i 'megamaid' "$1" | grep -i 'not loaded' >/dev/null  # no -q: an early exit can SIGPIPE the first grep under pipefail
@@ -31,18 +39,16 @@ for args in "" "fix"; do
     echo "$out"; cat "$tmp/err"; echo "FAIL: /megamaid:help $args run errored"; exit 1
   }
   if not_loaded "$tmp/err"; then cat "$tmp/err"; echo "FAIL: megamaid's hooks module did not load"; exit 1; fi
-  grep -q 'module loaded (Claude Code ' "$dbg" || { echo "FAIL: the debug log has no 'module loaded' line from megamaid"; exit 1; }
+  loaded "$dbg" || { echo "FAIL: the debug log has no 'module loaded' line from megamaid"; exit 1; }
   if [ -z "$args" ]; then
     echo "$out" | grep -q "megamaid — code-review pipeline" || { echo "$out"; echo "FAIL: /megamaid:help did not print the overview"; exit 1; }
-    echo "$out" | grep -q "MEGAMAID-MODULE-NOT-LOADED" || { echo "$out"; echo "FAIL: the overview has no Requirements block naming the token"; exit 1; }
+    echo "$out" | grep -qF "$STOP_TOKEN" || { echo "$out"; echo "FAIL: the overview has no Requirements block naming the token"; exit 1; }
   else
     echo "$out" | grep -q "Reviewer specialty is matched to the plan" || { echo "$out"; echo "FAIL: /megamaid:help fix did not print the per-command detail"; exit 1; }
   fi
 done
 
 echo "== review, module off (must stop) =="
-TOKEN_LINE="$(sed -n "s/^export const TOKEN_LINE = '\(.*\)'$/\1/p" hooks/stop-line.ts)"
-[ -n "$TOKEN_LINE" ] || { echo "FAIL: no TOKEN_LINE in hooks/stop-line.ts"; exit 1; }
 out="$(claude -p "/megamaid:review" --plugin-dir . --settings '{"disableAllHooks":true}' \
   --disallowedTools Agent Bash Write Edit --max-budget-usd 0.3 < /dev/null 2>"$tmp/err")" || true
 not_loaded "$tmp/err" || { cat "$tmp/err"; echo "FAIL: precondition: the engine did not report megamaid's module as not loaded"; exit 1; }
