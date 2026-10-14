@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-14
+
+The planner becomes its own role. Nothing a plan run produces changes: the eval suite passes 9/9 (5.23 USD, Opus 5.5 with a Sonnet 5.5 judge), the eight 0.2.0 cases at their 0.2.0 cost.
+
+### Added
+
+- **The `planner` role (`agents/planner.md`, `agents.planner`).** `/megamaid:plan` and the issues `/megamaid:fix` discovers now dispatch `megamaid:planner`, a senior developer who reads the code, reproduces the finding and writes one instruction file an implementer applies cold. Its boundaries are written for planning: exactly one file, the output file its prompt names; never a source edit (`Edit` is withheld, `Write` and `Bash` stay for the one file and for `git log`, `git blame`, `grep`); never git, agents or skills. Override it per project with `agents.planner`, separately from the fix writer.
+- **Eval case `plan-native-planner`.** The only case that runs the shipped planner: two findings, no override, graded on the `megamaid:planner` dispatches, the native brief, both instruction files, the source files left untouched, and the summary. Its graders replay offline against synthetic pass and fail runs (`scripts/test-replay.sh`), so a broken grader shows up for free.
+- **Contract checks.** Planning resolves and briefs `--role planner` in any flag order (a line-scoped check, not a prose match); both writer agents' `disallowedTools` lines are asserted exactly, since `claude plugin validate` accepts any text there; the fixture plugin's `defaults.json` must equal the shipped one.
+
+### Changed
+
+- **The implementer is the fix writer only.** Its agent file and `when_to_use` drop the plan clause; an `agents.implementer` override no longer applies to planning. No migration: the plugin has no users yet.
+- **Model guidance: keep the planner strong, save on the implementer.** The planner decides the quality of a fix, so a good instruction lets a cheaper implementer apply it. README and help say so; the README example and the configure sample now lower `models.fix.implementer_standard` instead of `models.plan`.
+
 ## [0.2.0] — 2026-10-14
 
 megamaid now requires a Claude Code build with hooks modules, with its module loaded. The pipeline itself is unchanged: the eval suite passes 8/8, matching comb v0.15.0 once its two grader-shape misses were fixed, at the same cost (4.56 vs 4.64 USD, Opus 5.5 with a Sonnet 5.5 judge).

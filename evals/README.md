@@ -53,7 +53,7 @@ claude plugin eval . --scaffold --ablation none --runs 1 --max-cost-usd 15 \
 claude plugin eval . --scaffold --allow-tools Bash Write Edit --case "help-*"
 ```
 
-Measured 2026-10-11 at eight cases, one run each: about 9 minutes and 4.70 USD.
+Measured 2026-10-14 at nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge): about 12 minutes and 5.23 USD.
 When and how often to run it: PLAYBOOK.md, "Eval cadence".
 
 To debug a grader without paying for a re-run, keep one run and replay the case's
