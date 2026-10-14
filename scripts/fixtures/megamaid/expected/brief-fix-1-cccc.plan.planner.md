@@ -1,4 +1,4 @@
-# megamaid brief — plan / implementer (megamaid:implementer)
+# megamaid brief — plan / planner (megamaid:planner)
 
 ## Directives
 

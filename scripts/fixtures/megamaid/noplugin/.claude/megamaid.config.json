@@ -1,2 +1,3 @@
 { "directives": { "include_plugin_defaults": false },
-  "agents": { "implementer": { "subagent_type": "general-purpose", "when_to_use": "Writer-capable agent; foreign per the delivery contract." } } }
+  "agents": { "implementer": { "subagent_type": "general-purpose", "when_to_use": "Writer-capable agent; foreign per the delivery contract." },
+              "planner": { "subagent_type": "general-purpose" } } }
