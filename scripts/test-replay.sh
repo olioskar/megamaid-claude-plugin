@@ -26,5 +26,14 @@ expect 1 fix-reviewer-diff-scope fix-fail \
 expect 0 noncode-shortcircuit noncode-pass \
   "✓ announces-shortcircuit" "✓ design-doc-untouched: Write called 0x" "✓ no-edits: Edit called 0x" \
   "✓ no-plan-files: docs/megamaid/plans/*/*.md absent as expected"
+expect 0 plan-native-planner plan-pass \
+  "✓ planner-dispatched: Agent called 2x" "✓ brief-delivered: Agent called 2x" "✓ native-form" \
+  "✓ m1-file-written" "✓ m2-file-written" "✓ util-untouched" "✓ config-untouched" \
+  "✓ no-edit: Edit called 0x" "✓ medium-label" "✓ no-missing" "✓ no-unexpected" "✓ next-names-fix" \
+  "replay: plan-native-planner — OK"
+expect 1 plan-native-planner plan-fail \
+  "✗ planner-dispatched: Agent called 0x" "✗ m2-file-written" "✗ util-untouched" \
+  "✗ no-edit: Edit called 1x" "✗ medium-label" "✗ no-missing" \
+  "replay: plan-native-planner — FAIL"
 [ "$fail" -eq 0 ] && echo "test-replay: OK"
 exit "$fail"

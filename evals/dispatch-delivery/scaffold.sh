@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Scratch repo with a finished code-shaped review report. The project config
-# overrides the writer with general-purpose (foreign per the delivery contract);
-# the shipped default is the native megamaid:implementer, which gets no authority
+# overrides the planner with general-purpose (foreign per the delivery contract);
+# the shipped default is the native megamaid:planner, which gets no authority
 # sentence, and this is the one case that exercises the foreign framing.
 # Regression target: directives must reach the planner as paths, never embedded.
 set -euo pipefail
@@ -10,8 +10,8 @@ git config user.email eval@example.com
 git config user.name "megamaid eval"
 mkdir -p src reviews .claude
 cat > .claude/megamaid.config.json <<'EOF'
-{ "agents": { "implementer": { "subagent_type": "general-purpose",
-  "when_to_use": "Writer-capable agent; foreign per the delivery contract." } } }
+{ "agents": { "planner": { "subagent_type": "general-purpose",
+  "when_to_use": "Planner-capable agent; foreign per the delivery contract." } } }
 EOF
 cat > src/util.js <<'EOF'
 function parsePort(raw) {

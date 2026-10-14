@@ -169,8 +169,10 @@ What it does
     instruction file.
 
 Config knobs
-  models.plan             (default: opus)   planner model
+  models.plan             (default: opus)   planner model; keep it strong: a good
+                                            instruction lets a cheaper implementer apply it
   effort.plan             (default: unset)  planner effort (session default)
+  agents.planner          (default: megamaid:planner)  the planner agent
 
 Output
   <paths.plans>/plan-for-<report-stem>/<code>-<title-slug>.md
@@ -195,6 +197,7 @@ What it does
     per-item commits, or abort.
   - Executes each fix instruction with implementer + reviewer per item.
   - Implementer is agents.implementer (default megamaid:implementer).
+  - A discovered issue is planned by agents.planner on models.plan.
   - Reviewer specialty is matched to the plan's **Specialty:** header.
   - Reviewer evaluates plan-compliance: did the implementer execute the
     plan, and are reported divergences justified?
@@ -224,7 +227,7 @@ Config knobs
   fix.model_invocation   (default: false) let Claude start fix from a
                          natural-language request ("apply the fixes")
                          (model-only fix-auto skill; /megamaid:fix stays user-only)
-  agents.implementer     (default: megamaid:implementer)  the writer agent
+  agents.implementer     (default: megamaid:implementer)  the fix writer agent
 ```
 
 ### vacu-suck
@@ -333,7 +336,7 @@ Inputs
            ${CLAUDE_PLUGIN_ROOT}/config/defaults.json are not editable.
   change   What you want different. Examples:
              "disable test-auditor"
-             "use sonnet for plan"
+             "use sonnet for the fix implementer"
              "change reviews dir to docs/reviews"
              "look for my directives in docs/our-rules"
 

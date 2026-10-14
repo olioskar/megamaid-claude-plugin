@@ -128,7 +128,7 @@ Pick 1–5 agents from `config.agents` based on:
 - The focus brief (required-include any agent matching it)
 
 **Hard cap:** 5 agents — never dispatch more than 5 in one run, even if both diff content and focus brief argue for more. If forced to choose, drop lower-priority required-includes by judgment.
-**`pattern-scanner`, `pattern-shaver`, and `implementer` are never eligible.** The first two are generation-only (dispatched by `/megamaid:patterns`); the third is the writer role, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
+**`pattern-scanner`, `pattern-shaver`, `implementer` and `planner` are never eligible.** The first two are generation-only (dispatched by `/megamaid:patterns`); the last two are writer roles, and review is read-only. Exclude them from the palette regardless of diff content or focus brief.
 **Soft floor:** 1 — the orchestrator always dispatches at least one agent for objectivity (self-review by the session that produced the artifact is biased). The anchor agent shifts with the Step 3.5 classification:
 
 - **code-shaped** → `code-reviewer` is the anchor.

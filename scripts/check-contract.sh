@@ -105,6 +105,15 @@ done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
 grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
 grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
+# Planning resolves and briefs the planner role, never the fix writer. Negative half: any resolve or
+# brief line in the plan lane (--lane plan / --skill plan, in any flag order) must carry --role planner.
+# Positive half: the code-block commands plan Step 6 and fix DISCOVERED run name the planner. Patterns
+# start with "--", so they go through -e.
+bad=$(grep -rnE -e '(resolve|brief) [^`]*--(lane|skill) plan([^.a-z_-]|$)' skills/ | grep -vF -e '--role planner')
+[ -z "$bad" ] || { echo "FAIL: plan-lane resolve/brief without --role planner:"; echo "$bad"; fail=1; }
+grep -qF -e 'megamaid.py" resolve --role planner --lane plan' skills/plan/SKILL.md || { echo "FAIL: skills/plan Step 6 does not run megamaid.py resolve --role planner --lane plan"; fail=1; }
+grep -qF -e 'megamaid.py" brief --skill plan --role planner' skills/plan/SKILL.md || { echo "FAIL: skills/plan Step 6 does not run megamaid.py brief --skill plan --role planner"; fail=1; }
+grep -qF -e 'resolve --role planner --lane plan' skills/fix/SKILL.md || { echo "FAIL: skills/fix DISCOVERED does not resolve the planner with --role planner --lane plan"; fail=1; }
 for f in skills/patterns/SKILL.md agents/pattern-scanner.md; do
   grep -Fq 'shared/scan-rules.md' "$f" || { echo "FAIL: $f does not point at shared/scan-rules.md"; fail=1; }
 done
@@ -153,6 +162,11 @@ for f in agents/*.md; do
   [ "$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -n 1 | sed 's/[[:space:]]*$//')" = "$n" ] || { echo "FAIL: agents/$n.md frontmatter name does not equal its filename"; fail=1; }
   grep -qF "\"megamaid:$n\"" config/defaults.json || { echo "FAIL: agents/$n.md is not a default subagent_type in config/defaults.json"; fail=1; }
 done
+# The fixture plugin's defaults are the shipped defaults: the brief fixtures prove the shipped text.
+cmp -s config/defaults.json scripts/fixtures/megamaid/plugin/config/defaults.json || { echo "FAIL: scripts/fixtures/megamaid/plugin/config/defaults.json drifted from config/defaults.json"; fail=1; }
+# The writer roles' tool restrictions are exact lines: validate accepts any text in disallowedTools.
+grep -qxF 'disallowedTools: Agent, Edit, NotebookEdit' agents/planner.md 2>/dev/null || { echo "FAIL: agents/planner.md must carry exactly 'disallowedTools: Agent, Edit, NotebookEdit'"; fail=1; }
+grep -qxF 'disallowedTools: Agent, NotebookEdit' agents/implementer.md || { echo "FAIL: agents/implementer.md must carry exactly 'disallowedTools: Agent, NotebookEdit'"; fail=1; }
 for n in code-reviewer simplifier silent-failure-hunter test-auditor consistency-auditor; do
   grep -qF "**Confidence**" "agents/$n.md" || { echo "FAIL: agents/$n.md has no Confidence line; review Step 7 treats an omitted field as unverified"; fail=1; }
 done

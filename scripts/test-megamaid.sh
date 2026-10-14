@@ -32,6 +32,7 @@ run config-latin1        config --plugin-root "$P" --home "$H" --project-root "$
 run resolve-review       resolve --role code-reviewer --lane review "${C[@]}"
 run resolve-plan-ours    resolve --role ours --lane plan "${C[@]}"
 run resolve-trivial      resolve --role implementer --lane fix.implementer_trivial "${C[@]}"
+run resolve-planner      resolve --role planner --lane plan "${C[@]}"
 run resolve-coerce       resolve --role test-auditor --lane review --coerce vacu_suck "${C[@]}"
 run resolve-coerce-plain resolve --role code-reviewer --lane plan --coerce vacu_suck "${C[@]}"
 run resolve-deleted      resolve --role simplifier --lane review "${C[@]}"
@@ -57,10 +58,12 @@ run brief-mint           brief --skill review --role code-reviewer "${C[@]}"
 run brief-missing-manifest brief --skill review --role code-reviewer --run review-1-dddd --manifest "$T/nope.md" "${C[@]}"
 run brief-badrun         brief --skill review --role code-reviewer --run "not a stem" "${C[@]}"
 run brief-excerpt-no-manifest brief --skill review --role code-reviewer --run review-1-eeee --excerpt "$T/ex.md" "${C[@]}"
-# the X-item planner brief of a fix run must not overwrite the implementer brief (same run, same role, other skill)
-run brief-plan-same-run  brief --skill plan --role implementer --run fix-1-cccc "${C[@]}"
+# a fix run's X-item planner brief lands beside its implementer brief: the skill and the role are both in the name
+run brief-plan-same-run  brief --skill plan --role planner --run fix-1-cccc "${C[@]}"
 # a foreign writer configured as the implementer role: authority sentence, lens, implementer intro
 run brief-foreign-fix-impl brief --skill fix --role implementer --run fix-1-dddd --plugin-root "$P" --home "$H" --project-root "$F/noplugin"
+# a project overrides the planner with a foreign agent and no when_to_use: the lens is the shipped planner text
+run brief-foreign-plan-planner brief --skill plan --role planner --run plan-1-abcd --plugin-root "$P" --home "$H" --project-root "$F/noplugin"
 run brief-blank-focus    brief --skill review --role code-reviewer --run review-1-ffff --brief "   " "${C[@]}"
 # report-name: rounds are parsed from filenames, never counted; the prefix is exact
 run report-pr            report-name --reviews "$R/reviews" --pr 7
@@ -93,7 +96,7 @@ run findings-prose       findings --report "$R/reports/prose.md"
 run findings-missing     findings --report "$R/reports/no-such-report.md"
 run findings-old         findings --report "$R/reports/old-report.md"
 run findings-mixed-deferred findings --report "$R/reports/mixed-deferred.md"
-for b in review-1-aaaa.review.code-reviewer plan-1-bbbb.plan.ours fix-1-cccc.fix.implementer fix-1-cccc.fix.test-auditor fix-1-cccc.plan.implementer fix-1-dddd.fix.implementer review-1-ffff.review.code-reviewer; do
+for b in review-1-aaaa.review.code-reviewer plan-1-bbbb.plan.ours fix-1-cccc.fix.implementer fix-1-cccc.fix.test-auditor fix-1-cccc.plan.planner fix-1-dddd.fix.implementer plan-1-abcd.plan.planner review-1-ffff.review.code-reviewer; do
   if [ -f ".megamaid/excerpts/$b.brief.md" ]; then norm < ".megamaid/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; else echo "MISSING .megamaid/excerpts/$b.brief.md" > "$OUT/brief-$b.md"; fi
 done
 [ -f .megamaid/.gitignore ] && cat .megamaid/.gitignore > "$OUT/brief-gitignore.out" || echo "MISSING .megamaid/.gitignore" > "$OUT/brief-gitignore.out"

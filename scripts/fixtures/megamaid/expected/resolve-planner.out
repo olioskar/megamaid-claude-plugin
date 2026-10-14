@@ -1,0 +1,7 @@
+warning: agents.broken dropped — missing subagent_type
+warning: agents.nondict dropped — missing subagent_type, when_to_use
+subagent_type: megamaid:planner
+model: sonnet
+effort: unset
+native: yes
+exit=0

@@ -58,7 +58,7 @@ Three layers are deep-merged, with later layers winning:
 2. `~/.claude/megamaid.config.json` (global)
 3. `<project-root>/.claude/megamaid.config.json` (project)
 
-`/megamaid:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for plan". It shows a diff, then writes the change to the global or project file.
+`/megamaid:configure` makes changes for you, for example "disable test-auditor" or "use sonnet for the fix implementer". It shows a diff, then writes the change to the global or project file.
 
 `config/defaults.json` lists every key with its default. Three kinds of setting are absent by default: `effort.<lane>`, and the per-role `agents.<role>.model` and `agents.<role>.effort`.
 
@@ -66,13 +66,14 @@ Three layers are deep-merged, with later layers winning:
 
 ```json
 {
-  "models": { "plan": "sonnet" },
+  "models": { "fix": { "implementer_standard": "sonnet" } },
   "effort": { "review": "medium" },
   "agents": { "simplifier": { "model": "haiku" } }
 }
 ```
 
 - **Models** can be `sonnet`, `opus`, `haiku`, or `fable`. The agent dispatch rejects a full model ID.
+- **Where to save:** the planner is the senior of the pair. A good instruction lets a cheaper implementer apply it, so lower `models.fix.implementer_standard` or `models.fix.implementer_trivial` and keep `models.plan` strong.
 - **Effort** can be `low`, `medium`, `high`, `xhigh`, or `max`. When it is unset, agents use your session's effort.
 - **Per-role settings** beat the lane setting.
 
@@ -92,13 +93,16 @@ In one measured review run, `medium` found the same bugs as `high` for about 8% 
 
 `/megamaid:fix` is user-only by default because it edits code and commits. With this flag, asking in your own words ("apply the fixes") runs the same workflow, with the same questions and commits. Without the flag, such a request gets a short reply naming `/megamaid:fix` and the flag.
 
-### Use your own writer
+### Use your own writer or planner
 
 ```json
-{ "agents": { "implementer": { "subagent_type": "your-org:implementer" } } }
+{ "agents": { "implementer": { "subagent_type": "your-org:implementer" },
+              "planner": { "subagent_type": "your-org:planner" } } }
 ```
 
 The default writer, `megamaid:implementer`, edits only the files the instruction names, never commits, and reports every file it touched. A writer from outside this plugin gets an explicit instruction that the directives are authoritative. It also gets the same boundaries, and the same file and git checks after it returns.
+
+The default planner, `megamaid:planner`, writes one instruction file per finding and never edits source. A planner from outside this plugin gets the same authority instruction and its lens; a code-shaped plan run counts the output folder after it returns, and that is the only check (a plan run has no git checks).
 
 ### Add or swap reviewers
 
@@ -154,9 +158,10 @@ Each finding must name a real cost, such as a failure mode, a coverage gap, or a
 
 Before a finding enters the report, `/megamaid:review` opens every cited line and recomputes every count. Each finding carries a `Verified:` line stating what was checked and what was not. `/megamaid:plan` re-checks anything marked unchecked.
 
-Three more agents:
+Four more agents:
 
-- **`megamaid:implementer`** is the writer for `/megamaid:fix` and `/megamaid:plan`.
+- **`megamaid:planner`** is the planner for `/megamaid:plan` and for the issues `/megamaid:fix` discovers.
+- **`megamaid:implementer`** is the writer for `/megamaid:fix`.
 - **`megamaid:pattern-scanner`** is used only by `/megamaid:patterns`.
 - **`megamaid:pattern-shaver`** is used only by `/megamaid:patterns --shave`.
 
@@ -190,7 +195,7 @@ CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 
 ## Status
 
-v0.2.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
+v0.3.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
 
 ## License
 
