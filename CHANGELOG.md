@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] — 2026-10-14
 
-megamaid now requires a Claude Code build with hooks modules, with its module loaded. The pipeline itself is unchanged: the eval suite passes 8/8 against comb v0.15.0's 6/8 at the same cost (4.56 vs 4.64 USD, Opus 5.5 with a Sonnet 5.5 judge).
+megamaid now requires a Claude Code build with hooks modules, with its module loaded. The pipeline itself is unchanged: the eval suite passes 8/8, matching comb v0.15.0 once its two grader-shape misses were fixed, at the same cost (4.56 vs 4.64 USD, Opus 5.5 with a Sonnet 5.5 judge).
 
 ### Added
 
