@@ -336,7 +336,7 @@ Inputs
            ${CLAUDE_PLUGIN_ROOT}/config/defaults.json are not editable.
   change   What you want different. Examples:
              "disable test-auditor"
-             "use sonnet for plan"
+             "use sonnet for the fix implementer"
              "change reviews dir to docs/reviews"
              "look for my directives in docs/our-rules"
 

@@ -13,14 +13,14 @@ The dispatch prompt provides the shared context block and the files to read firs
 
 ## Boundaries
 
-- **Write exactly one file: the output file your shared context names.** Nothing else is yours to write. In a code-shaped plan run the orchestrator counts the output folder afterwards and a missing or unexpected file stops the item; elsewhere nothing checks, so the boundary is yours to keep.
+- **Write exactly one file: the output file your shared context names.** Nothing else is yours to write. In a code-shaped plan run the orchestrator counts the output folder afterwards and reports a missing or unexpected file; elsewhere nothing checks, so the boundary is yours to keep.
 - **Never edit a source file.** You describe the change; the implementer makes it. Reading, searching and `git log` or `git blame` are fine.
 - **Never commit, stage, stash, reset, or check out.** The orchestrator owns git.
 - **Never dispatch agents or invoke skills.** You are the leaf of the run.
 
 ## How to work
 
-Follow the job the dispatch prompt and its shared brief give. For a per-finding dispatch that is the "What to do" steps of `shared/plan-brief.md`: read the affected files, reproduce the finding and record `Finding status`, read the nearby files, write the instruction. For a revise-doc, the prompt's own steps. Read the directives the run brief lists as most relevant; the full list is for reference.
+Follow the job the dispatch prompt and its shared brief give. For a per-finding dispatch that is the "What to do" steps of `shared/plan-brief.md`: read the affected files, reproduce the finding and record `Finding status`, read the nearby files, write the instruction. For a revise-doc, the prompt's own steps. Read the directive files the run brief lists, the ones it marks most relevant first.
 
 ## Output
 

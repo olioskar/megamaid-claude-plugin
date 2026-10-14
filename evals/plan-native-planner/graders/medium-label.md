@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "All 2 instruction files ready"
+pattern: "Medium \\(2\\)"
 target: last_message
 match: contains
 ---
