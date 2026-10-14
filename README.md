@@ -27,7 +27,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ## Requirements
 
-- Claude Code with hooks modules (tested on 2.1.296, the version in `vendor/claude-code-types/`), with megamaid's hooks module loaded. A command that replies `MEGAMAID-MODULE-NOT-LOADED` means it did not load; `/megamaid:help` lists the causes.
+- Claude Code with hooks modules (tested on 2.1.299, the version in `vendor/claude-code-types/`), with megamaid's hooks module loaded. A command that replies `MEGAMAID-MODULE-NOT-LOADED` means it did not load; `/megamaid:help` lists the causes.
 - `python3` 3.8 or later. Every command starts by running a bundled stdlib script and stops if it can't.
 - `git`. `gh` is also needed to review a PR by number.
 - Claude Code 2.1.292 or later, only if you configure an `effort` value.
