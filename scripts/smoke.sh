@@ -50,7 +50,7 @@ done
 
 echo "== review, module off (must stop) =="
 out="$(claude -p "/megamaid:review" --plugin-dir . --settings '{"disableAllHooks":true}' \
-  --disallowedTools Agent Bash Write Edit --max-budget-usd 0.3 < /dev/null 2>"$tmp/err")" || true
+  --disallowedTools Agent Bash Write Edit --max-turns 2 < /dev/null 2>"$tmp/err")" || true
 not_loaded "$tmp/err" || { cat "$tmp/err"; echo "FAIL: precondition: the engine did not report megamaid's module as not loaded"; exit 1; }
 last="$(printf '%s\n' "$out" | awk 'NF {l = $0} END {print l}' | tr -d '`')"
 [ "$last" = "$TOKEN_LINE" ] || { echo "$out"; echo "FAIL: with the module off, review did not stop on: $TOKEN_LINE"; exit 1; }
