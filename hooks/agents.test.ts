@@ -26,10 +26,10 @@ test('lanes tell apart one role name in several jobs', async ($, on) => {
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(FIX_STEM, 'fix', 'code-reviewer')) }))
   await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer', prompt: say(briefPath(FIX_STEM, 'fix', 'implementer')) }))
-  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer', prompt: say(briefPath(FIX_STEM, 'plan', 'implementer')) }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: say(briefPath(FIX_STEM, 'plan', 'planner')) }))
   const agents = writes.at(-1)?.agents ?? {}
   expect([agents.a1?.lane, agents.a2?.lane, agents.a3?.lane, agents.a4?.lane]).toEqual(['review', 'fix', 'fix', 'plan'])
-  expect(agents.a4).toMatchObject({ role: 'implementer', runStem: FIX_STEM })
+  expect(agents.a4).toMatchObject({ role: 'planner', runStem: FIX_STEM })
 })
 
 test('a megamaid-provider spawn without a brief counts only during a patterns run', async ($, on) => {
@@ -59,7 +59,7 @@ test('a foreign spawn without a brief is ignored (control: with a brief it is re
   await $.skill.prompt({ skill: 'megamaid:patterns', text: 'x' })
   await $.agent.spawn(spawnInput({ provider: FOREIGN, subagentType: 'Explore' }))
   expect(writes).toHaveLength(1)
-  await $.agent.spawn(spawnInput({ provider: FOREIGN, subagentType: 'general-purpose', prompt: say(briefPath(STEM, 'plan', 'implementer')) }))
+  await $.agent.spawn(spawnInput({ provider: FOREIGN, subagentType: 'general-purpose', prompt: say(briefPath(STEM, 'plan', 'planner')) }))
   expect(Object.keys(writes.at(-1)?.agents ?? {})).toEqual(['a2'])
 })
 
