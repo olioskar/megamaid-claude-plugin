@@ -15,7 +15,7 @@ test("help's file and a subagent's Read gain no note (control: review's main-loo
   rig(on); answerStat(on); answerRead(on)
   expect((await $.tool.call({ tool: 'Read', file_path: REAL + '/skills/review/SKILL.md' })).context).toEqual([SKIP_NOTE])
   expect((await $.tool.call({ tool: 'Read', file_path: REAL + '/skills/help/SKILL.md' })).context).toBeUndefined()
-  // $.tool.call's type omits agentId (ToolCallArgs, types 12646-12652); the test engine passes it on,
+  // $.tool.call's type omits agentId (ToolCallArgs in the vendored types); the test engine passes it on,
   // so a non-literal object carries it.
   const subagentRead = { tool: 'Read' as const, file_path: REAL + '/skills/review/SKILL.md', agentId: 'sub1' }
   expect((await $.tool.call(subagentRead)).context).toBeUndefined()
