@@ -10,9 +10,11 @@ export function registerSession(on: On): void {
     $.ui.log(`module loaded (Claude Code ${version})`, { to: 'debug' })
     return next(e)
   })
-  // /clear ends the conversation too; the next skill starts a fresh run.
+  // /clear ends the conversation too; the next skill starts a fresh run. next first: the chain
+  // shares one time limit, so the write spends what is left after the other hooks.
   on('session.end', async ($, e, next) => {
+    const r = await next(e)
     await update($, RUN, () => null)
-    return next(e)
+    return r
   }).catch(($, e, next) => next(e))
 }

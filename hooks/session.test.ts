@@ -12,10 +12,14 @@ test('session.start logs that the module loaded, with the Claude Code version', 
 test('session.end writes null (control: a skill wrote a run first)', async ($, on) => {
   const { writes } = rig(on)
   on('skill.prompt', () => ({ text: 'body' }))
-  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  // Writes seen when the rest of the chain answers: the run is cleared after it, so the
+  // chain's shared time limit goes to the other hooks first.
+  let atAnswer = -1
+  on('session.end', (_$, e) => { atAnswer = writes.length; return { sessionId: e.sessionId } })
   await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
   expect(writes).toHaveLength(1)
   await $.session.end(endInput())
+  expect(atAnswer).toBe(1)
   expect(writes).toHaveLength(2)
   expect(writes[1]).toBeNull()
 })
