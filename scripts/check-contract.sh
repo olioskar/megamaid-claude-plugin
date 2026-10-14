@@ -153,6 +153,9 @@ for f in agents/*.md; do
   [ "$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -n 1 | sed 's/[[:space:]]*$//')" = "$n" ] || { echo "FAIL: agents/$n.md frontmatter name does not equal its filename"; fail=1; }
   grep -qF "\"megamaid:$n\"" config/defaults.json || { echo "FAIL: agents/$n.md is not a default subagent_type in config/defaults.json"; fail=1; }
 done
+# The writer roles' tool restrictions are exact lines: validate accepts any text in disallowedTools.
+grep -qxF 'disallowedTools: Agent, Edit, NotebookEdit' agents/planner.md 2>/dev/null || { echo "FAIL: agents/planner.md must carry exactly 'disallowedTools: Agent, Edit, NotebookEdit'"; fail=1; }
+grep -qxF 'disallowedTools: Agent, NotebookEdit' agents/implementer.md || { echo "FAIL: agents/implementer.md must carry exactly 'disallowedTools: Agent, NotebookEdit'"; fail=1; }
 for n in code-reviewer simplifier silent-failure-hunter test-auditor consistency-auditor; do
   grep -qF "**Confidence**" "agents/$n.md" || { echo "FAIL: agents/$n.md has no Confidence line; review Step 7 treats an omitted field as unverified"; fail=1; }
 done
