@@ -35,7 +35,7 @@ not_loaded() {  # $1: stderr file. True when the engine said megamaid's module d
 echo "== help, module on =="
 for args in "" "fix"; do
   dbg="$tmp/dbg-${args:-overview}"
-  out="$(claude -p "/megamaid:help $args" --plugin-dir . --allowedTools "Skill Read" --debug-file "$dbg" 2>"$tmp/err")" || {
+  out="$(claude -p "/megamaid:help $args" --plugin-dir . --allowedTools "Skill Read" --debug-file "$dbg" < /dev/null 2>"$tmp/err")" || {
     echo "$out"; cat "$tmp/err"; echo "FAIL: /megamaid:help $args run errored"; exit 1
   }
   if not_loaded "$tmp/err"; then cat "$tmp/err"; echo "FAIL: megamaid's hooks module did not load"; exit 1; fi
