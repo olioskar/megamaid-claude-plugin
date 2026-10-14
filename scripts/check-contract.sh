@@ -301,13 +301,21 @@ fi
 
 # Every eval case but help-overview fails when its run stopped on the token (a module that did not
 # load would otherwise pass every negative grader). help is exempt: its Requirements block names it.
-for d in evals/*/; do
-  d=${d%/}; c=$(basename "$d"); [ -d "$d/graders" ] || continue; [ "$c" = help-overview ] && continue
-  g="$d/graders/module-loaded.md"
-  if [ ! -f "$g" ] || ! grep -qx 'pattern: "MEGAMAID-MODULE-NOT-LOADED"' "$g" || ! grep -qx 'match: not_contains' "$g"; then
-    echo "FAIL: $g missing or not a not_contains grader for MEGAMAID-MODULE-NOT-LOADED"; fail=1
-  fi
-done
+# The grader must be exactly this file, built from STOP_TOKEN: a last_message target, because the
+# fix-auto cases' transcripts carry the token in the sub-skill file they Read.
+STOP_TOKEN=$(sed -n "s/^export const STOP_TOKEN = '\([A-Z-]*\)'$/\1/p" hooks/stop-line.ts 2>/dev/null)
+if [ -z "$STOP_TOKEN" ]; then
+  echo "FAIL: hooks/stop-line.ts must hold one line: export const STOP_TOKEN = '...'"; fail=1
+else
+  want_grader=$(printf -- '---\ntype: regex\npattern: "%s"\ntarget: last_message\nmatch: not_contains\n---' "$STOP_TOKEN")
+  for d in evals/*/; do
+    d=${d%/}; c=$(basename "$d"); [ -d "$d/graders" ] || continue; [ "$c" = help-overview ] && continue
+    g="$d/graders/module-loaded.md"
+    if [ ! -f "$g" ] || [ "$(cat "$g")" != "$want_grader" ]; then
+      echo "FAIL: $g missing or not the last_message not_contains grader for $STOP_TOKEN"; fail=1
+    fi
+  done
+fi
 
 # 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
 #     warns), the module type-checks, and its tests run and pass.
