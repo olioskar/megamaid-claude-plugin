@@ -4,7 +4,7 @@ A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamai
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
-Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) 0.15.3. From Phase 1 megamaid moves comb's rules into a hooks module and will require a mod-capable Claude Code; comb stays for builds without mods.
+Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) 0.15.3. megamaid moves comb's rules into a hooks module and requires a Claude Code build with hooks modules, with the module loaded; comb stays for builds without them.
 
 With [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) also installed, both plugins' model-invocable skills trigger on the same phrases; install one, or use explicit `/megamaid:*` commands.
 
@@ -27,6 +27,7 @@ Every command takes a free-form focus brief that steers which agents run and wha
 
 ## Requirements
 
+- Claude Code with hooks modules (tested on 2.1.296, the version in `vendor/claude-code-types/`), with megamaid's hooks module loaded. A command that replies `MEGAMAID-MODULE-NOT-LOADED` means it did not load; `/megamaid:help` lists the causes.
 - `python3` 3.8 or later. Every command starts by running a bundled stdlib script and stops if it can't.
 - `git`. `gh` is also needed to review a PR by number.
 - Claude Code 2.1.292 or later, only if you configure an `effort` value.
@@ -176,16 +177,20 @@ Release gate, in order:
    - The shared blocks are not copied into skills, and every reference resolves.
    - The help defaults match `config/defaults.json`.
    - The agent files are consistent.
-   - The fixture tests for both scripts and the grader replay pass.
+   - The fixture tests for the scripts and the grader replay pass.
+   - Every skill but help carries the stop line, equal to `hooks/stop-line.ts`.
+   - The hooks module type-checks (`tsc`) and its tests pass (`claude plugin test`).
 3. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit` runs the eight behavioral cases in `evals/`, at about 5 USD per pass. On macOS it needs a standalone git, such as Homebrew's. `evals/README.md` explains the flags.
 
-`scripts/smoke.sh` runs the free gates plus two short `claude -p` help checks (a few cents); run it once before a PR. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
+`scripts/smoke.sh` runs the free gates plus three short `claude -p` runs (about 0.25 USD): help with the module on, with proof it loaded, and review with the module off, which must stop. Run it once before a PR.
+
+The hooks module type-checks against a pinned copy of the engine's types in `vendor/claude-code-types/`. To refresh it for a new Claude Code: run `claude --plugin-dir .` once, then `scripts/sync-types.sh`, and commit the result on its own as `chore(types): Claude Code X`. `scripts/replay-graders.py` re-scores a kept eval run for free. `experiments/` holds two-arm runs that test whether a prompt passage is still needed: run them with `--eval-dir experiments`, and see `experiments/README.md` for results.
 
 CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 
 ## Status
 
-v0.1.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
+v0.2.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
 
 ## License
 

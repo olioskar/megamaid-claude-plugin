@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Release-gate greps for the megamaid plugin's shipped contract.
-# Deterministic and offline; run from anywhere.
+# Needs claude and node (npx) on PATH; the first npx run needs network. Run from anywhere.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
+for tool in claude node npx; do
+  command -v "$tool" >/dev/null 2>&1 || { echo "FAIL: $tool is not on PATH (check-contract needs claude, node and npx)"; exit 1; }
+done
 
 # 1. No dead spec citations in shipped files (the design spec does not ship).
 if grep -rn "spec §\|decision §" skills/ agents/ shared/ directives/ README.md 2>/dev/null; then
@@ -80,6 +83,7 @@ if ! bash scripts/test-replay.sh >/dev/null 2>&1; then
   echo "FAIL: scripts/test-replay.sh failed (run it for the diff)"
   fail=1
 fi
+bash scripts/test-sync-types.sh >/dev/null 2>&1 || { echo "FAIL: scripts/test-sync-types.sh failed (run it for the diff)"; fail=1; }
 for skill in review plan fix; do
   if ! grep -Eq 'manifest\.py"? excerpt' "skills/$skill/SKILL.md"; then
     echo "FAIL: skills/$skill does not invoke manifest.py excerpt"
@@ -190,14 +194,15 @@ sys.exit(bad)
 PY
 
 # 10. Old-name guard: no identifier of the plugin this one was forked from, in tracked file
-#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/, and
+#     contents or paths. Exempt: CHANGELOG.md, scripts/migrate.py, scripts/fixtures/migrate/,
+#     vendor/claude-code-types/ (engine text), and
 #     any line carrying the old repo URL. The pattern is built from fragments so this section does
 #     not match itself. GUARD=off skips the repo scan (the self-tests still run).
 w='co''mb'
 GUARD_WORDS="$w|${w}s|the-""desert|the_""desert"
 GUARD_CAMEL="[a-z]Co""mb|[Cc]o""mb[A-Z]"
 GUARD_URL="github.com/olioskar/${w}-the-""desert-claude-plugin"
-GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/)'
+GUARD_EXEMPT='^(CHANGELOG\.md|scripts/migrate\.py|scripts/fixtures/migrate/|vendor/claude-code-types/)'
 # Three shapes: the word (case-insensitive, whole word), `_`-joined forms, and camelCase forms.
 guard_grep() {  # $1: "files" to filter stdin paths with grep, or "git" to search contents of repo $2
   if [ "$1" = files ]; then
@@ -272,6 +277,75 @@ if [ "$(id -u)" != 0 ]; then
   chmod 644 "$gt/a.md"
 fi
 rm -rf "$gt"
+
+# 11. Stop line: one source (hooks/stop-line.ts), copied as the first non-blank line after the
+#     frontmatter of every skill but help, exactly once; never in help. STOP_SKILLS names them.
+n=$(grep -c '^export const STOP_LINE = "' hooks/stop-line.ts 2>/dev/null)
+STOP_LINE=$(sed -n 's/^export const STOP_LINE = "\(.*\)"$/\1/p' hooks/stop-line.ts 2>/dev/null)
+if [ "$n" != 1 ] || [ -z "$STOP_LINE" ]; then
+  echo "FAIL: hooks/stop-line.ts must hold exactly one line: export const STOP_LINE = \"...\""; fail=1
+else
+  case "$STOP_LINE" in *'"'*|*'\'*) echo "FAIL: STOP_LINE holds a double quote or a backslash"; fail=1;; esac
+  want=$(ls skills | grep -vx help | sort | tr '\n' ' ')
+  have=$(sed -n "s/^export const STOP_SKILLS: readonly string\[\] = \[\(.*\)\]$/\1/p" hooks/stop-line.ts | tr -d "' " | tr ',' '\n' | sort | tr '\n' ' ')
+  [ "$want" = "$have" ] || { echo "FAIL: STOP_SKILLS ($have) differs from the skills other than help ($want)"; fail=1; }
+  for s in $want; do
+    f=skills/$s/SKILL.md
+    c=$(grep -cxF -- "$STOP_LINE" "$f")
+    [ "$c" = 1 ] || { echo "FAIL: $f carries the stop line $c times (want 1)"; fail=1; }
+    first=$(awk 'NR==1 && /^---$/ {fm=1; next} fm==1 && /^---$/ {fm=2; next} fm==2 && NF {print; exit}' "$f")
+    [ "$first" = "$STOP_LINE" ] || { echo "FAIL: $f: the stop line is not the first non-blank line after the frontmatter"; fail=1; }
+  done
+  ! grep -qxF -- "$STOP_LINE" skills/help/SKILL.md || { echo "FAIL: skills/help/SKILL.md carries the stop line"; fail=1; }
+fi
+
+# Every eval case but help-overview fails when its run stopped on the token (a module that did not
+# load would otherwise pass every negative grader). help is exempt: its Requirements block names it.
+# The grader must be exactly this file, built from STOP_TOKEN: a last_message target, because the
+# fix-auto cases' transcripts carry the token in the sub-skill file they Read.
+STOP_TOKEN=$(sed -n "s/^export const STOP_TOKEN = '\([A-Z-]*\)'$/\1/p" hooks/stop-line.ts 2>/dev/null)
+if [ -z "$STOP_TOKEN" ]; then
+  echo "FAIL: hooks/stop-line.ts must hold one line: export const STOP_TOKEN = '...'"; fail=1
+else
+  want_grader=$(printf -- '---\ntype: regex\npattern: "%s"\ntarget: last_message\nmatch: not_contains\n---' "$STOP_TOKEN")
+  for d in evals/*/; do
+    d=${d%/}; c=$(basename "$d"); [ -d "$d/graders" ] || continue; [ "$c" = help-overview ] && continue
+    g="$d/graders/module-loaded.md"
+    if [ ! -f "$g" ] || [ "$(cat "$g")" != "$want_grader" ]; then
+      echo "FAIL: $g missing or not the last_message not_contains grader for $STOP_TOKEN"; fail=1
+    fi
+  done
+fi
+
+# 12. Engine: the vendored types name the Claude Code in use (CI must match; locally a mismatch
+#     warns), the module type-checks, and its tests run and pass.
+# The state ref is a literal const in each file that uses it (validate reads no imported ref); the copies must agree.
+runs=$(grep -h '^const RUN = ' hooks/*.ts | sort -u)
+[ "$runs" = "const RUN = { plugin: 'megamaid', key: 'run' } as const" ] || { echo "FAIL: hooks/*.ts declare RUN differently: $runs"; fail=1; }
+have=$(grep -l '^const RUN = ' hooks/*.ts | sort | tr '\n' ' ')
+[ "$have" = "hooks/agents.ts hooks/session.ts hooks/skill-prompt.ts " ] || { echo "FAIL: want RUN in exactly hooks/agents.ts, hooks/session.ts, hooks/skill-prompt.ts; found: $have"; fail=1; }
+MIN_TESTS=29
+tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
+cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
+if [ -z "$tv" ]; then
+  echo "FAIL: vendor/claude-code-types/claude-code/index.d.ts names no Claude Code version"; fail=1
+elif [ "$tv" != "$cv" ]; then
+  if [ -n "${CI:-}" ]; then
+    echo "FAIL: vendored types are Claude Code $tv, claude --version is '$cv'"; fail=1
+  else
+    echo "WARN: vendored types are Claude Code $tv, this claude is '$cv'. To refresh: run 'claude --plugin-dir .' once, exit, then scripts/sync-types.sh, and commit as 'chore(types): Claude Code <version>'."
+  fi
+fi
+if ! out=$(npx -y -p typescript@5.9.3 tsc -p . 2>&1); then echo "$out"; echo "FAIL: tsc -p ."; fail=1; fi
+cfg=$(mktemp -d "${TMPDIR:-/tmp}/plugin-test.XXXXXX")
+out=$(CLAUDE_CONFIG_DIR="$cfg" claude plugin test . 2>&1); rc=$?
+rm -rf "$cfg"
+ran=$(printf '%s\n' "$out" | sed -nE 's/^Ran ([0-9]+) tests? across [0-9]+ files?\..*/\1/p')
+if printf '%s\n' "$out" | grep -q '^claude plugin test:'; then
+  printf '%s\n' "$out" | grep '^claude plugin test:'; echo "FAIL: claude plugin test refused"; fail=1
+elif [ "$rc" != 0 ] || [ -z "$ran" ] || [ "$ran" -lt "$MIN_TESTS" ] || ! printf '%s\n' "$out" | grep -qx ' 0 fail'; then
+  printf '%s\n' "$out" | grep -v '^(pass)'; echo "FAIL: claude plugin test (exit $rc, ran '${ran:-?}', want >= $MIN_TESTS and 0 fail)"; fail=1
+fi
 
 if [ "$fail" -eq 0 ]; then
   echo "check-contract: OK"

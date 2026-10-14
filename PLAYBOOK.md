@@ -14,7 +14,7 @@ How megamaid is developed and how we work together. It describes the current pra
 ## Where things live
 
 - `skills/*/SKILL.md` and `shared/*.md`: the prose runtime contract. `shared/manifest-migration.md` is the manifest-migration offer used by configure and patterns.
-- `hooks/`: the hooks module (from Phase 1), the code half of the runtime contract. `types/` holds its `$.state` contract.
+- `hooks/`: the hooks module, the code half of the runtime contract. `register.ts` wires one file per event (`skill-prompt.ts`, `read-note.ts`, `agents.ts`, `session.ts`); pure helpers without `$` live in `run.ts` and `stop-line.ts`, the stop line's single source; tests are `*.test.ts` with `test-rig.ts`. `types/` holds the `$.state` contract. `vendor/claude-code-types/` is the pinned engine API, refreshed by `scripts/sync-types.sh`.
 - `agents/*.md`, `directives/`, `config/defaults.json`: agents, shipped policy, config keys and defaults.
 - `scripts/`: the helpers the skills call and their fixture tests. Change a script and its fixtures together. `scripts/migrate.py` holds every name of the plugin megamaid was forked from (the old-name guard exempts it).
 - `evals/` (the suite) and `experiments/` (two-arm runs).
@@ -37,10 +37,10 @@ Small fixes skip steps 1 and 2, never 3 to 7.
 
 1. `claude plugin validate .`
 2. `scripts/check-contract.sh`
-3. From Phase 1: `tsc -p .` and `claude plugin test .`
+3. Covered by step 2: `check-contract.sh` runs `tsc` and `claude plugin test`.
 4. `claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit --no-publish --trust-plugin`. On macOS put Homebrew git first on the `PATH` and pass `--keep-temp`.
 
-`scripts/smoke.sh` runs once before a PR: the free gates plus two short `claude -p` help checks (a few cents).
+`scripts/smoke.sh` runs once before a PR: the free gates, help with the module on (and proof it loaded), and review with it off, which must stop (about 0.25 USD).
 
 CI runs the free gates on every push and PR. Evals run on manual dispatch.
 
@@ -60,10 +60,12 @@ Never re-run a paid case to test a grader edit.
 ## Design rules
 
 - **Single source.** A block shared across skills lives in `shared/`. A rule enforced by a hook lives in the hook, and the prose it replaced is removed.
+- **The stop line is the one copied text.** It must be in the file the engine loads, so each skill but help carries it; `check-contract.sh` keeps every copy equal to `hooks/stop-line.ts`.
 - **Every tier that produces an artifact a later tier trusts also verifies it.**
 - **A gate states its bound**, or it turns into a second review.
 - **Correctness properties get no config knobs.**
 - **Guards fail closed.** Every hook that can refuse something is written with `.catch(($, e, next) => next.called ? next(e) : { deny: '…' })`. A guard that throws without a handler lets the call through.
+- **Observers refuse nothing.** A hook that only records, at a site that can refuse (`agent.spawn`, `tool.call`), takes a pass-through `.catch(($, e, next) => next(e))`; validate still lists it as gating.
 - **Moving text moves its checks.** When a passage moves (prose → brief → script → hook), update every grader, gate needle and pointer that matched it.
 - **Trust the model.** Prompts state concepts, not per-language catalogues.
 - **Domain-neutral examples. No dead citations. Descriptions carry triggers.**

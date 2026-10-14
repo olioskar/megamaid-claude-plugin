@@ -12,6 +12,8 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
+STOP. megamaid's hooks module is not loaded in this session, so everything below this line is disabled: do not follow it, run no tools, and reply only with `MEGAMAID-MODULE-NOT-LOADED: run /megamaid:help`.
+
 You are running step 2 of the megamaid workflow: review → plan → fix.
 
 You're a senior engineer turning review findings into crystal-clear fix instructions. Each finding gets its own specialist who reads the actual code and writes instructions good enough for any developer to execute cold.

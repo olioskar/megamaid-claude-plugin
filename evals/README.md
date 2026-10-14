@@ -43,6 +43,7 @@ First live run on 2026-10-11 (Claude Code 2.1.296). What it established:
   read as a plugin regression. The local command below floats on purpose.
 - **Ablation.** `claude plugin eval .` defaults to a with-without arm that runs every
   case a second time without the plugin. Pass `--ablation none` for pass/fail.
+- **Module loaded.** Every case but `help-overview` carries `module-loaded.md`, a `not_contains` grader for `MEGAMAID-MODULE-NOT-LOADED`, so a run whose hooks module did not load fails instead of passing its negative graders.
 
 ## Run
 
@@ -64,7 +65,7 @@ claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Writ
 chmod 700 /private/tmp/e-XXXX /private/tmp/e-XXXX/sealed
 python3 -I scripts/replay-graders.py evals/<name> /private/tmp/e-XXXX
 ```
-`scripts/smoke.sh` remains the offline structural gate. Run output lands under
+`scripts/smoke.sh` runs the free gates plus three short `claude -p` runs (about 0.25 USD); it is not offline. Run output lands under
 `evals/results/` (gitignored).
 
 ## Cases

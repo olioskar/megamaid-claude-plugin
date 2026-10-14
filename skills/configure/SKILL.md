@@ -11,6 +11,8 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
+STOP. megamaid's hooks module is not loaded in this session, so everything below this line is disabled: do not follow it, run no tools, and reply only with `MEGAMAID-MODULE-NOT-LOADED: run /megamaid:help`.
+
 You help the user edit their megamaid config conversationally and write the result to the right `megamaid.config.json` file with correct deep-merge semantics.
 
 ## Inputs

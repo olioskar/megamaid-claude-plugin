@@ -17,3 +17,6 @@ __pycache__/
 # Eval run output (claude plugin eval writes reports and aggregate JSON here)
 evals/results/
 experiments/results/
+
+# Engine-written hooks types (laid on each interactive --plugin-dir load); the pinned copy is vendor/claude-code-types/
+.claude-plugin/types/
