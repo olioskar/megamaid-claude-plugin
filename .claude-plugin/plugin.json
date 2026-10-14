@@ -1,7 +1,7 @@
 {
   "name": "megamaid",
   "displayName": "Megamaid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "megamaid: a review → plan → fix pipeline for code review with configurable agents and authoritative project directives.",
   "author": {
     "name": "Olafur O. Egilsson",
