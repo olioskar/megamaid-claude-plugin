@@ -15,9 +15,9 @@ An agent is **native** when the resolved `subagent_type` equals `megamaid:` + th
 
 ## Briefs
 
-Every planner, implementer, fix-reviewer, and review dispatch delivers two files by absolute path, as the first lines after the shared context: `Read these first, in order: <shared brief>, <run brief>`.
+Every per-finding planner, implementer, fix-reviewer, and review dispatch delivers two files by absolute path, as the first lines after the shared context: `Read these first, in order: <shared brief>, <run brief>`.
 
-- The **shared brief** holds the role's invariant job and output format: `${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md`, `${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.md`, `${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md`. Review agents have none — their agent body is the brief — so a review dispatch delivers the run brief alone.
+- The **shared brief** holds the role's invariant job and output format: `${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md`, `${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.md`, `${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md`. Review agents have none — their agent body is the brief — so a review dispatch delivers the run brief alone; so does plan's non-code revise-doc dispatch, whose job and output format are in the prompt itself.
 - The **run brief** is the file `scripts/megamaid.py brief` wrote under `.megamaid/excerpts/<run>.<skill>.<role>.brief.md` (the skill and the role are in the name, so one run's briefs never collide): the Directives section in native or foreign form, the primaries, the observed-baseline block, and the user focus brief. `manifest.py clean --run` removes it with the run's excerpts.
 
 The prompt itself carries no directive paths, baseline block, or focus text; those live in the run brief.

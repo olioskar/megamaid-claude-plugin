@@ -2,7 +2,8 @@
 # Scratch repo with a finished code-shaped review report and NO config override, so the
 # shipped megamaid:planner runs. Two Medium findings on two files: two native planner
 # dispatches, two instruction files. Regression target: the planner agent file itself
-# (its framing, its one-file boundary, its tool restriction) and the native brief form.
+# (its framing and its one-file boundary, via the file-target and stray-file graders) and
+# the native brief form. Its tool restriction is gated by check-contract §8, not here.
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com

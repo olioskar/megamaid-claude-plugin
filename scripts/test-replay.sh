@@ -30,10 +30,11 @@ expect 0 plan-native-planner plan-pass \
   "✓ planner-dispatched: Agent called 2x" "✓ brief-delivered: Agent called 2x" "✓ native-form" \
   "✓ m1-file-written" "✓ m2-file-written" "✓ util-untouched" "✓ config-untouched" \
   "✓ no-edit: Edit called 0x" "✓ medium-label" "✓ no-missing" "✓ no-unexpected" "✓ next-names-fix" \
+  "✓ no-stray-file: docs/megamaid/plans/plan-for-pr-1-round1-report/[!M]*.md absent as expected" \
   "replay: plan-native-planner — OK"
 expect 1 plan-native-planner plan-fail \
   "✗ planner-dispatched: Agent called 0x" "✗ m2-file-written" "✗ util-untouched" \
-  "✗ no-edit: Edit called 1x" "✗ medium-label" "✗ no-missing" \
+  "✗ no-edit: Edit called 1x" "✗ medium-label" "✗ no-missing" "✗ no-stray-file: 1 file(s) match" \
   "replay: plan-native-planner — FAIL"
 [ "$fail" -eq 0 ] && echo "test-replay: OK"
 exit "$fail"

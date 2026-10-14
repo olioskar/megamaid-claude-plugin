@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-10-14
+
+### Fixed
+
+- **Contract check §8 reads the frontmatter only.** The writer agents' `disallowedTools` lines were matched anywhere in the file, so a line moved into the body passed; a `tools:` allowlist (which could drop Write) was not refused. Both are caught now.
+- **`plan-native-planner` catches a stray planner file.** A new `no-stray-file` grader fails on any file in the instruction folder not named `M*.md`, so an extra file is caught without relying on the orchestrator printing `Unexpected:`.
+- **Wording.** The planner file names grouped findings; `shared/dispatch-delivery.md` says the non-code revise-doc dispatch delivers the run brief alone; the eval scaffold comment says what the case gates and what §8 gates.
+
 ## [0.3.0] — 2026-10-14
 
 The planner becomes its own role. Nothing a plan run produces changes: the eval suite passes 9/9 (5.23 USD, Opus 5.5 with a Sonnet 5.5 judge), the eight 0.2.0 cases at their 0.2.0 cost.
