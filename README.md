@@ -167,7 +167,8 @@ Four more agents:
 
 ## How it works
 
-- **Scripts do the bookkeeping.** `scripts/megamaid.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.megamaid/`, which ignores itself in git and is cleaned at the end of each run.
+- **Scripts do the bookkeeping.** `scripts/megamaid.py` merges config, resolves each agent's model and effort, matches directives to the focus brief, names reports, and batches fix items. Each dispatch prompt is a few lines plus the path to a per-run brief that the script writes. Planner and fix agents also get their role's brief in `shared/`. Working files live in `.megamaid/`, which ignores itself in git; a run's excerpts and briefs are removed at its end, its usage ledger stays.
+- **The module keeps a usage ledger.** The hooks module records what a run costs per role from `turn.complete` and writes it as the run goes: beside the review report (`…-usage.md`) for `/megamaid:review` and `/megamaid:vacu-suck`, under `.megamaid/usage/` for the other commands. Tokens per lane and role, the orchestrator's share, and the session cost over the run.
 - **Agents get a manifest excerpt, not the whole file.** `scripts/manifest.py` cuts the PATTERNS manifest down to the sections whose scope matches the change, and lists the omitted sections by line range. The rules are in `shared/manifest-slicing.md`. Add a one-line `Home:` to a section if it is included too often.
 - **The skills are the contract.** `skills/*/SKILL.md` and `shared/*.md` define the behavior, and `CHANGELOG.md` records every change to it. Skills run in your session's model; agents get the model from config on each dispatch.
 
@@ -195,7 +196,7 @@ CI runs gates 1 and 2 on every push. The eval suite runs on manual dispatch.
 
 ## Status
 
-v0.3.1. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
+v0.4.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
 
 ## License
 

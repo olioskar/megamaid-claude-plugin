@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-18
+
+The hooks module now says what a run cost. Built in an unattended session; the eval suite did not run for this release (the free gates and 49 module tests did), so the two new `usage-ledger` graders are verified by offline replay only.
+
+### Added
+
+- **A usage ledger per run.** The module sums every `turn.complete` of a run per role, from the token counts the engine reports, and writes a Markdown ledger as the run goes: beside the review report as `<report>-usage.md` for `/megamaid:review` and `/megamaid:vacu-suck` once the report exists, under `.megamaid/usage/<skill>-<startedAt>.md` for the other commands. One row per lane and role (`review/code-reviewer`, `fix/implementer`; the briefless patterns agents by type), the orchestrator's row first, a total, the orchestrator's share of input and of output tokens, and a cost line (the session's spend from run start to the last counted turn, so it includes anything else done in the session meanwhile). A run ends at the next run's start or at session end: there is no earlier signal the module can trust, so main-loop turns after the run's last answer are counted and the turn count makes that visible. This is the Phase 2 baseline instrument; the measurement itself (one full loop) is still to run.
+- **Nested spawns count toward the parent role.** An agent a reviewer spawns is recorded under the reviewer's lane and role, with a `parent` field, so the ledger's split is honest about helper agents. The writer roles cannot spawn.
+- **Contract checks.** `hooks/ledger.ts`'s report-name pattern must match what `megamaid.py report-name` prints (§5); `usage.ts` joins the files that declare the state ref (§12).
+
 ## [0.3.1] — 2026-10-14
 
 ### Fixed
