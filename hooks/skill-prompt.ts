@@ -13,7 +13,9 @@ export function registerSkillPrompt(on: On): void {
     const text = stripStopLine((await next(e)).text)
     try {
       if (isRunSkill(e.skill)) {
-        const run = startRun(crypto.randomUUID(), e.skill, await $.clock.now())
+        // The session's cost at run start; a host with no cost ledger (or the test kit) leaves it null.
+        const usage = await $.session.usage().catch(() => undefined)
+        const run = startRun(crypto.randomUUID(), e.skill, await $.clock.now(), usage?.cost?.usd ?? null)
         await update($, RUN, () => run)
         $.ui.log(`run ${e.skill} started (${run.id})`, { to: 'debug' })
       }
