@@ -26,6 +26,8 @@ export function registerAgents(on: On): void {
       role: brief?.role ?? 'unknown',
       lane: brief?.lane ?? null,
       runStem: brief?.runStem ?? null,
+      parent: null,
+      usage: null,
     }))
     $.ui.log(`${brief?.lane ?? '-'}/${brief?.role ?? 'unknown'} spawned as ${e.subagentType} (${agentId})`, { to: 'debug' })
     return r
