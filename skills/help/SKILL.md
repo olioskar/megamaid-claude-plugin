@@ -85,8 +85,10 @@ Requirements
 
   Each run writes a usage ledger (tokens per lane and role, the
   orchestrator's share, the session cost over the run): beside the review
-  report as <report>-usage.md for review and vacu-suck, under
-  .megamaid/usage/ for the other commands.
+  report once it is written, named like it with -usage.md for -report.md
+  (pr-12-round1-usage.md), for review and vacu-suck; under
+  .megamaid/usage/ for the other commands. It counts the main loop's turns
+  until the next run or the session ends.
 
 Focus brief
 

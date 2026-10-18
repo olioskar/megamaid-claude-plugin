@@ -6,14 +6,14 @@ import type { MegamaidAgent, MegamaidUsage } from '../types'
 const u = (turns: number, input: number, cacheRead: number, cacheWrite: number, output: number, model: string | null = 'm'): MegamaidUsage =>
   ({ turns, input, cacheRead, cacheWrite, output, model })
 const agent = (over: Partial<MegamaidAgent> = {}): MegamaidAgent => ({
-  subagentType: 'megamaid:code-reviewer', provider: 'megamaid@inline', role: 'code-reviewer', lane: 'review', runStem: 's', parent: null, usage: null, ...over,
+  subagentType: 'megamaid:code-reviewer', provider: 'megamaid@inline', role: 'code-reviewer', lane: 'review', runStem: 's', parent: null, seq: 0, usage: null, ...over,
 })
 
-test('renderLedger: orchestrator first, keys in first-seen order, distinct models per key, a total row, the two shares', () => {
+test('renderLedger: orchestrator first, keys in spawn order (an all-digit id too), distinct models per key, a total row, the two shares', () => {
   let run = startRun('r', 'megamaid:review', 0, 1)
   run = { ...run, usage: u(3, 100, 900, 0, 60), lastTurnAt: 61000, report: '/w/pr-1-round1-report.md' }
   run = addAgent(run, 'a1', agent({ usage: u(1, 50, 0, 50, 20) }))
-  run = addAgent(run, 'a2', agent({ role: 'simplifier', usage: u(2, 100, 100, 0, 20) }))
+  run = addAgent(run, '7', agent({ role: 'simplifier', usage: u(2, 100, 100, 0, 20) }))
   run = addAgent(run, 'a3', agent({ usage: u(1, 100, 0, 0, 0) }))
   run = addAgent(run, 'a4', agent({ usage: null }))
   run = addAgent(run, 'a5', agent({ role: 'simplifier', usage: u(1, 0, 0, 0, 0, 'n') }))

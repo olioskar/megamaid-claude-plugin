@@ -74,7 +74,7 @@ test("a spawn nested in an unrecorded agent is ignored (controls: the main loop'
   await $.agent.spawn(spawnInput({ subagentType: 'Explore', provider: FOREIGN, prompt: 'look around', parentAgentId: 'a2' }))
   expect(writes).toHaveLength(2)
   expect(writes.at(-1)?.agents.a3).toEqual({
-    subagentType: 'Explore', provider: 'other@market', role: 'simplifier', lane: 'review', runStem: STEM, parent: 'a2', usage: null })
+    subagentType: 'Explore', provider: 'other@market', role: 'simplifier', lane: 'review', runStem: STEM, parent: 'a2', seq: 1, usage: null })
   expect(logs).toContain('review/simplifier nested spawn Explore (a3) under a2')
   // A brief in a nested prompt does not re-key it: the parent's lane and role win.
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'fix', 'implementer')), parentAgentId: 'a3' }))

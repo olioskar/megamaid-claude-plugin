@@ -1,5 +1,5 @@
 import { update } from 'claude-code'
-import type { CoreEngineInterface, On } from 'claude-code'
+import type { CoreEngineInterface, HookFailure, On } from 'claude-code'
 import type { MegamaidRun } from '../types'
 import { REPORT_SKILLS, ZERO, addUsage, ledgerPath, renderLedger, reportName, usageKey } from './ledger'
 
@@ -18,6 +18,8 @@ export function registerUsage(on: On): void {
     if (usage === undefined) return r
     const { value: stored } = await $.state.get(RUN)
     if (stored === null || stored === undefined) return r
+    // A run stored before the ledger (a 0.3.x run across a hot reload) has no usage; it is left uncounted.
+    if (stored.usage === undefined) return r
     const agentId = e.agentId
     if (agentId !== undefined && stored.agents[agentId] === undefined) return r
     const now = await $.clock.now()
@@ -36,7 +38,7 @@ export function registerUsage(on: On): void {
     $.ui.log(`usage ${key} +${input}/${usage.output_tokens} (${turns})`, { to: 'debug' })
     await writeLedger($, run)
     return r
-  }).catch(($, e, next) => next(e))
+  }).catch(($, e, next) => { failed($, next.error); return next(e) })
 
   // The main loop's first Write of a file named like megamaid.py report-name's output, in a review
   // or sweep run, names the report; a sweep's later rounds leave it.
@@ -51,7 +53,13 @@ export function registerUsage(on: On): void {
     const run = await update($, RUN, run => run === null || run === undefined ? null : { ...run, report: run.report ?? path })
     if (run !== null) await writeLedger($, run)
     return r
-  }).catch(($, e, next) => next(e))
+  }).catch(($, e, next) => { failed($, next.error); return next(e) })
+}
+
+// A failed hook is replayed beneath and named in the debug log; under re-entry $ calls reject, so
+// nothing is logged.
+function failed($: Pick<CoreEngineInterface, 'ui'>, error: HookFailure): void {
+  if (error.kind !== 're-entry') $.ui.log(`usage hook failed: ${error.message ?? error.kind}`, { to: 'debug' })
 }
 
 type LedgerDollar = Pick<CoreEngineInterface, 'fs' | 'session' | 'ui'>

@@ -67,7 +67,7 @@ function iso(ms: number | null): string {
 export function renderLedger(run: MegamaidRun, costNow: number | null): string {
   const rows: Row[] = [{ key: 'orchestrator', agents: 0, usage: run.usage, models: run.usage.model === null ? [] : [run.usage.model] }]
   const byKey = new Map<string, Row>()
-  for (const agent of Object.values(run.agents)) {
+  for (const agent of Object.values(run.agents).sort((a, b) => a.seq - b.seq)) {
     const key = usageKey(agent)
     let row = byKey.get(key)
     if (row === undefined) { row = { key, agents: 0, usage: ZERO, models: [] }; byKey.set(key, row); rows.push(row) }

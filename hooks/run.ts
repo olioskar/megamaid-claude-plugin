@@ -27,6 +27,7 @@ export function parseBrief(prompt: string): Brief | null {
   return { runStem, lane, role }
 }
 
-export function addAgent(run: MegamaidRun, agentId: string, agent: MegamaidAgent): MegamaidRun {
-  return { ...run, agents: { ...run.agents, [agentId]: agent } }
+// seq is the spawn order within the run: Object.values(run.agents) would put an all-digit id first.
+export function addAgent(run: MegamaidRun, agentId: string, agent: Omit<MegamaidAgent, 'seq'>): MegamaidRun {
+  return { ...run, agents: { ...run.agents, [agentId]: { ...agent, seq: Object.keys(run.agents).length } } }
 }

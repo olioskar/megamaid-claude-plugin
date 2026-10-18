@@ -1,5 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 import type { On } from 'claude-code'
+import type { MegamaidRun } from '../types'
 import { briefPath, rig, spawnInput, turnInput } from './test-rig'
 
 const STEM = 'review-1760000000-ab12'
@@ -189,4 +190,36 @@ test("a nested agent's turn counts under the parent's key in the ledger", async 
   expect(text).toContain('| review/code-reviewer | 2 | 2 | 200 | 2000 | 20 | 100 | claude-opus-5-5 |')
   expect(text).toContain('| total | 2 | 2 | 200 | 2000 | 20 | 100 |  |')
   expect(text).toContain('Orchestrator share: 0% of input tokens, 0% of output tokens.')
+})
+
+test('a denied state read fails the hook, which logs the failure and lets the turn answer', async ($, on) => {
+  const r = rig(on)
+  on('state.get', () => ({ deny: 'nope' }))
+  expect(await $.turn.complete(turnInput())).toEqual({ text: 'ok' })
+  const failed = r.logs.filter(l => l.startsWith('usage hook failed: '))
+  expect(failed).toHaveLength(1)
+  expect(failed[0]).toContain('nope')
+})
+
+test('a run stored before the ledger (no usage field: a 0.3.x run across a hot reload) is left uncounted, without a hook failure', async ($, on) => {
+  const r = rig(on)
+  const old = { id: 'r', skill: 'megamaid:plan', startedAt: 0, agents: {} } as unknown as MegamaidRun
+  on('state.get', () => ({ value: { value: old, version: 1 } }))
+  await $.turn.complete(turnInput())
+  expect(r.writes).toHaveLength(0)
+  expect(r.fsWrites).toHaveLength(0)
+  expect(r.logs.some(l => l.startsWith('usage hook failed'))).toBe(false)
+})
+
+test('two report Writes landing together leave one report and one ledger place (the update reads the stored report, not the pre-check)', async ($, on) => {
+  const r = rig(on); answerSkills(on); answerWrites(on)
+  await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
+  const R2 = '/w/docs/megamaid/reviews/branch-x-round2-report.md'
+  await Promise.all([
+    $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' }),
+    $.tool.call({ tool: 'Write', file_path: R2, content: 'r' }),
+  ])
+  const places = new Set(r.fsWrites.map(w => w[0]))
+  expect(places.size).toBe(1)
+  expect(r.writes.at(-1)?.report?.replace(/-report\.md$/, '-usage.md')).toBe([...places][0])
 })

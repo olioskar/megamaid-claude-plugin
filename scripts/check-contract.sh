@@ -122,6 +122,12 @@ else
   printf '%s\n' "pr-7-round1-usage.md" | grep -Eq "$rn" && { echo "FAIL: hooks/ledger.ts REPORT_NAME matches a usage file name"; fail=1; }
   rm -rf "$rd"
 fi
+# .megamaid/.gitignore has three writers (state_dir in megamaid.py and manifest.py, writeLedger in
+# usage.ts); each must write the one line `*`, or a run's working files reach git status.
+for f in scripts/megamaid.py scripts/manifest.py; do
+  grep -A3 -F 'gi = os.path.join(d, ".gitignore")' "$f" | grep -qF 'f.write("*\n")' || { echo "FAIL: $f state_dir does not write .megamaid/.gitignore as the one line *"; fail=1; }
+done
+{ grep -qF "const GITIGNORE = '.megamaid/.gitignore'" hooks/usage.ts && grep -qF "\$.fs.write(GITIGNORE, '*\\n')" hooks/usage.ts; } || { echo "FAIL: hooks/usage.ts does not write .megamaid/.gitignore as the one line *"; fail=1; }
 # Planning resolves and briefs the planner role, never the fix writer. Negative half: any resolve or
 # brief line in the plan lane (--lane plan / --skill plan, in any flag order) must carry --role planner.
 # Positive half: the code-block commands plan Step 6 and fix DISCOVERED run name the planner. Patterns
@@ -360,7 +366,7 @@ runs=$(grep -h '^const RUN = ' hooks/*.ts | sort -u)
 [ "$runs" = "const RUN = { plugin: 'megamaid', key: 'run' } as const" ] || { echo "FAIL: hooks/*.ts declare RUN differently: $runs"; fail=1; }
 have=$(grep -l '^const RUN = ' hooks/*.ts | sort | tr '\n' ' ')
 [ "$have" = "hooks/agents.ts hooks/session.ts hooks/skill-prompt.ts hooks/usage.ts " ] || { echo "FAIL: want RUN in exactly hooks/agents.ts, hooks/session.ts, hooks/skill-prompt.ts, hooks/usage.ts; found: $have"; fail=1; }
-MIN_TESTS=49
+MIN_TESTS=52
 tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
 cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
 if [ -z "$tv" ]; then
