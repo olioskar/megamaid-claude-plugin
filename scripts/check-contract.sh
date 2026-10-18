@@ -111,6 +111,8 @@ rn=$(sed -n 's/^export const REPORT_NAME = \/\(.*\)\/$/\1/p' hooks/ledger.ts 2>/
 if [ -z "$rn" ]; then
   echo "FAIL: hooks/ledger.ts must hold one line: export const REPORT_NAME = /.../"; fail=1
 else
+  # The pattern is read by JavaScript and by grep -E alike: GNU grep has no \d, \w or \s in ERE.
+  case $rn in *'\d'*|*'\w'*|*'\s'*) echo "FAIL: hooks/ledger.ts REPORT_NAME uses a JavaScript-only escape; write the class out ([0-9]) so grep -E reads the same pattern"; fail=1;; esac
   rd=$(mktemp -d "${TMPDIR:-/tmp}/report-name.XXXXXX")
   for args in "--pr 7" "--branch feat/x"; do
     # shellcheck disable=SC2086

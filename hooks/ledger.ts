@@ -10,7 +10,7 @@ export const REPORT_SKILLS: readonly string[] = ['megamaid:review', 'megamaid:va
 
 // megamaid.py report-name's shape, repeated here in a second language: <pr-N|branch-…>-round<N>-report.md.
 // check-contract keeps the two equal.
-export const REPORT_NAME = /^(pr-\d+|branch-.+)-round\d+-report\.md$/
+export const REPORT_NAME = /^(pr-[0-9]+|branch-.+)-round[0-9]+-report\.md$/
 
 export function addUsage(u: MegamaidUsage, t: TurnUsage): MegamaidUsage {
   return {
