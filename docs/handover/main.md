@@ -27,7 +27,7 @@ A report to the maintainer holds: what was done; what passed, with the gate's la
 
 As of 2026-10-18. Rewritten in place at every milestone and on "save progress"; never appended.
 
-- Version: 0.4.0 on local `main` (a5cdccf, the merge of `feat/v0.4.0-usage-ledger`). `origin/main` is at 0.3.1 (d532d83); no PR for 0.4.0 exists. Free gates green.
-- Under way: the documentation reset on `chore/reset-docs`. Not merged into `main`; nothing pushed.
-- Waits on the maintainer: merging `chore/reset-docs` (by PR after MM-005, or locally on their word); pushing 0.4.0 and opening its PR (issues.yaml MM-005); the paid 0.4.0 steps: smoke (MM-008), the eval suite (MM-009), and the baseline measurement of the orchestrator's token share that decides whether deterministic fix orchestration is worth building (MM-010); the run-end rule for the usage ledger (MM-001); a types refresh to Claude Code 2.1.302 (MM-007).
+- Version: 0.4.0 on `main` and `origin/main` (a5cdccf, the merge of `feat/v0.4.0-usage-ledger`, pushed without a PR on the maintainer's word). Free gates green.
+- Under way: the documentation reset on `chore/reset-docs`, in a PR against `main`; merged on the maintainer's word.
+- Waits on the maintainer: the paid 0.4.0 steps: smoke (MM-008), the eval suite (MM-009), and the baseline measurement of the orchestrator's token share that decides whether deterministic fix orchestration is worth building (MM-010); the run-end rule for the usage ledger (MM-001); a types refresh to Claude Code 2.1.302 (MM-007).
 - Next work after that: the call-time guarantees (issues.yaml MM-025), approach first.

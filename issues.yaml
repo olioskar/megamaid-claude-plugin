@@ -30,19 +30,7 @@ issues:
     title: Squash or keep the three 0.4.0 commits (release 7b0a61d and fixes c5df97a, 6125d85)
     body: |
       The release commit precedes the two fix commits; all three are 0.4.0. Local main holds them under merge
-      commit a5cdccf and nothing is pushed (MM-005, Push 0.4.0 to origin), so rewriting is possible. Keep as is
-      or squash before pushing.
-    needs_owner: true
-
-  - id: MM-005
-    type: improvement
-    area: release
-    title: Push 0.4.0 to origin and reconcile with the PR-only rule for main
-    body: |
-      origin/main is at d532d83 (0.3.1); local main is nine commits ahead (feat/v0.4.0-usage-ledger merged as
-      a5cdccf). No PR exists for 0.4.0, so CI's free gates have not run on Linux for it. docs/process/dev-flow.md
-      says main changes only through a PR. Push waits for the maintainer's go; a PR from the branch head needs main
-      reset to d532d83 first.
+      commit a5cdccf, which is pushed, so rewriting is now a history rewrite. Keep as is unless a rewrite is worth it.
     needs_owner: true
 
   - id: MM-007
