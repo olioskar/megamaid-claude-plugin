@@ -114,3 +114,65 @@ test('a failing fs.exists leaves the state write standing, writes no file and lo
   expect(r.fsWrites).toHaveLength(0)
   expect(r.logs.some(l => l.startsWith('ledger failed: '))).toBe(true)
 })
+
+const REPORT = '/w/docs/megamaid/reviews/branch-x-round1-report.md'
+const LEDGER = '/w/docs/megamaid/reviews/branch-x-round1-usage.md'
+type WriteAnswer = 'ok' | 'deny' | 'error'
+function answerWrites(on: On, how: () => WriteAnswer = () => 'ok') {
+  on('tool.call', { tool: 'Write' }, (_$, e) => {
+    const h = how()
+    if (h === 'deny') return { deny: 'no' }
+    if (h === 'error') return { isError: true as const, result: 'boom', text: 'boom' }
+    return { result: { type: 'create' as const, filePath: String(e.file_path), content: String(e.content), structuredPatch: [], originalFile: null } }
+  })
+}
+
+test("a review run writes no file before its report; the main loop's first report Write places the ledger beside it and later ones leave it (controls: a non-report name, a subagent's Write, a denied and an errored Write set none)", async ($, on) => {
+  const r = rig(on); answerSkills(on)
+  let how: WriteAnswer = 'ok'; answerWrites(on, () => how)
+  await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
+  await $.turn.complete(turnInput())
+  expect(r.fsWrites).toHaveLength(0)
+  expect(r.writes.at(-1)?.report).toBeNull()
+  await $.tool.call({ tool: 'Write', file_path: '/w/docs/megamaid/reviews/notes.md', content: 'n' })
+  const sub = { tool: 'Write' as const, file_path: REPORT, content: 'r', agentId: 'a1' }
+  await $.tool.call(sub)
+  how = 'deny'
+  expect(await $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' })).toEqual({ deny: 'no' })
+  how = 'error'
+  await $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' })
+  expect(r.writes.at(-1)?.report).toBeNull()
+  expect(r.fsWrites).toHaveLength(0)
+  how = 'ok'
+  await $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' })
+  expect(r.writes.at(-1)?.report).toBe(REPORT)
+  expect(r.fsWrites.map(w => w[0])).toEqual([LEDGER])
+  expect(r.files[LEDGER]).toContain('| orchestrator | - | 1 |')
+  await $.turn.complete(turnInput())
+  expect(r.fsWrites.map(w => w[0])).toEqual([LEDGER, LEDGER])
+  expect(r.files[LEDGER]).toContain('| orchestrator | - | 2 |')
+  // A sweep's second round writes a round-2 report in the same run: the ledger stays with round 1.
+  await $.tool.call({ tool: 'Write', file_path: '/w/docs/megamaid/reviews/branch-x-round2-report.md', content: 'r' })
+  expect(r.writes.at(-1)?.report).toBe(REPORT)
+  expect(r.fsWrites.map(w => w[0])).toEqual([LEDGER, LEDGER])
+  expect(r.logs.filter(l => l.startsWith('ledger '))).toEqual([`ledger ${LEDGER}`, `ledger ${LEDGER}`])
+})
+
+test('a report Write outside a review or sweep run sets no report (control: in a sweep it does)', async ($, on) => {
+  const r = rig(on); answerSkills(on); answerWrites(on)
+  await $.skill.prompt({ skill: 'megamaid:plan', text: 'x' })
+  await $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' })
+  expect(r.writes.at(-1)?.report).toBeNull()
+  await $.skill.prompt({ skill: 'megamaid:vacu-suck', text: 'x' })
+  await $.tool.call({ tool: 'Write', file_path: '/w/docs/megamaid/reviews/pr-12-round2-report.md', content: 'r' })
+  expect(r.writes.at(-1)?.report).toBe('/w/docs/megamaid/reviews/pr-12-round2-report.md')
+  expect(r.fsWrites.map(w => w[0])).toEqual(['/w/docs/megamaid/reviews/pr-12-round2-usage.md'])
+})
+
+test('a backslash report path places the ledger beside it', async ($, on) => {
+  const r = rig(on); answerSkills(on); answerWrites(on)
+  await $.skill.prompt({ skill: 'megamaid:vacu-suck', text: 'x' })
+  await $.tool.call({ tool: 'Write', file_path: 'C:\\w\\reviews\\pr-3-round1-report.md', content: 'r' })
+  // The kit resolves a non-POSIX path against the plugin folder before the recorder sees it; the suffix is the hook's.
+  expect(r.fsWrites.map(w => w[0].endsWith('C:\\w\\reviews\\pr-3-round1-usage.md'))).toEqual([true])
+})

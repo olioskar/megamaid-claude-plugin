@@ -1,15 +1,16 @@
 import { update } from 'claude-code'
 import type { CoreEngineInterface, On } from 'claude-code'
 import type { MegamaidRun } from '../types'
-import { ZERO, addUsage, ledgerPath, renderLedger, usageKey } from './ledger'
+import { REPORT_SKILLS, ZERO, addUsage, ledgerPath, renderLedger, reportName, usageKey } from './ledger'
 
 const RUN = { plugin: 'megamaid', key: 'run' } as const
 
 const GITIGNORE = '.megamaid/.gitignore'
 
 // Records what each turn of a stored run cost: the main loop's to the orchestrator, a recorded
-// agent's to that agent; every other turn counts nowhere. The hook refuses nothing and rewrites
-// nothing: a fault means a missing or stale ledger.
+// agent's to that agent; every other turn counts nowhere. Finds the review report a review or sweep
+// writes so the ledger can sit beside it. Neither hook refuses or rewrites anything: a fault means
+// a missing or stale ledger.
 export function registerUsage(on: On): void {
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
@@ -34,6 +35,21 @@ export function registerUsage(on: On): void {
     const input = usage.input_tokens + usage.cache_read_input_tokens + usage.cache_creation_input_tokens
     $.ui.log(`usage ${key} +${input}/${usage.output_tokens} (${turns})`, { to: 'debug' })
     await writeLedger($, run)
+    return r
+  }).catch(($, e, next) => next(e))
+
+  // The main loop's first Write of a file named like megamaid.py report-name's output, in a review
+  // or sweep run, names the report; a sweep's later rounds leave it.
+  on('tool.call', { tool: 'Write' }, async ($, e, next) => {
+    const r = await next(e)
+    if (e.tool !== 'Write' || e.agentId !== undefined) return r
+    if (r.deny !== undefined || r.isError === true) return r
+    const path = String(e.file_path)
+    if (!reportName(path)) return r
+    const { value: stored } = await $.state.get(RUN)
+    if (stored === null || stored === undefined || !REPORT_SKILLS.includes(stored.skill) || stored.report !== null) return r
+    const run = await update($, RUN, run => run === null || run === undefined ? null : { ...run, report: run.report ?? path })
+    if (run !== null) await writeLedger($, run)
     return r
   }).catch(($, e, next) => next(e))
 }
