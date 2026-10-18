@@ -5,3 +5,5 @@
 - [tooling.md](tooling.md): this machine, its shell tools, the gates and CI.
 - [costs.md](costs.md): observed costs, kept eval runs, the baseline run.
 - [live-checks.md](live-checks.md): recipes for paid checks and the rules around them.
+
+A row marked `unverified` is a note, not a fact: a session that relies on one checks it first (a code read or a free probe) and flips the mark, before any paid run is built on it.
