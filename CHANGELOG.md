@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`PLAYBOOK.md` is replaced by `docs/process/dev-flow.md`**, and `docs/` and the session memory `.claude/memory/main.md` are tracked. The process, the architecture notes, the handover, the memory and the backlog (`issues.yaml`) live in the tree, so a fresh session reads the current state from git instead of from per-contributor local files.
+
 ## [0.4.0] — 2026-10-18
 
-The hooks module now says what a run cost. Built in an unattended session; the eval suite did not run for this release (the free gates and 49 module tests did), so the two new `usage-ledger` graders are verified by offline replay only.
+The hooks module now says what a run cost. Built in an unattended session; the eval suite did not run for this release (the free gates and 52 module tests did), so the two new `usage-ledger` graders are verified by offline replay only.
 
 ### Added
 
