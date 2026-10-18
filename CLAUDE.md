@@ -2,7 +2,7 @@
 
 A Claude Code plugin for code review: review, plan and fix in one loop, with a hooks module that enforces the rules at call time.
 
-- Read `docs/INDEX.md`, then your role file `docs/handover/main.md`. The rules for every session are in `docs/process/dev-flow.md`, "Rules for every session".
+- Start with your role file, `docs/handover/main.md`; it orders the rest (`docs/INDEX.md`, then `docs/process/dev-flow.md`, whose "Rules for every session" bind every session).
 - Memory home: `.claude/memory/main.md` (`MEMORY.md` beside it is the engine's one-line index); nowhere else.
 - Checks: `claude plugin validate .` and `scripts/check-contract.sh` (tsc and the module tests included). Nothing to build.
 - A paid run (eval suite, smoke, live check) needs the maintainer's word for that run, with its cost said first.
