@@ -1,0 +1,366 @@
+# The backlog. One file; the file is the index (grep it).
+# id: MM-NNN  type: bug | improvement | feature  area: one word
+# body: current state only, 1 to 4 lines; file:line where it helps; "Not seen" if only suspected.
+# needs_owner: true marks an item that waits on the maintainer's word.
+issues:
+  - id: MM-001
+    type: improvement
+    area: hooks
+    title: Decide the run-end rule for the usage ledger (activity-gated main-loop turns, or keep next-run-or-session-end)
+    body: |
+      Every main-loop turn until the next run or session end is counted, so chat after a run inflates the
+      orchestrator row and a ledger in a tracked paths.reviews keeps changing. Proposal, not built: a main-loop
+      turn counts only when something of the run happened since the previous counted one (a recorded spawn, a
+      recorded agent's turn, or the report Write; the first always counts). Until decided: read the ledger right after the final summary.
+    needs_owner: true
+
+  - id: MM-002
+    type: improvement
+    area: hooks
+    title: Decide whether plan and fix ledgers should also sit beside their report
+    body: |
+      Every run but review and vacu-suck writes .megamaid/usage/<skill>-<startedAt>.md, which avoids a per-lane
+      heuristic (learning paths.reviews and paths.plans from the config call, or watching lane Reads). Reading
+      paths.* in the module is out of scope. Leave as is, or extend.
+    needs_owner: true
+
+  - id: MM-004
+    type: improvement
+    area: release
+    title: Squash or keep the three 0.4.0 commits (release 7b0a61d and fixes c5df97a, 6125d85)
+    body: |
+      The release commit precedes the two fix commits; all three are 0.4.0. Local main holds them under merge
+      commit a5cdccf and nothing is pushed (MM-005, Push 0.4.0 to origin), so rewriting is possible. Keep as is
+      or squash before pushing.
+    needs_owner: true
+
+  - id: MM-005
+    type: improvement
+    area: release
+    title: Push 0.4.0 to origin and reconcile with the PR-only rule for main
+    body: |
+      origin/main is at d532d83 (0.3.1); local main is nine commits ahead (feat/v0.4.0-usage-ledger merged as
+      a5cdccf). No PR exists for 0.4.0, so CI's free gates have not run on Linux for it. docs/process/dev-flow.md
+      says main changes only through a PR. Push waits for the maintainer's go; a PR from the branch head needs main
+      reset to d532d83 first.
+    needs_owner: true
+
+  - id: MM-007
+    type: improvement
+    area: scripts
+    title: Refresh the vendored engine types to Claude Code 2.1.302
+    body: |
+      Local Claude Code is 2.1.302; vendor/claude-code-types/ and the CI pin are 2.1.299, so check-contract WARNs
+      on every local run. Lay the types with an interactive `claude --plugin-dir .` start (claude -p does not lay
+      them), run scripts/sync-types.sh, commit as chore(types): Claude Code 2.1.302, and move README's "tested
+      on 2.1.299" line with it. claude-code-tools/index.d.ts may change for reasons other than version.
+
+  - id: MM-008
+    type: improvement
+    area: release
+    title: Run scripts/smoke.sh once for 0.4.0
+    body: |
+      No smoke run covers 0.4.0. About 0.25 USD: the free gates, help with the module on (proof it loaded),
+      review with the module off (must stop on the token). Run before the 0.4.0 PR.
+    needs_owner: true
+
+  - id: MM-009
+    type: improvement
+    area: evals
+    title: Run the eval suite for 0.4.0 and verify the three replay-only graders live
+    body: |
+      No suite run covers 0.4.0. Pinned like CI, nine cases, about 5 USD. Watch the two usage-ledger graders
+      (noncode-shortcircuit: docs/megamaid/reviews/*-usage.md; plan-native-planner: .megamaid/usage/plan-*.md)
+      and no-stray-file ([!M]*.md glob), all verified by replay only. If a ledger grader fails on MM-011 or MM-012,
+      drop it and note it in evals/README.md (the unit tests cover the module). Record the result in evals/README.md's measured line and under CHANGELOG.md [Unreleased].
+    needs_owner: true
+
+  - id: MM-010
+    type: feature
+    area: evals
+    title: Take the Phase 2 baseline measurement, one full vacu-suck loop and its orchestrator share
+    body: |
+      One ordinary /megamaid:vacu-suck on a code-shaped branch, "run again?" answered no. Read <report>-usage.md;
+      record the orchestrator share of input and output tokens and the cost as the baseline; compare with
+      the ideation estimate (orchestrator 20 to 35%; under 20% means only Phase 6 (MM-028) is worth doing for tokens).
+      While at it, confirm MM-013, MM-014 and MM-015 (the three ledger bounds) from the ledger and the trace. Several USD.
+    needs_owner: true
+
+  - id: MM-011
+    type: bug
+    area: evals
+    title: Unverified, a relative $.fs.write from the module lands in the eval workspace
+    body: |
+      plan-native-planner's usage-ledger grader expects .megamaid/usage/plan-*.md in the eval workspace. The
+      types say a relative $.fs.write resolves against the session's working directory; the spike only shows an
+      absolute write reaching outside the sandbox. Not seen. MM-009 (Run the eval suite for 0.4.0) settles it.
+
+  - id: MM-012
+    type: bug
+    area: evals
+    title: Unverified, the eval runner's file_exists glob matches a dot-directory
+    body: |
+      The same grader globs .megamaid/usage/plan-*.md. Offline replay matches it through Python's glob; the
+      runner's own matcher is untested on a dot-directory. Not seen. MM-009 (Run the eval suite for 0.4.0) settles it.
+
+  - id: MM-013
+    type: bug
+    area: hooks
+    title: A review report written without the Write tool produces no usage ledger
+    body: |
+      The report site is a main-loop tool.call of Write (hooks/usage.ts). Review Step 8 says "the path to write"
+      and the skill allows Bash and Edit, so a report produced by a shell heredoc or assembled with Edit raises
+      no such call and the ledger never lands. Every kept trace uses Write; not seen live. If the measurement
+      loop (MM-010) shows the gap, Step 8 gains one sentence pinning the Write tool.
+
+  - id: MM-014
+    type: bug
+    area: hooks
+    title: Unverified live, the engine raises agent.spawn for a subagent's spawn to this plugin's hook
+    body: |
+      Nested-spawn attribution relies on it (the types say parentAgentId is set and turn.complete is heard for
+      every agent). If it does not, nested usage is missing from the split and the ledger under-counts the
+      subagent side. Symptom: an agent row whose Agents count is below the trace's Agent calls under that role.
+      Not seen. Checked by MM-010 (the baseline measurement).
+
+  - id: MM-015
+    type: bug
+    area: hooks
+    title: An agent whose turn ends before its spawn record lands counts nowhere
+    body: |
+      The spawn hook's state write races the agent's first API call; a turn.complete whose agentId is not yet
+      recorded is dropped. Symptom: a row whose Turns is below its Agents. Not seen. Checked by MM-010 (the
+      baseline measurement).
+
+  - id: MM-016
+    type: improvement
+    area: hooks
+    title: Unprobed, $.plugin.root equals ${CLAUDE_PLUGIN_ROOT} for a marketplace-installed copy
+    body: |
+      The Read note matches sub-skill files by realPath under $.plugin.root. The vacu-suck and fix-auto eval
+      cases show it for the eval's own load; an installed (cache) copy is unprobed. Phase 7 (MM-029) checks an
+      installed copy. Not seen.
+
+  - id: MM-017
+    type: improvement
+    area: hooks
+    title: Untested path, the stripping .catch on skill.prompt (budget overrun) and a throw from next
+    body: |
+      Removing the stripping .catch still passes every module test; its only remaining trigger, a budget
+      overrun, cannot be simulated in the kit. A throw from next itself, or a throwing .catch, passes the skill
+      text unstripped and the model stops (fails closed, wrong); engine behaviour, untestable. Known gap; no
+      action unless the kit gains a way to simulate it.
+
+  - id: MM-018
+    type: improvement
+    area: hooks
+    title: Unprobed, a build without hooks modules may refuse the plugin outright, showing no token
+    body: |
+      hooks/hooks.json holds only "modules"; an older build may refuse the plugin instead of loading the skills
+      with the stop line, so no MEGAMAID-MODULE-NOT-LOADED appears. README states the requirement; help says
+      "such a build may refuse the plugin outright". Not seen.
+
+  - id: MM-019
+    type: improvement
+    area: docs
+    title: Help's rollout-switch remedy rests on one observation
+    body: |
+      Help says "start claude once with network access" clears the "hooks modules are turned off ... rollout
+      switch" cause. Seen once in the spike; unverified. Confirm or soften the wording if it recurs.
+
+  - id: MM-020
+    type: improvement
+    area: hooks
+    title: A megamaid skill run inside a subagent replaces the stored run and records no agents
+    body: |
+      skill.prompt carries no agentId, so a subagent's megamaid skill replaces the main loop's run; later
+      main-loop spawns are recorded under the subagent's skill, and the subagent's own spawns are not recorded.
+      Phase 3 (MM-025) guards that read the run must not take it for the active main-loop run. A fix needs a
+      run-per-loop or an agentId on skill.prompt from the engine.
+
+  - id: MM-021
+    type: improvement
+    area: hooks
+    title: An overridden pattern-scanner or pattern-shaver is not recorded, so its usage is uncounted
+    body: |
+      Run detection records briefless spawns only when the provider is megamaid and the stored run is
+      megamaid:patterns. A project that points agents.pattern-scanner at a foreign type gets no row in a
+      patterns run's ledger. Revisit when patterns gets a brief or Phase 3 (MM-025) keys on role another way.
+
+  - id: MM-022
+    type: improvement
+    area: scripts
+    title: The §5 plan-lane check accepts reordered flags
+    body: |
+      check-contract §5 refuses "--role implementer --lane plan" and "--skill plan --role implementer" by
+      literal order; "--lane plan --role implementer" slips through. Stated in the check's comment
+      (scripts/check-contract.sh, the plan-lane block). Tighten if a skill edit ever reorders the flags.
+
+  - id: MM-023
+    type: feature
+    area: hooks
+    title: Per-role cost in USD on the usage ledger
+    body: |
+      The ledger has token rows and one session-cost line; per-role USD needs a price table. Shares are reported
+      for input and output separately so a reader with prices can weight them.
+
+  - id: MM-024
+    type: feature
+    area: hooks
+    title: A ledger for a review or sweep interrupted before its report, and a per-round ledger inside one sweep
+    body: |
+      A review that ends before Step 8 leaves no ledger file (counts stay in $.state); a sweep's rounds are
+      summed into one file at the first report's place.
+
+  - id: MM-025
+    type: feature
+    area: hooks
+    title: Phase 3, Guarantees, enforce the prose rules at call time (ideas A1 to A4, B5)
+    body: |
+      Hooks for: the implementer's file boundary (the instruction's ## Where) and the planner's (one file, the output
+      file its prompt names); the orchestrator never reading the PATTERNS manifest during a run; the fix reviewer never
+      using HEAD~; models and effort set at spawn from resolved config (full ids normalised to aliases); briefs injected
+      at spawn. Remove the prose each replaces and move its graders and gate needles with it (docs/architecture/design-rules.md, "Moving text moves its checks").
+
+  - id: MM-026
+    type: feature
+    area: hooks
+    title: Phase 4, Mechanics out of prose, fix gate by config, config at skill load, excerpt cleanup, interrupted-fix notice (B6, B7, D11, D12)
+    body: |
+      Gate fix by config in a hook (feasible: a hook can deny the Skill tool.call once fix drops
+      disable-model-invocation, so fix-auto can go); inject resolved config at skill.prompt instead of each
+      skill's "run megamaid.py config, stop if it fails" step; delete .megamaid/excerpts/<run>.* on session end
+      or an aborted turn; on an aborted turn mid-batch, post a notice naming the item in flight and dirty paths.
+
+  - id: MM-027
+    type: feature
+    area: hooks
+    title: Phase 5, Visibility, a fix / vacu-suck pane and a status line entry (C8, C9)
+    body: |
+      A pane of items x batch x implementer/reviewer state x attempts x commit from agent.spawn and
+      turn.complete keyed by agentId (needs dispatch descriptions that name the item; the per-agent usage
+      store is the data), and a status line such as "megamaid: fix 3/7". hooks/register.ts becomes .tsx when
+      something draws.
+
+  - id: MM-028
+    type: feature
+    area: hooks
+    title: Phase 6, Deterministic fix orchestration from code, only if the baseline (MM-010) says it pays (E)
+    body: |
+      Drive fix batching, dispatch, verification and commits from code through $.agent.spawn and $.process,
+      leaving the model the judgment steps. The largest token saving and also a rewrite. Go/no-go depends on
+      the orchestrator share from MM-010 (the baseline measurement; under 20% means this is the only phase
+      worth doing for tokens).
+    needs_owner: true
+
+  - id: MM-029
+    type: feature
+    area: release
+    title: Phase 7, First public release, marketplace entry, README install line, usage measurement against the baseline
+    body: |
+      A separate entry in the olioskar/claude-plugins marketplace; the README install line; a usage
+      measurement compared with the baseline (MM-010); and the installed-copy probe for $.plugin.root (MM-016).
+      Until that release the plugin installs with --plugin-dir only.
+
+  - id: MM-030
+    type: improvement
+    area: skills
+    title: Coexistence with the plugin megamaid is forked from is a README note only; a hook could disambiguate the shared triggers
+    body: |
+      With both plugins installed, their model-invocable skills trigger on the same phrases. Handled by a
+      README note; revisit with a hook if it matters. No report of it mattering.
+
+  - id: MM-031
+    type: improvement
+    area: evals
+    title: No eval case runs a code-shaped /megamaid:vacu-suck past review (the hardcoded-reviewer class)
+    body: |
+      Uncovered by cost. The suite's vacu-suck case (noncode-shortcircuit) stops at review on a prose artifact,
+      so a regression in the plan and fix stages of a sweep is not caught.
+
+  - id: MM-032
+    type: improvement
+    area: evals
+    title: No eval case runs /megamaid:patterns --shave end to end
+    body: |
+      Uncovered by cost. The shaver's behaviour is fixture-tested through scripts/manifest.py only.
+
+  - id: MM-033
+    type: improvement
+    area: evals
+    title: No eval case covers review round numbering with a deleted earlier round
+    body: |
+      Uncovered by cost. megamaid.py report-name is fixture-tested; the orchestrator's use of it after a
+      deleted round is not exercised live.
+
+  - id: MM-034
+    type: improvement
+    area: evals
+    title: No eval case covers revert-on-FAIL and the "## Attempts" section of the fix skill
+    body: |
+      Uncovered by cost; needs a FAILing reviewer on demand. Both paths are prose in skills/fix/SKILL.md with no
+      live check.
+
+  - id: MM-035
+    type: improvement
+    area: evals
+    title: No eval case covers the python3-missing stop at Step 1
+    body: |
+      Uncovered: the eval sandbox inherits PATH, and every skill needs python3, so a run without it cannot be
+      staged in the suite.
+
+  - id: MM-036
+    type: improvement
+    area: evals
+    title: The reviewer calibration step is untested on simplifier, silent-failure-hunter and consistency-auditor
+    body: |
+      Experiment E1 (experiments/calibration-clean-diff) drew code-reviewer and test-auditor only, so the step
+      is removed from those two and kept in the other three without evidence. Testing them needs a clean diff
+      that draws them (a refactor, a try/catch, a spec).
+  - id: MM-037
+    type: improvement
+    area: hooks
+    title: "Unverified: skill.prompt hooks of a user-installed plugin do not run under an organization-managed Claude Code"
+    body: |
+      claude plugin validate prints the note on every run. If true, the module loads but nothing strips the
+      stop line, so every command stops with the token on such an installation. Not seen; needs a managed
+      account to probe. The help skill's Requirements block does not name this cause.
+  - id: MM-038
+    type: bug
+    area: scripts
+    title: scripts/megamaid.py docstring disagrees with its behaviour in five places
+    body: |
+      The user_path warning is printed by directives and brief, not config (megamaid.py:17-18 vs :343);
+      resolve's exit-2 list omits "lane present but not a model string" (:296); brief lists no exit-2 cases
+      (:462-467, :505-512); report-name omits exit 2 for an empty slug or unreadable reviews dir (:540-549);
+      config also exits 2 when migrate.py cannot load (:223). docs/api/scripts.md documents the behaviour.
+  - id: MM-039
+    type: improvement
+    area: hooks
+    title: A configure run writes a usage ledger under .megamaid/usage/
+    body: |
+      isRunSkill excludes only help (hooks/run.ts:7-9), so /megamaid:configure, which dispatches no agents,
+      leaves a configure-<startedAt>.md ledger behind. Decide whether configure is a run worth a ledger.
+  - id: MM-040
+    type: bug
+    area: skills
+    title: Review's closing note omits the usage ledger from "the only files created"
+    body: |
+      skills/review/SKILL.md:415 says the report and the run's working files are the only files created;
+      the module also writes <stem>-usage.md beside the report (hooks/ledger.ts). docs/features/review.md
+      says so; the skill text does not.
+  - id: MM-041
+    type: improvement
+    area: skills
+    title: configure states an unverified Claude Code minimum for effort
+    body: |
+      skills/configure/SKILL.md:69 says the Agent call takes effort on 2.1.292 or later; no code or vendored
+      type pins it, and the hooks-module requirement is later anyway. Confirm against the vendored types or
+      drop the version.
+  - id: MM-042
+    type: improvement
+    area: scripts
+    title: manifest.py gate accepts --manifest and ignores it
+    body: |
+      scripts/manifest.py:1041 takes the flag "for symmetry; unused"; skills/patterns/SKILL.md:323 calls gate
+      without it. Drop the flag or use it.
