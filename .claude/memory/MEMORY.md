@@ -1,0 +1,5 @@
+- [Project: megamaid](project_megamaid.md) — mods-based successor to comb; process in root PLAYBOOK.md, state in docs/handover/
+- [Communication style](feedback_no_fluff.md) — drop hyper-marketing/fluff mode; ground claims; don't invent requirements
+- [Trust the model](feedback_trust_the_model.md) — when fixing language bias in prompts, abstract the concept; don't enumerate per-language idioms
+- [Plan-execution commits](feedback_plan_commit_authorization.md) — approved plan + "go" authorizes per-task commits; confirm once, then don't re-prompt
+- [Eval cadence](feedback_eval_cadence.md) — evals once per PR; replay graders offline, never paid re-runs for grader edits
