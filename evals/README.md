@@ -1,90 +1,64 @@
 # megamaid eval suite
 
-Results and version numbers below were recorded on [comb](https://github.com/olioskar/comb-the-desert-claude-plugin); command and file names are updated to megamaid.
+Behavioural regression tests for the megamaid plugin, in the `claude plugin eval` format: nine cases, each `<case>/prompt.md` + `<case>/graders/*.md`, with a `scaffold.sh` and `case.yaml` for every case but `help-overview`. When to run it: [docs/process/dev-flow.md](../docs/process/dev-flow.md), "Eval cadence". What it does not cover: `issues.yaml` (area `evals`).
 
-Behavioral regression tests for the megamaid plugin, in the `claude plugin eval` format
-(`<case>/prompt.md` + `<case>/graders/*.md`, optional `scaffold.sh` per case).
+## Case layout
 
-## Status
+- `prompt.md` frontmatter carries `name`, `tags`, `runs`, `max_turns`, `timeout_seconds` and `allowed_tools: [Read, Glob, Grep, Skill, Agent, TodoWrite]`; without `Read` there the session cannot open the plugin's own `shared/` and `skills/` files.
+- A scaffolded case has `case.yaml` with `schema_version: "1.1"`, `name` and `context.scaffold_script: scaffold.sh`; `scaffold_script` is not a `prompt.md` key. Every scaffold with a git repo commits its initial state so a reviewer's `git diff HEAD` has a HEAD.
+- Bash, Write and Edit come from the CLI (`--allow-tools Bash Write Edit`); a case cannot grant them.
 
-First live run on 2026-10-11 (Claude Code 2.1.296). What it established:
+## Grader shapes
 
-- **Case layout.** Scaffolded cases carry a `case.yaml` beside `prompt.md` with
-  `schema_version: "1.1"`, `name`, and `context.scaffold_script: scaffold.sh`;
-  `scaffold_script` is not a `prompt.md` key. Every case lists its read-only tools in
-  `allowed_tools` (`Read, Glob, Grep, Skill, Agent, TodoWrite`); without `Read` there,
-  the session cannot open the plugin's own `shared/` and `skills/` files.
-- **Gated tools come from the CLI.** Bash, Write, and Edit are removed from the session
-  unless the run passes `--allow-tools Bash Write Edit`; a case cannot grant them.
-- **Graders.** Facts about tool calls (what was dispatched, with what prompt, what was
-  read) are checked by `tool_used`, `file_exists`, and `regex` graders. The LLM judge's
-  `trace` view is the first and last 12 messages only, so a megamaid run of 40 to 100
-  messages cannot be judged on its middle; every `llm` grader here reads `last_message`
-  and confirms the final report, nothing more. Exact-text checks are `regex`, not a
-  judge. Report contents are graded with `target: { source: file, path: … }`.
-- **Scaffolds commit.** Every scaffold with a git repo commits its initial state so a reviewer's `git diff HEAD` has a HEAD to diff against.
-- **git on macOS.** Inside the eval sandbox `/usr/bin/git` is Apple's xcrun shim, which
-  needs `/Library/Developer/CommandLineTools`, and the sandbox cannot read it. A standalone
-  git (`brew install git`) works, but the agent's shell still puts `/usr/bin` first
-  (macOS `path_helper` reorders `PATH`), so plain `git` fails and the agent finds
-  `/opt/homebrew/bin/git` itself. It did in every run on 2026-10-11, in varying forms: full
-  path, `export PATH=…`, or `G=…; $G commit`. Graders that look for git commands therefore
-  match the subcommand (`commit … -m`), not the word `git`. `fix-auto-on` turns per-item
-  commits off so it needs no commits of its own.
-- **Template wording varies.** The final message follows the skill's templates closely but
-  not byte for byte, and the default judge is a small model that votes on wording. Graders
-  on the final message match the template's fixed labels (`Plan: skipped … Fix: skipped`)
-  with slack between them, and the outcome is graded from files and tool calls.
-- **Grader minimums on the fix case.** For two sequential items the fix skill mandates 5 `git rev-parse HEAD`,
-  8 `git status --porcelain`, and 3 verification runs; the graders ask for 4, 5, and 2. The one-under margin
-  is for an orchestrator that combines calls (`git rev-parse HEAD && git status --porcelain` counts once per
-  pattern); tightening to the mandated count would fail a conforming run.
-- **Pinning.** The CI job pins `--model` and `--judge-model` so a model rollout is not
-  read as a plugin regression. The local command below floats on purpose.
-- **Ablation.** `claude plugin eval .` defaults to a with-without arm that runs every
-  case a second time without the plugin. Pass `--ablation none` for pass/fail.
-- **Module loaded.** Every case but `help-overview` carries `module-loaded.md`, a `not_contains` grader for `MEGAMAID-MODULE-NOT-LOADED`, so a run whose hooks module did not load fails instead of passing its negative graders.
-- **Usage ledger (0.4.0, replay-only so far).** `noncode-shortcircuit` and `plan-native-planner` carry `usage-ledger.md`, a `file_exists` grader for the ledger the hooks module writes (`docs/megamaid/reviews/*-usage.md` beside the sweep's report; `.megamaid/usage/plan-*.md` for the plan run). No suite run has exercised them yet: they pass `scripts/test-replay.sh` against the synthetic fixtures. The first paid run checks two assumptions: that a relative `$.fs.write` from the module lands in the eval workspace, and that the eval's `file_exists` glob matches a dot-directory. If either fails, drop the grader; the unit tests cover the module.
+- Facts about tool calls (what is dispatched, with what prompt, what is read) are `tool_used`, `file_exists` and `regex` graders. Exact text is a `regex`, never a judge.
+- The LLM judge's `trace` view is the first and last 12 messages, so a 40 to 100 message run cannot be judged on its middle: the one `llm` grader (`config-null-delete/no-simplifier`) reads `last_message` and confirms the final report only. Report contents are graded with `target: { source: file, path: … }`.
+- The final message follows the skill's templates closely but not byte for byte, and the default judge is a small model: graders on it match the template's fixed labels (`Plan: skipped … Fix: skipped`) with slack between them; the outcome is graded from files and tool calls.
+- Graders that look for git commands match the subcommand (`commit … -m`), not the word `git` (see macOS below).
+- `fix-reviewer-diff-scope` asks for 4 `rev-parse HEAD`, 5 `status --porcelain` and 2 verification runs where the skill mandates 5, 8 and 3 for two items: the margin is for an orchestrator that combines calls (`git rev-parse HEAD && git status --porcelain` counts once per pattern).
+- `module-loaded.md` in every case but `help-overview`: a `not_contains` grader for `MEGAMAID-MODULE-NOT-LOADED`, so a run whose hooks module did not load fails instead of passing its negative graders. `check-contract.sh` §11 keeps the file exact.
+- `usage-ledger.md` in `noncode-shortcircuit` and `plan-native-planner`: a `file_exists` grader for the module's ledger (`docs/megamaid/reviews/*-usage.md` beside the sweep's report; `.megamaid/usage/plan-*.md` for the plan run). Both pass `scripts/test-replay.sh` against synthetic fixtures and no paid run has exercised them; they assume a relative `$.fs.write` lands in the eval workspace and the runner's glob matches a dot-directory (MM-011, MM-012 in `issues.yaml`). If either fails live, drop the grader: the unit tests cover the module.
 
 ## Run
 
 ```bash
 claude plugin eval . --scaffold --ablation none --runs 1 --max-cost-usd 15 \
-  --allow-tools Bash Write Edit --no-publish      # one run per case, bounded
+  --allow-tools Bash Write Edit --no-publish --trust-plugin   # one run per case, bounded
 claude plugin eval . --scaffold --allow-tools Bash Write Edit --case "help-*"
 ```
 
-Measured 2026-10-14 at nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge): about 12 minutes and 5.23 USD.
-When and how often to run it: PLAYBOOK.md, "Eval cadence".
+- Measured: nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge), about 12 minutes and 5.23 USD.
+- `--ablation none` for pass/fail; the default `with-without` arm runs every case a second time without the plugin.
+- CI pins `--model` and `--judge-model` so a model rollout is not read as a plugin regression; the local command floats on purpose.
+- Output lands under `evals/results/` (gitignored).
+- `scripts/smoke.sh` runs the free gates plus three short `claude -p` runs (about 0.25 USD); it is not offline.
 
-To debug a grader without paying for a re-run, keep one run and replay the case's
-`regex`, `tool_used`, and `file_exists` graders against it (`llm` graders are skipped):
+**git on macOS.** Inside the eval sandbox `/usr/bin/git` is Apple's xcrun shim, which needs `/Library/Developer/CommandLineTools`, and the sandbox cannot read it. A standalone git (`brew install git`) works, but the agent's shell puts `/usr/bin` first (`path_helper` reorders `PATH`), so plain `git` fails and the agent finds `/opt/homebrew/bin/git` itself, in varying forms (full path, `export PATH=…`, `G=…; $G commit`). `fix-auto-on` turns per-item commits off so it needs no commits of its own.
+
+## Replay a grader offline
+
+To debug a grader without paying for a re-run, keep one run and replay the case's `regex`, `tool_used` and `file_exists` graders against it (`llm` graders are skipped):
 
 ```bash
 claude plugin eval . --scaffold --ablation none --runs 1 --allow-tools Bash Write Edit \
-  --no-publish --keep-temp --case <name>          # prints "kept temp: /private/tmp/e-XXXX"
+  --no-publish --trust-plugin --keep-temp --case <name>   # prints "kept temp: /private/tmp/e-XXXX"
 chmod 700 /private/tmp/e-XXXX /private/tmp/e-XXXX/sealed
 python3 -I scripts/replay-graders.py evals/<name> /private/tmp/e-XXXX
 ```
-`scripts/smoke.sh` runs the free gates plus three short `claude -p` runs (about 0.25 USD); it is not offline. Run output lands under
-`evals/results/` (gitignored).
+
+`scripts/test-replay.sh` (run by `check-contract.sh`) replays the real graders of three cases against synthetic kept runs in `scripts/fixtures/replay/`: `fix-reviewer-diff-scope` (`fix-pass`, `fix-fail`), `noncode-shortcircuit` (`noncode-pass`) and `plan-native-planner` (`plan-pass`, `plan-fail`), so a misspelled grader shows up for free.
 
 ## Cases
 
-| Case | Guards against |
-|---|---|
-| `help-overview` | Help text drift; paraphrased instead of verbatim output |
-| `config-null-delete` | `null`-as-delete merge semantics regressing (deleted role still dispatched) |
-| `noncode-shortcircuit` | `/megamaid:vacu-suck` running plan/fix on a prose artifact; `usage-ledger` expects the module's ledger beside the report |
-| `fix-reviewer-diff-scope` | The fix reviewer reading the wrong diff (`HEAD~1` bug class, v0.9.0; since 0.15.0 the `git diff HEAD -- <files>` instruction lives in `shared/fix-reviewer-brief.md`, gated by check-contract, so the trace grader checks the reviewer prompt carries that brief and never says `HEAD~1`); a commit landing without the project's test run (0.14.0); HEAD and tree checks skipped around the implementer |
-| `dispatch-delivery` | Directive embedding returning for foreign agents (paths-only contract); the scaffold overrides the planner with `general-purpose` because the shipped default is native since 0.14.0. Since 0.15.0 the authority sentence and the directive paths live in the run brief, not the Agent prompt, so `authority-sentence` and `directive-paths-listed` read the `form:` and `directives:` lines `megamaid.py brief` prints into the trace (the brief's content is fixture-tested by `scripts/test-megamaid.sh`), and `brief-delivered` checks the Agent prompt carries the brief path |
-| `plan-native-planner` | The shipped planner regressing: `/megamaid:plan` on a two-finding report with no override must spawn `subagent_type: megamaid:planner` twice with the native brief (`form: native`), write both instruction files, leave `src/util.js` and `src/config.js` as scaffolded (file-target graders, so a planner writing source through Write or Bash fails), make no Edit call, and report `Medium (2)` (the template's fixed label; past runs never printed the `All N` line) with nothing missing or unexpected; `no-stray-file` also fails on any instruction-folder file not named `M*.md`, so an extra planner file is caught without the orchestrator's label. This is the only case that runs `agents/planner.md`; `dispatch-delivery` overrides it. `scripts/test-replay.sh` replays its graders against a synthetic pass run and a fail run (`scripts/fixtures/replay/plan-{pass,fail}`), so a misspelled grader shows up offline; `usage-ledger` expects the module's ledger under `.megamaid/usage/` |
-| `manifest-slice` | Whole-manifest delivery returning: agents must get a per-run excerpt (entity-page section in, pdf and theme out) and the orchestrator must never print the manifest body; also `Verified:` lines in the report, `.megamaid/excerpts` cleaned, `model` passed on dispatch. Since 0.15.0 the excerpt and manifest paths live in the run brief, so `excerpt-path-in-dispatch` and `full-path-in-dispatch` read the `baseline:` line `megamaid.py brief` prints, and `brief-delivered` checks the Agent prompt carries the brief path; briefs share the excerpt's run stem, so `excerpts-cleaned` covers them |
-| `fix-auto-off` | The model-only fix entry running without `fix.model_invocation: true` (must refuse, naming the observed value and `/megamaid:fix`, with no edits) |
-| `fix-auto-on` | The model-only fix entry refusing or stalling when the flag is set (must run the fix workflow and apply the plan) |
+| Case | What it checks | Graders |
+|---|---|---|
+| `help-overview` | Help text verbatim, every command listed | `overview-header`, `all-commands-listed`, `sections-verbatim` |
+| `config-null-delete` | `null`-as-delete merge semantics: a deleted role is not dispatched | `no-simplifier`, `no-simplifier-dispatch` |
+| `noncode-shortcircuit` | `/megamaid:vacu-suck` on a prose artifact announces the short circuit and runs no plan or fix; the module's ledger lands beside the report | `announces-shortcircuit`, `design-doc-untouched`, `no-edits`, `no-plan-files`, `usage-ledger` |
+| `fix-reviewer-diff-scope` | The fix reviewer gets `shared/fix-reviewer-brief.md` and never says `HEAD~1`; HEAD and tree checked around the implementer; the project's tests run before each of the two commits | `reviewer-brief-delivered`, `reviewer-never-head-tilde`, `head-recorded`, `tree-checked`, `verification-before-commit`, `two-commits`, `m1-applied`, `m2-applied` |
+| `dispatch-delivery` | Foreign agents (the scaffold overrides the planner with `general-purpose`) get the run brief, not an embedded directive body: `authority-sentence` and `directive-paths-listed` read the `form:` and `directives:` lines `megamaid.py brief` prints into the trace; `brief-delivered` checks the Agent prompt carries the brief path; the summary ends `Next: /megamaid:fix …` (one pair of backticks allowed) and never names `fix-auto` | `authority-sentence`, `directive-paths-listed`, `brief-delivered`, `no-embedded-directive-body`, `model-passed`, `plan-file-written`, `next-names-fix`, `never-names-fix-auto` |
+| `plan-native-planner` | The only case that runs `agents/planner.md`: `/megamaid:plan` on a two-finding report spawns `subagent_type: megamaid:planner` twice with `form: native`, writes both instruction files, leaves `src/util.js` and `src/config.js` as scaffolded, makes no Edit call, reports `Medium (2)` with nothing missing or unexpected; `no-stray-file` fails on any instruction-folder file not named `M*.md` | `planner-dispatched`, `native-form`, `brief-delivered`, `model-passed`, `m1-file-written`, `m2-file-written`, `util-untouched`, `config-untouched`, `no-edit`, `medium-label`, `no-missing`, `no-unexpected`, `no-stray-file`, `next-names-fix`, `usage-ledger` |
+| `manifest-slice` | Agents get a per-run excerpt (entity-page section in, pdf and theme out) and the orchestrator never prints or reads the manifest body; `excerpt-path-in-dispatch` and `full-path-in-dispatch` read the `baseline:` line the brief prints; `Verified:` lines in the report; `.megamaid/excerpts` cleaned (briefs share the excerpt's run stem); `model` passed on dispatch | `excerpt-path-in-dispatch`, `full-path-in-dispatch`, `brief-delivered`, `excerpt-log-line`, `orchestrator-never-reads-manifest`, `orchestrator-never-cats-manifest`, `report-has-verified-lines`, `excerpts-cleaned`, `model-passed` |
+| `fix-auto-off` | The model-only fix entry refuses without `fix.model_invocation: true`, naming the observed value and `/megamaid:fix`, with no edits | `refuses-naming-flag`, `names-slash-command`, `no-edits`, `no-writes` |
+| `fix-auto-on` | The model-only fix entry runs the fix workflow and applies the plan when the flag is set | `no-refusal`, `fix-applied` |
 
-`dispatch-delivery` also asserts the plan summary ends with `Next: /megamaid:fix …` (the model may wrap the command in backticks; the grader allows one) and never
-names `fix-auto`. Still uncovered, by cost: a code-shaped `/megamaid:vacu-suck` run past
-review (the 0.10.0 hardcoded-reviewer class), `--shave` end to end, review round numbering
-with a deleted earlier round, revert-on-FAIL and `## Attempts` (needs a FAILing reviewer on
-demand), and the python3-missing stop at Step 1 (PATH is inherited; since 0.15.0 every skill needs python3).
+Every case but `help-overview` also carries `module-loaded`.
