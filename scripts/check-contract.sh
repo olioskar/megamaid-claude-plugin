@@ -105,6 +105,29 @@ done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
 grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
 grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
+# The hooks module repeats report-name's file shape (hooks/ledger.ts REPORT_NAME) to find the review
+# report; the two must agree. The pattern is read from the source, as §11 reads the stop line.
+rn=$(sed -n 's/^export const REPORT_NAME = \/\(.*\)\/$/\1/p' hooks/ledger.ts 2>/dev/null)
+if [ -z "$rn" ]; then
+  echo "FAIL: hooks/ledger.ts must hold one line: export const REPORT_NAME = /.../"; fail=1
+else
+  # The pattern is read by JavaScript and by grep -E alike: GNU grep has no \d, \w or \s in ERE.
+  case $rn in *'\d'*|*'\w'*|*'\s'*) echo "FAIL: hooks/ledger.ts REPORT_NAME uses a JavaScript-only escape; write the class out ([0-9]) so grep -E reads the same pattern"; fail=1;; esac
+  rd=$(mktemp -d "${TMPDIR:-/tmp}/report-name.XXXXXX")
+  for args in "--pr 7" "--branch feat/x"; do
+    # shellcheck disable=SC2086
+    name=$(python3 -I scripts/megamaid.py report-name --reviews "$rd" $args 2>/dev/null | sed -n 's/^report: //p'); name=${name##*/}
+    printf '%s\n' "$name" | grep -Eq "$rn" || { echo "FAIL: hooks/ledger.ts REPORT_NAME does not match megamaid.py report-name output ($name)"; fail=1; }
+  done
+  printf '%s\n' "pr-7-round1-usage.md" | grep -Eq "$rn" && { echo "FAIL: hooks/ledger.ts REPORT_NAME matches a usage file name"; fail=1; }
+  rm -rf "$rd"
+fi
+# .megamaid/.gitignore has three writers (state_dir in megamaid.py and manifest.py, writeLedger in
+# usage.ts); each must write the one line `*`, or a run's working files reach git status.
+for f in scripts/megamaid.py scripts/manifest.py; do
+  grep -A3 -F 'gi = os.path.join(d, ".gitignore")' "$f" | grep -qF 'f.write("*\n")' || { echo "FAIL: $f state_dir does not write .megamaid/.gitignore as the one line *"; fail=1; }
+done
+{ grep -qF "const GITIGNORE = '.megamaid/.gitignore'" hooks/usage.ts && grep -qF "\$.fs.write(GITIGNORE, '*\\n')" hooks/usage.ts; } || { echo "FAIL: hooks/usage.ts does not write .megamaid/.gitignore as the one line *"; fail=1; }
 # Planning resolves and briefs the planner role, never the fix writer. Negative half: any resolve or
 # brief line in the plan lane (--lane plan / --skill plan, in any flag order) must carry --role planner.
 # Positive half: the code-block commands plan Step 6 and fix DISCOVERED run name the planner. Patterns
@@ -342,8 +365,8 @@ fi
 runs=$(grep -h '^const RUN = ' hooks/*.ts | sort -u)
 [ "$runs" = "const RUN = { plugin: 'megamaid', key: 'run' } as const" ] || { echo "FAIL: hooks/*.ts declare RUN differently: $runs"; fail=1; }
 have=$(grep -l '^const RUN = ' hooks/*.ts | sort | tr '\n' ' ')
-[ "$have" = "hooks/agents.ts hooks/session.ts hooks/skill-prompt.ts " ] || { echo "FAIL: want RUN in exactly hooks/agents.ts, hooks/session.ts, hooks/skill-prompt.ts; found: $have"; fail=1; }
-MIN_TESTS=29
+[ "$have" = "hooks/agents.ts hooks/session.ts hooks/skill-prompt.ts hooks/usage.ts " ] || { echo "FAIL: want RUN in exactly hooks/agents.ts, hooks/session.ts, hooks/skill-prompt.ts, hooks/usage.ts; found: $have"; fail=1; }
+MIN_TESTS=52
 tv=$(sed -n '1s/^\/\/ Written by Claude Code \([0-9][0-9.]*[0-9]\)\.$/\1/p' vendor/claude-code-types/claude-code/index.d.ts 2>/dev/null)
 cv=$(claude --version 2>/dev/null | sed -n '1s/^\([0-9][0-9.]*[0-9]\) (Claude Code)$/\1/p')
 if [ -z "$tv" ]; then

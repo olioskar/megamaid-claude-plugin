@@ -1,13 +1,28 @@
 import { mock } from 'claude-code/testing'
-import type { AgentSpawnInput, On, SessionEndInput } from 'claude-code'
+import type { AgentSpawnInput, On, SessionEndInput, TurnCompleteInput } from 'claude-code'
 import type { MegamaidRun } from '../types'
 
-export type Rig = { logs: string[]; writes: (MegamaidRun | null)[] }
+export type Rig = {
+  logs: string[]
+  writes: (MegamaidRun | null)[]
+  // Every fs.write, in order: [path, text]. files holds the last text per path.
+  fsWrites: [string, string][]
+  files: Record<string, string>
+  // Paths fs.exists answers true for.
+  exists: Set<string>
+  // What session.usage answers as cost.usd; null leaves cost out.
+  cost: number | null
+  // When true, fs.write (or fs.exists) is denied.
+  failWrites: boolean
+  failExists: boolean
+}
 
 // Shared setup. Register every test hook before the test's first $ call (the kit refuses later ones).
-// A clock (unless withheld), a ui.log answer that collects lines, and a state.set recorder that keeps
-// each landed write (the test's $ has no state noun; next(e) lets update()'s ifVersion retry work).
-export function rig(on: On, opts: { clock?: boolean } = {}): Rig {
+// A clock (unless withheld), a ui.log answer that collects lines, a state.set recorder that keeps
+// each landed write (the test's $ has no state noun; next(e) lets update()'s ifVersion retry work),
+// an fs.write recorder, an fs.exists answer, a session.usage answer (unless withheld) and a
+// turn.complete answer.
+export function rig(on: On, opts: { clock?: boolean; usage?: boolean } = {}): Rig {
   if (opts.clock !== false) mock.clock(on, { now: 1000 })
   const logs: string[] = []
   on('ui.log', (_$, e) => { logs.push(e.text); return { value: undefined } })
@@ -17,7 +32,35 @@ export function rig(on: On, opts: { clock?: boolean } = {}): Rig {
     if (r.deny === undefined && r.value.isSet) writes.push(e.value as MegamaidRun | null)
     return r
   })
-  return { logs, writes }
+  const r: Rig = { logs, writes, fsWrites: [], files: {}, exists: new Set(), cost: 3.5, failWrites: false, failExists: false }
+  // The kit hands a relative path to fs.write and fs.exists already resolved against the test
+  // session's cwd (the plugin folder); the recorder keeps a .megamaid/ path relative so tests
+  // match the spec's spelling.
+  on('fs.write', (_$, e) => {
+    if (r.failWrites) return { deny: 'disk full' }
+    const path = dotMegamaid(e.path)
+    r.fsWrites.push([path, e.text]); r.files[path] = e.text
+    return { value: undefined }
+  })
+  on('fs.exists', (_$, e) => r.failExists ? { deny: 'no stat' } : { value: r.exists.has(dotMegamaid(e.path)) })
+  if (opts.usage !== false) on('session.usage', () => ({ value: {
+    startedAt: 0, context: { window: 200000 }, rateLimits: [], ...(r.cost === null ? {} : { cost: { usd: r.cost } }),
+  } }))
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+  return r
+}
+
+function dotMegamaid(path: string): string {
+  const i = path.indexOf('/.megamaid/')
+  return i < 0 ? path : path.slice(i + 1)
+}
+
+export function turnInput(over: Partial<TurnCompleteInput> = {}): TurnCompleteInput {
+  return {
+    reason: 'answer', answer: 'ok', durationMs: 10, isAborted: false, turnId: 'turn1',
+    usage: { input_tokens: 100, cache_read_input_tokens: 1000, cache_creation_input_tokens: 10, output_tokens: 50, model: 'claude-opus-5-5' },
+    ...over,
+  } as TurnCompleteInput
 }
 
 export const MEGAMAID = { plugin: 'megamaid@inline', tier: 'user' } as const

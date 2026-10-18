@@ -14,7 +14,7 @@ How megamaid is developed and how we work together. It describes the current pra
 ## Where things live
 
 - `skills/*/SKILL.md` and `shared/*.md`: the prose runtime contract. `shared/manifest-migration.md` is the manifest-migration offer used by configure and patterns.
-- `hooks/`: the hooks module, the code half of the runtime contract. `register.ts` wires one file per event (`skill-prompt.ts`, `read-note.ts`, `agents.ts`, `session.ts`); pure helpers without `$` live in `run.ts` and `stop-line.ts`, the stop line's single source; tests are `*.test.ts` with `test-rig.ts`. `types/` holds the `$.state` contract. `vendor/claude-code-types/` is the pinned engine API, refreshed by `scripts/sync-types.sh`.
+- `hooks/`: the hooks module, the code half of the runtime contract. `register.ts` wires one file per event (`skill-prompt.ts`, `read-note.ts`, `agents.ts`, `usage.ts`, `session.ts`); pure helpers without `$` live in `run.ts`, `ledger.ts` and `stop-line.ts`, the stop line's single source; tests are `*.test.ts` with `test-rig.ts`. `types/` holds the `$.state` contract. `vendor/claude-code-types/` is the pinned engine API, refreshed by `scripts/sync-types.sh`.
 - `agents/*.md`, `directives/`, `config/defaults.json`: agents, shipped policy, config keys and defaults.
 - `scripts/`: the helpers the skills call and their fixture tests. Change a script and its fixtures together. `scripts/migrate.py` holds every name of the plugin megamaid was forked from (the old-name guard exempts it).
 - `evals/` (the suite) and `experiments/` (two-arm runs).
