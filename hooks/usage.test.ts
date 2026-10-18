@@ -176,3 +176,17 @@ test('a backslash report path places the ledger beside it', async ($, on) => {
   // The kit resolves a non-POSIX path against the plugin folder before the recorder sees it; the suffix is the hook's.
   expect(r.fsWrites.map(w => w[0].endsWith('C:\\w\\reviews\\pr-3-round1-usage.md'))).toEqual([true])
 })
+
+test("a nested agent's turn counts under the parent's key in the ledger", async ($, on) => {
+  const r = rig(on); answerSkills(on)
+  let n = 0; answerSpawns(on, () => 'a' + ++n)
+  await $.skill.prompt({ skill: 'megamaid:fix', text: 'x' })
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  await $.agent.spawn(spawnInput({ subagentType: 'Explore', prompt: 'look', parentAgentId: 'a1' }))
+  await $.turn.complete(turnInput({ agentId: 'a2' }))
+  await $.turn.complete(turnInput({ agentId: 'a1' }))
+  const text = r.files['.megamaid/usage/fix-1000.md'] ?? ''
+  expect(text).toContain('| review/code-reviewer | 2 | 2 | 200 | 2000 | 20 | 100 | claude-opus-5-5 |')
+  expect(text).toContain('| total | 2 | 2 | 200 | 2000 | 20 | 100 |  |')
+  expect(text).toContain('Orchestrator share: 0% of input tokens, 0% of output tokens.')
+})

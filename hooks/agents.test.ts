@@ -63,13 +63,24 @@ test('a foreign spawn without a brief is ignored (control: with a brief it is re
   expect(Object.keys(writes.at(-1)?.agents ?? {})).toEqual(['a2'])
 })
 
-test("a subagent's spawn is ignored (control: the main loop's is recorded)", async ($, on) => {
-  const { writes } = rig(on)
+test("a spawn nested in an unrecorded agent is ignored (controls: the main loop's is recorded; one nested in a recorded agent is recorded under it)", async ($, on) => {
+  const { writes, logs } = rig(on)
   let n = 0; answerSpawns(on, () => 'a' + ++n)
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'simplifier')), parentAgentId: 'p1' }))
   expect(writes).toHaveLength(0)
   await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'simplifier')) }))
   expect(writes).toHaveLength(1)
+  expect(writes.at(-1)?.agents.a2).toMatchObject({ parent: null, usage: null })
+  await $.agent.spawn(spawnInput({ subagentType: 'Explore', provider: FOREIGN, prompt: 'look around', parentAgentId: 'a2' }))
+  expect(writes).toHaveLength(2)
+  expect(writes.at(-1)?.agents.a3).toEqual({
+    subagentType: 'Explore', provider: 'other@market', role: 'simplifier', lane: 'review', runStem: STEM, parent: 'a2', usage: null })
+  expect(logs).toContain('review/simplifier nested spawn Explore (a3) under a2')
+  // A brief in a nested prompt does not re-key it: the parent's lane and role win.
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'fix', 'implementer')), parentAgentId: 'a3' }))
+  expect(writes.at(-1)?.agents.a4).toMatchObject({ role: 'simplifier', lane: 'review', parent: 'a3' })
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'fix', 'implementer')), parentAgentId: 'nobody' }))
+  expect(writes).toHaveLength(3)
 })
 
 test('a result without agentId records nothing (control: with one it records)', async ($, on) => {
