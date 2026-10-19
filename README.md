@@ -27,7 +27,7 @@ Review, plan, fix, vacu-suck, and patterns take a free-form focus brief that ste
 
 ## Requirements
 
-- Claude Code with hooks modules (tested on 2.1.299, the version in `vendor/claude-code-types/`), with megamaid's hooks module loaded. A command that replies `MEGAMAID-MODULE-NOT-LOADED` means it did not load; `/megamaid:help` lists the causes.
+- Claude Code with hooks modules (tested on 2.1.303, the version in `vendor/claude-code-types/`), with megamaid's hooks module loaded. A command that replies `MEGAMAID-MODULE-NOT-LOADED` means it did not load; `/megamaid:help` lists the causes.
 - `python3`; the scripts are stdlib-only. Every command but help starts by running one and stops if it can't.
 - `git`. `gh` is also needed to review a PR by number.
 

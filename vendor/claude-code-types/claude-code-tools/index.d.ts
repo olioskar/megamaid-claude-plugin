@@ -67,7 +67,7 @@ declare module 'claude-code' {
       type_query?: string
       /** list only: the name of a published Artifact type, as a 'types' listing shows it (case does not matter). The listing then shows the Artifacts made from that type instead of the person's gallery. Claude passes this or `type_url`, not both. */
       type?: string
-      /** quickstart only (required): what is being made — 'document' (text to read or edit together), 'slides' (a deck or one slide), 'design' (a visual design or prototype on a canvas), 'other' (anything else, or unsure). */
+      /** quickstart only (required): what is being made — 'document' (text to read or edit together), 'slides' (a deck or one slide), 'design' (a visual design or prototype on a canvas), 'other' (a dashboard that shows data, anything else, or unsure). */
       intent?: "document" | "slides" | "design" | "other"
       /** quickstart only: false when a design system's link is already in hand (it is then read with its own call) or one was declined. Omitted or true, the result lists the design systems (not for a document) and, for slides or a design, attaches the default one's README. */
       design_systems?: boolean
@@ -4450,6 +4450,8 @@ declare module 'claude-code' {
       isImage?: boolean
       /** ID of the background task if command is running in background */
       backgroundTaskId?: string
+      /** @internal Path of the background task's output file on the machine that keeps the command, when that is not this process */
+      backgroundOutputPath?: string
       /** True if the user manually backgrounded the command with Ctrl+B */
       backgroundedByUser?: boolean
       /** @internal True if a plugin's turn abort moved the running command to the background */
@@ -5101,6 +5103,8 @@ declare module 'claude-code' {
       }
       /** Document page number of the first extracted page (1 when no range was requested); labels the page images in the model-facing tool_result */
       firstPage?: number
+      /** @internal Number of pages in the document. Set only when the call named no page range and the PDF was too long to read whole, so only its first pages were extracted */
+      totalPages?: number
       /** Extracted page images, in page order. Present only transiently in-process: the page image bytes are delivered solely as image blocks in the model-facing tool_result content and are not retained on the tool_use_result, so this key is absent on the emitted/persisted result */
       pages?: Array<{
         /** Base64-encoded page image; empty when the page could not be processed */

@@ -56,10 +56,9 @@ export function registerUsage(on: On): void {
   }).catch(($, e, next) => { failed($, next.error); return next(e) })
 }
 
-// A failed hook is replayed beneath and named in the debug log; under re-entry $ calls reject, so
-// nothing is logged.
+// A failed hook is replayed beneath and named in the debug log.
 function failed($: Pick<CoreEngineInterface, 'ui'>, error: HookFailure): void {
-  if (error.kind !== 're-entry') $.ui.log(`usage hook failed: ${error.message ?? error.kind}`, { to: 'debug' })
+  $.ui.log(`usage hook failed: ${error.message ?? error.kind}`, { to: 'debug' })
 }
 
 type LedgerDollar = Pick<CoreEngineInterface, 'fs' | 'session' | 'ui'>

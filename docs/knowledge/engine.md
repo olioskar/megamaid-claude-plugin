@@ -1,6 +1,6 @@
 # Engine: Claude Code's validator, types and hooks runtime
 
-Checked against the vendored 2.1.299 types and `claude` 2.1.302 with this plugin's module ([hooks-module](../architecture/hooks-module.md), events in [hook-events](../api/hook-events.md)). The last column says how a row is known: `code` (the working tree relies on it), `machine` (checked on this machine), `unverified` (stated in a working note only).
+Checked against the vendored 2.1.303 types and `claude` 2.1.303 with this plugin's module ([hooks-module](../architecture/hooks-module.md), events in [hook-events](../api/hook-events.md)). The last column says how a row is known: `code` (the working tree relies on it), `machine` (checked on this machine), `unverified` (stated in a working note only).
 
 ## `claude plugin validate`
 
@@ -28,7 +28,7 @@ Checked against the vendored 2.1.299 types and `claude` 2.1.302 with this plugin
 | TypeScript 5.9.3 is pinned, in `check-contract.sh` only (`npx -y -p typescript@5.9.3 tsc -p .`); 5.4.5 rejects `target: es2023` | No package.json | code (pin); unverified (5.4.5) |
 | Imports between hook files are extensionless; `.ts` fails tsc (TS5097) | `from './stop-line'` | code |
 | `skipLibCheck: false` on purpose: `true` would hide an error in `types/index.d.ts` that validate also misses; `false` adds no errors on the engine types and about a second | tsconfig.json | code |
-| The first line of `vendor/claude-code-types/claude-code/index.d.ts` names the version (`// Written by Claude Code 2.1.299.`); CI installs that version and fails on a mismatch, locally a mismatch warns | check-contract §12, ci.yml | code |
+| The first line of `vendor/claude-code-types/claude-code/index.d.ts` names the version (`// Written by Claude Code 2.1.303.`); CI installs that version and fails on a mismatch, locally a mismatch warns | check-contract §12, ci.yml | code |
 
 ## Runtime
 

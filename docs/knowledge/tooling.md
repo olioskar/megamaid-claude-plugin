@@ -25,7 +25,8 @@ Baseline: macOS, `/bin/bash` 3.2.57, Apple tools; CI is `ubuntu-latest` with GNU
 
 | Fact | Consequence | Checked |
 |---|---|---|
-| `claude --version` is 2.1.302; the vendored types and the CI pin are 2.1.299 | check-contract prints `WARN: vendored types are Claude Code 2.1.299, this claude is '2.1.302'` until a types refresh lands (the refresh steps: [gates](../architecture/gates.md), the vendored types pin) | machine |
+| `claude --version`, the vendored types and the CI pin are 2.1.303 (refreshed 2026-10-19) | check-contract prints `WARN: vendored types are Claude Code <pinned>, this claude is '<local>'` when they drift (the refresh steps: [gates](../architecture/gates.md), the vendored types pin). An interactive start can be driven under `expect` (spawn `claude --plugin-dir .`, wait, send `/exit`); `claude -p` does not lay the types | machine |
+| 2.1.303 dropped the `re-entry` hook-failure kind (`HookFailure.kind` is `throw \| timeout`): an event raised beneath a hook's own call runs the chain with that hook skipped, no failure | `usage.ts` logs every failure | code (types) |
 | Laying `.claude-plugin/types/` unattended (why an interactive session is needed: [engine.md](engine.md), Types) | `expect` (`/usr/bin/expect`) drives one `claude --plugin-dir . --model haiku`: wait for the prompt, send `/exit`; then `scripts/sync-types.sh` | machine (expect present); unverified (recipe) |
 | `check-contract.sh` is not offline: `claude`, `node` and `npx` on PATH, network on the first `npx` run (typescript@5.9.3) | | code |
 | smoke's module-off review is capped by `--max-turns 2`, not a dollar cap: one turn with this machine's global context (about 37k tokens of MCP servers and plugins) is most of smoke's cost ([costs](costs.md)) | A dollar cap under one turn's cost would stop the run before the token line | code (cap); unverified (share); unverified (context size) |
