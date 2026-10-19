@@ -18,16 +18,16 @@ export type Rig = {
 }
 
 // Shared setup. Register every test hook before the test's first $ call (the kit refuses later ones).
-// A clock (unless withheld), a ui.log answer that collects lines, a state.set recorder that keeps
+// A clock (unless withheld), a ui.log answer that collects lines, a state.set recorder (unless withheld) that keeps
 // each landed write (the test's $ has no state noun; next(e) lets update()'s ifVersion retry work),
 // an fs.write recorder, an fs.exists answer, a session.usage answer (unless withheld) and a
 // turn.complete answer.
-export function rig(on: On, opts: { clock?: boolean; usage?: boolean } = {}): Rig {
+export function rig(on: On, opts: { clock?: boolean; usage?: boolean; state?: boolean } = {}): Rig {
   if (opts.clock !== false) mock.clock(on, { now: 1000 })
   const logs: string[] = []
   on('ui.log', (_$, e) => { logs.push(e.text); return { value: undefined } })
   const writes: (MegamaidRun | null)[] = []
-  on('state.set', async (_$, e, next) => {
+  if (opts.state !== false) on('state.set', async (_$, e, next) => {
     const r = await next(e)
     if (r.deny === undefined && r.value.isSet) writes.push(e.value as MegamaidRun | null)
     return r

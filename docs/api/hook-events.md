@@ -30,6 +30,7 @@ Declared in `types/index.d.ts`; `MegamaidRun | null`. The stored run is the last
 | `report` | `string \| null` | the review report path once its Write is seen; null otherwise |
 | `costAtStart` | `number \| null` | `$.session.usage().cost.usd` at run start; null when the host has no cost or the call fails |
 | `lastTurnAt` | `number \| null` | `$.clock.now()` at the last counted turn |
+| `owed` | `boolean` (absent on a run stored by 0.4.0) | true while the next main-loop turn counts: set at run start, by a recorded spawn, a recorded agent's counted turn and the report Write; cleared by a counted main-loop turn |
 
 `MegamaidAgent`:
 
@@ -70,7 +71,7 @@ Each line is written with `$.ui.log(…, { to: 'debug' })`; the engine prefixes 
 | `usage <key> +<input>/<output> (<turns>)` | `usage.ts:38` | a counted turn; `<key>` is `orchestrator` or the agent's usage key; `<input>` counts what the ledger's share line counts ([working-paths.md](working-paths.md)); `<turns>` the key's total so far |
 | `ledger <path>` | `usage.ts:76` | the ledger file was written |
 | `ledger failed: <message>` | `usage.ts:78` | the write threw |
-| `usage hook failed: <message or kind>` | `usage.ts:62` | a usage hook threw (not on re-entry); the hook chain beneath is replayed |
+| `usage hook failed: <message or kind>` | `usage.ts:64` | a usage hook threw; the hook chain beneath is replayed |
 
 ## Stop line and Read note
 

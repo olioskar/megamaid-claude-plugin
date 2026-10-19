@@ -10,6 +10,18 @@ const LEDGER_PLAN = '.megamaid/usage/plan-1000.md'
 function answerSkills(on: On) { on('skill.prompt', () => ({ text: 'body' })) }
 function answerSpawns(on: On, id: () => string | undefined) { on('agent.spawn', () => ({ model: 'haiku', agentId: id() })) }
 
+const REPORT = '/w/docs/megamaid/reviews/branch-x-round1-report.md'
+const LEDGER = '/w/docs/megamaid/reviews/branch-x-round1-usage.md'
+type WriteAnswer = 'ok' | 'deny' | 'error'
+function answerWrites(on: On, how: () => WriteAnswer = () => 'ok') {
+  on('tool.call', { tool: 'Write' }, (_$, e) => {
+    const h = how()
+    if (h === 'deny') return { deny: 'no' }
+    if (h === 'error') return { isError: true as const, result: 'boom', text: 'boom' }
+    return { result: { type: 'create' as const, filePath: String(e.file_path), content: String(e.content), structuredPatch: [], originalFile: null } }
+  })
+}
+
 test('a main-loop turn during a run adds to the orchestrator (control: with no stored run nothing is written)', async ($, on) => {
   const { writes } = rig(on); answerSkills(on)
   await $.turn.complete(turnInput())
@@ -61,7 +73,7 @@ test('a turn without usage writes no state (control: with usage it does)', async
 })
 
 test('a plan run writes .megamaid/usage/plan-<startedAt>.md after a main-loop turn, and the .gitignore first when missing (control: when it exists, no second write)', async ($, on) => {
-  const r = rig(on); answerSkills(on)
+  const r = rig(on); answerSkills(on); answerSpawns(on, () => 'a1')
   await $.skill.prompt({ skill: 'megamaid:plan', text: 'x' })
   expect(r.fsWrites).toHaveLength(0)
   await $.turn.complete(turnInput())
@@ -70,10 +82,56 @@ test('a plan run writes .megamaid/usage/plan-<startedAt>.md after a main-loop tu
   expect(r.files[LEDGER_PLAN]).toContain('| orchestrator | - | 1 | 100 | 1000 | 10 | 50 | claude-opus-5-5 |')
   expect(r.logs.filter(l => l.startsWith('ledger '))).toEqual([`ledger ${LEDGER_PLAN}`])
   r.exists.add('.megamaid/.gitignore')
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath('plan-1760000000-ab12', 'plan', 'planner')) }))
   await $.turn.complete(turnInput())
   expect(r.fsWrites.map(w => w[0])).toEqual(['.megamaid/.gitignore', LEDGER_PLAN, LEDGER_PLAN])
   expect(r.files[LEDGER_PLAN]).toContain('| orchestrator | - | 2 | 200 | 2000 | 20 | 100 | claude-opus-5-5 |')
   expect(r.logs.filter(l => l.startsWith('ledger '))).toEqual([`ledger ${LEDGER_PLAN}`, `ledger ${LEDGER_PLAN}`])
+})
+
+test("a main-loop turn counts only when the run did something since the last counted one: the first always; then a recorded spawn, a recorded agent's turn or the report Write each owe one more (control: chat turns with nothing between count nowhere and write no ledger)", async ($, on) => {
+  const r = rig(on); answerSkills(on); answerWrites(on)
+  let n = 0; answerSpawns(on, () => 'a' + ++n)
+  await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
+  await $.turn.complete(turnInput())
+  expect(r.writes.at(-1)?.usage.turns).toBe(1)
+  // Chat after the run's answer: nothing happened, nothing counted, no state write.
+  const quiet = r.writes.length
+  await $.turn.complete(turnInput())
+  await $.turn.complete(turnInput())
+  expect(r.writes).toHaveLength(quiet)
+  expect(r.writes.at(-1)?.usage.turns).toBe(1)
+  // A recorded spawn owes one turn, not two.
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  await $.turn.complete(turnInput())
+  await $.turn.complete(turnInput())
+  expect(r.writes.at(-1)?.usage.turns).toBe(2)
+  // A recorded agent's turn owes one (control: an unrecorded agent's does not).
+  await $.turn.complete(turnInput({ agentId: 'zz' }))
+  await $.turn.complete(turnInput())
+  expect(r.writes.at(-1)?.usage.turns).toBe(2)
+  await $.turn.complete(turnInput({ agentId: 'a1' }))
+  await $.turn.complete(turnInput())
+  await $.turn.complete(turnInput())
+  expect(r.writes.at(-1)?.usage.turns).toBe(3)
+  // The report Write owes one; the ledger beside it then shows three turns and stays at three.
+  await $.tool.call({ tool: 'Write', file_path: REPORT, content: 'r' })
+  await $.turn.complete(turnInput())
+  expect(r.files[LEDGER]).toContain('| orchestrator | - | 4 |')
+  const written = r.fsWrites.length
+  await $.turn.complete(turnInput())
+  expect(r.fsWrites).toHaveLength(written)
+  expect(r.files[LEDGER]).toContain('| orchestrator | - | 4 |')
+})
+
+test('a run stored without the owed flag (a 0.4.0 run across a hot reload) still counts its main-loop turns', async ($, on) => {
+  rig(on, { state: false })
+  const old = { id: 'r', skill: 'megamaid:plan', startedAt: 0, agents: {}, usage: { turns: 0, input: 0, cacheRead: 0, cacheWrite: 0, output: 0, model: null }, report: null, costAtStart: null, lastTurnAt: null } as unknown as MegamaidRun
+  let stored: unknown = old; let version = 1
+  on('state.get', () => ({ value: { value: stored as MegamaidRun, version } }))
+  on('state.set', (_$, e) => { stored = e.value; version += 1; return { value: { isSet: true, version } } })
+  await $.turn.complete(turnInput())
+  expect((stored as MegamaidRun).usage.turns).toBe(1)
 })
 
 test('the cost line is the session cost now minus at start', async ($, on) => {
@@ -115,18 +173,6 @@ test('a failing fs.exists leaves the state write standing, writes no file and lo
   expect(r.fsWrites).toHaveLength(0)
   expect(r.logs.some(l => l.startsWith('ledger failed: '))).toBe(true)
 })
-
-const REPORT = '/w/docs/megamaid/reviews/branch-x-round1-report.md'
-const LEDGER = '/w/docs/megamaid/reviews/branch-x-round1-usage.md'
-type WriteAnswer = 'ok' | 'deny' | 'error'
-function answerWrites(on: On, how: () => WriteAnswer = () => 'ok') {
-  on('tool.call', { tool: 'Write' }, (_$, e) => {
-    const h = how()
-    if (h === 'deny') return { deny: 'no' }
-    if (h === 'error') return { isError: true as const, result: 'boom', text: 'boom' }
-    return { result: { type: 'create' as const, filePath: String(e.file_path), content: String(e.content), structuredPatch: [], originalFile: null } }
-  })
-}
 
 test("a review run writes no file before its report; the main loop's first report Write places the ledger beside it and later ones leave it (controls: a non-report name, a subagent's Write, a denied and an errored Write set none)", async ($, on) => {
   const r = rig(on); answerSkills(on)

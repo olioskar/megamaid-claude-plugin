@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Chat after a run no longer inflates the orchestrator's row.** A main-loop turn is counted only when the run did something since the last counted one (the first turn always; then a dispatch, a dispatched agent's turn, or the review report's Write owes the next). The ledger was counting every main-loop turn until the next run or session end, so a question asked after the summary changed a committed ledger. The one turn this misses is an answer to the run's own question that dispatches nothing, such as "run again?" answered no.
+- **Vendored engine types refreshed to Claude Code 2.1.303** (CI installs that version). 2.1.303 dropped the `re-entry` hook-failure kind, so the usage hooks' failure log no longer special-cases it.
+- **Review Step 8 names the Write tool for the report.** The hooks module finds the report by its Write call to place the usage ledger beside it; a report assembled with a shell heredoc or Edit left no ledger. Review's closing note now lists the ledger among the files a run creates.
 - **The eval suite ran for 0.4.0** (2026-10-18, 8/9, 4.53 USD): the two `usage-ledger` graders and `no-stray-file`, verified by replay only at release, pass live. The one miss, `manifest-slice`'s `orchestrator-never-reads-manifest`, did not recur when the case ran alone; it is tracked as MM-043.
 - **`PLAYBOOK.md` is replaced by `docs/process/dev-flow.md`**, and `docs/` and the session memory `.claude/memory/main.md` are tracked. The process, the architecture notes, the handover, the memory and the backlog (`issues.yaml`) live in the tree, so a fresh session reads the current state from git instead of from per-contributor local files.
 

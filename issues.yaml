@@ -3,17 +3,6 @@
 # body: current state only, 1 to 4 lines; file:line where it helps; "Not seen" if only suspected.
 # needs_owner: true marks an item that waits on the maintainer's word.
 issues:
-  - id: MM-001
-    type: improvement
-    area: hooks
-    title: Decide the run-end rule for the usage ledger (activity-gated main-loop turns, or keep next-run-or-session-end)
-    body: |
-      Every main-loop turn until the next run or session end is counted, so chat after a run inflates the
-      orchestrator row and a ledger in a tracked paths.reviews keeps changing. Proposal, not built: a main-loop
-      turn counts only when something of the run happened since the previous counted one (a recorded spawn, a
-      recorded agent's turn, or the report Write; the first always counts). Until decided: read the ledger right after the final summary.
-    needs_owner: true
-
   - id: MM-002
     type: improvement
     area: hooks
@@ -33,16 +22,6 @@ issues:
       commit a5cdccf, which is pushed, so rewriting is now a history rewrite. Keep as is unless a rewrite is worth it.
     needs_owner: true
 
-  - id: MM-007
-    type: improvement
-    area: scripts
-    title: Refresh the vendored engine types to Claude Code 2.1.302
-    body: |
-      Local Claude Code is 2.1.302; vendor/claude-code-types/ and the CI pin are 2.1.299, so check-contract WARNs
-      on every local run. Lay the types with an interactive `claude --plugin-dir .` start (claude -p does not lay
-      them), run scripts/sync-types.sh, commit as chore(types): Claude Code 2.1.302, and move README's "tested
-      on 2.1.299" line with it. claude-code-tools/index.d.ts may change for reasons other than version.
-
   - id: MM-008
     type: improvement
     area: release
@@ -60,18 +39,8 @@ issues:
       One ordinary /megamaid:vacu-suck on a code-shaped branch, "run again?" answered no. Read <report>-usage.md;
       record the orchestrator share of input and output tokens and the cost as the baseline; compare with
       the ideation estimate (orchestrator 20 to 35%; under 20% means only Phase 6 (MM-028) is worth doing for tokens).
-      While at it, confirm MM-013, MM-014 and MM-015 (the three ledger bounds) from the ledger and the trace. Several USD.
+      While at it, confirm MM-014 and MM-015 (the two ledger bounds) from the ledger and the trace. Several USD.
     needs_owner: true
-
-  - id: MM-013
-    type: bug
-    area: hooks
-    title: A review report written without the Write tool produces no usage ledger
-    body: |
-      The report site is a main-loop tool.call of Write (hooks/usage.ts). Review Step 8 says "the path to write"
-      and the skill allows Bash and Edit, so a report produced by a shell heredoc or assembled with Edit raises
-      no such call and the ledger never lands. Every kept trace uses Write; not seen live. If the measurement
-      loop (MM-010) shows the gap, Step 8 gains one sentence pinning the Write tool.
 
   - id: MM-014
     type: bug
@@ -294,21 +263,6 @@ issues:
       resolve's exit-2 list omits "lane present but not a model string" (:296); brief lists no exit-2 cases
       (:462-467, :505-512); report-name omits exit 2 for an empty slug or unreadable reviews dir (:540-549);
       config also exits 2 when migrate.py cannot load (:223). docs/api/scripts.md documents the behaviour.
-  - id: MM-039
-    type: improvement
-    area: hooks
-    title: A configure run writes a usage ledger under .megamaid/usage/
-    body: |
-      isRunSkill excludes only help (hooks/run.ts:7-9), so /megamaid:configure, which dispatches no agents,
-      leaves a configure-<startedAt>.md ledger behind. Decide whether configure is a run worth a ledger.
-  - id: MM-040
-    type: bug
-    area: skills
-    title: Review's closing note omits the usage ledger from "the only files created"
-    body: |
-      skills/review/SKILL.md:415 says the report and the run's working files are the only files created;
-      the module also writes <stem>-usage.md beside the report (hooks/ledger.ts). docs/features/review.md
-      says so; the skill text does not.
   - id: MM-041
     type: improvement
     area: skills

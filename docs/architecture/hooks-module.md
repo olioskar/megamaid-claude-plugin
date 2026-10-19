@@ -9,7 +9,7 @@
 | `skill-prompt.ts` | `skill.prompt` (megamaid:*) | guard | replays `next` and strips again: an overrun cannot cost the strip. Run start sits in `try`; its failure is logged and the strip still returns. | writes `run` |
 | `read-note.ts` | `tool.call` Read | observer | pass-through `next(e)`: a fault means no note, and the run stops | none |
 | `agents.ts` | `agent.spawn` | observer | pass-through: a fault means an unrecorded agent | reads and writes `run.agents` |
-| `usage.ts` | `turn.complete` | observer | logs `usage hook failed: …` (not under re-entry), then `next(e)`: a fault means a stale ledger | `run.usage`, `run.agents[id].usage`, `run.lastTurnAt` |
+| `usage.ts` | `turn.complete` | observer | logs `usage hook failed: …`, then `next(e)`: a fault means a stale ledger | `run.usage`, `run.agents[id].usage`, `run.lastTurnAt`, `run.owed` |
 | `usage.ts` | `tool.call` Write | observer | same; a denied or errored Write is skipped before any state is read | `run.report` |
 | `session.ts` | `session.start` | observer | none (the site refuses nothing) | none |
 | `session.ts` | `session.end` | observer | pass-through; `next` first because the chain shares one time limit, so the write spends what is left | clears `run` |
@@ -41,7 +41,7 @@ The stored run means "the last run started", not "a run in progress". It starts 
 What the file looks like for a user: [usage-ledger.md](../features/usage-ledger.md). The mechanism:
 
 - Usage is stored per agent (`agents[id].usage`) and for the main loop (`run.usage`); `renderLedger` folds it per key: `orchestrator` for the main loop, `<lane>/<role>` for a briefed agent, the `subagentType` for a briefless one. A `turn.complete` with an unrecorded `agentId` counts nowhere; a stored run with no `usage` field is left uncounted.
-- Run end is the next run's start or session end because no earlier signal is trustworthy: a main-loop turn that ends on text is a question as often as the run's last answer (review's scope question, fix's dirty-tree pre-flight, vacu-suck's "run again?"), and a background agent's completion raises a main-loop turn of its own. So the ledger keeps counting main-loop turns until then. A sweep's "run again" is the same run: `report` is set once and the totals cover every round.
+- Run end is the next run's start or session end because no earlier signal is trustworthy: a main-loop turn that ends on text is a question as often as the run's last answer (review's scope question, fix's dirty-tree pre-flight, vacu-suck's "run again?"), and a background agent's completion raises a main-loop turn of its own. So the ledger counts main-loop turns until then, but only owed ones (`run.owed`): the first is owed at run start; a recorded spawn (`addAgent`), a recorded agent's counted turn, and the report Write each owe the next; a counted main-loop turn clears it. Chat after the run's last answer counts nowhere. The one turn this misses is a main-loop answer to the run's own question that dispatches nothing ("run again?" answered no). A run stored without the field (0.4.0 across a hot reload) reads as owed. A sweep's "run again" is the same run: `report` is set once and the totals cover every round.
 - The report is found by a main-loop `tool.call` of Write, neither denied nor errored, whose basename matches `REPORT_NAME` (`ledger.ts`), the same shape `megamaid.py report-name` prints, kept equal by check-contract §5. A subagent's Write is ignored.
 - Placement (`ledgerPath`): beside the report for review and vacu-suck, `-usage.md` for `-report.md`, nothing until the report exists; `.megamaid/usage/<skill>-<startedAt>.md` for every other run, with `.megamaid/.gitignore` (`*`) written first when absent. Plan and fix ledgers do not learn `paths.*` from the config call (parsing a tool result) or from lane Reads.
 - The cost line is `$.session.usage().cost.usd` at the last counted turn minus `costAtStart`; "unavailable" when either is null. No price table, so no per-role USD; the split is two shares (input incl. cache; output) because the two price classes differ by an order of magnitude.
@@ -53,7 +53,7 @@ What the file looks like for a user: [usage-ledger.md](../features/usage-ledger.
 
 | Bound | Status |
 |---|---|
-| A report produced by a shell heredoc or Edit raises no Write call; the ledger never lands. Every kept trace uses Write. | unverified live; issues.yaml MM-013: pin the Write tool in review Step 8 if the measurement shows the gap |
+| A report produced by a shell heredoc or Edit raises no Write call; the ledger never lands. Review Step 8 pins the Write tool; every kept trace uses it. | prose only; no hook enforces it (MM-025 would) |
 | The engine raises `agent.spawn` for a subagent's spawn to this hook (nested attribution rests on it). Symptom: an agent row's Agents below the trace's Agent calls. | unverified live; issues.yaml MM-014: confirm from the baseline measurement |
 | An agent whose turn ends before its spawn record lands counts nowhere. Symptom: Turns below Agents. | unverified live; issues.yaml MM-015: confirm from the baseline measurement |
 | `$.plugin.root` equals `${CLAUDE_PLUGIN_ROOT}` for a marketplace-installed copy (the Read note keys on it). | unverified; issues.yaml MM-016: probe an installed copy |

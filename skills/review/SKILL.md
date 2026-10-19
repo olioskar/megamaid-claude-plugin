@@ -272,7 +272,7 @@ Carry each agent's `Confidence` line forward. Where an agent reported `Unverifie
 python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" report-name --reviews <paths.reviews> --pr <number>      # or: --branch <name>
 ```
 
-Its `report:` line is the path to write (`pr-{number}-round{N}-report.md`, or `branch-{slug}-round{N}-report.md` with the branch name made path-safe). The script parses `N` out of the existing filenames with the same prefix and never counts files — after a deletion, a count collides with a surviving later round.
+Its `report:` line is the path to write (`pr-{number}-round{N}-report.md`, or `branch-{slug}-round{N}-report.md` with the branch name made path-safe). The script parses `N` out of the existing filenames with the same prefix and never counts files — after a deletion, a count collides with a surviving later round. Write the report with the Write tool, in one call, never with a shell heredoc or Edit: the hooks module finds the report by that Write and places the usage ledger beside it.
 
 **Template selection.** Use the template that matches the Step 3.5 classification.
 
@@ -412,7 +412,7 @@ Then, last of all, remove this run's excerpt and brief working files (they share
 
 ## Ground rules
 
-- **Read-only.** Nobody edits code. The only files created are the report and this run's excerpt and brief working files under `.megamaid/excerpts/`, which are removed at the end.
+- **Read-only.** Nobody edits code. The only files created are the report, the usage ledger the hooks module writes beside it (`…-usage.md`), and this run's excerpt and brief working files under `.megamaid/excerpts/`, which are removed at the end.
 - **Agents read actual source code.** Not just filenames.
 - **The report's voice is authoritative.** Step 7's verification gate is what earns it. A particular that survived no check is marked, not stated.
 - **Project-aware.** Every agent gets the project's directives.

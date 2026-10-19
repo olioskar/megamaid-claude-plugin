@@ -34,6 +34,6 @@ Below the table the orchestrator's share of input and of output tokens (the line
 
 ## When it stops changing
 
-A run ends at the next megamaid command other than help, or at session end (`/clear` included). Until then every main-loop turn is added to the orchestrator row and the file is rewritten whole, so read it right after the run's final summary, or after `/clear`. The orchestrator's turn count shows how much was counted after the summary.
+A run ends at the next megamaid command other than help, or at session end (`/clear` included). Until then a main-loop turn is added to the orchestrator row only when the run did something since the last counted one: the run's first turn always counts; a dispatch, a dispatched agent's turn, or the review report's Write owes the next one. Chat after the run's last answer adds nothing. One turn can slip through: a main-loop turn that answers a question of the run without dispatching (vacu-suck's "run again?" answered no) is not counted.
 
 Exact format and paths: [../api/working-paths.md](../api/working-paths.md). How the counting works: [../architecture/hooks-module.md](../architecture/hooks-module.md).

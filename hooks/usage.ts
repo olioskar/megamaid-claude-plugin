@@ -8,9 +8,11 @@ const RUN = { plugin: 'megamaid', key: 'run' } as const
 const GITIGNORE = '.megamaid/.gitignore'
 
 // Records what each turn of a stored run cost: the main loop's to the orchestrator, a recorded
-// agent's to that agent; every other turn counts nowhere. Finds the review report a review or sweep
-// writes so the ledger can sit beside it. Neither hook refuses or rewrites anything: a fault means
-// a missing or stale ledger.
+// agent's to that agent; every other turn counts nowhere. A main-loop turn counts only while one is
+// owed: the run's first always is, and a recorded spawn, a recorded agent's turn or the report
+// Write owes the next one; so chat after the run's last answer adds nothing. Finds the review
+// report a review or sweep writes so the ledger can sit beside it. Neither hook refuses or
+// rewrites anything: a fault means a missing or stale ledger.
 export function registerUsage(on: On): void {
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
@@ -22,13 +24,14 @@ export function registerUsage(on: On): void {
     if (stored.usage === undefined) return r
     const agentId = e.agentId
     if (agentId !== undefined && stored.agents[agentId] === undefined) return r
+    if (agentId === undefined && stored.owed === false) return r
     const now = await $.clock.now()
     const run = await update($, RUN, run => {
       if (run === null || run === undefined) return null
-      if (agentId === undefined) return { ...run, usage: addUsage(run.usage, usage), lastTurnAt: now }
+      if (agentId === undefined) return run.owed === false ? run : { ...run, usage: addUsage(run.usage, usage), lastTurnAt: now, owed: false }
       const agent = run.agents[agentId]
       if (agent === undefined) return run
-      return { ...run, agents: { ...run.agents, [agentId]: { ...agent, usage: addUsage(agent.usage ?? ZERO, usage) } }, lastTurnAt: now }
+      return { ...run, agents: { ...run.agents, [agentId]: { ...agent, usage: addUsage(agent.usage ?? ZERO, usage) } }, lastTurnAt: now, owed: true }
     })
     if (run === null) return r
     const agent = agentId === undefined ? undefined : run.agents[agentId]
@@ -50,7 +53,7 @@ export function registerUsage(on: On): void {
     if (!reportName(path)) return r
     const { value: stored } = await $.state.get(RUN)
     if (stored === null || stored === undefined || !REPORT_SKILLS.includes(stored.skill) || stored.report !== null) return r
-    const run = await update($, RUN, run => run === null || run === undefined ? null : { ...run, report: run.report ?? path })
+    const run = await update($, RUN, run => run === null || run === undefined ? null : { ...run, report: run.report ?? path, owed: true })
     if (run !== null) await writeLedger($, run)
     return r
   }).catch(($, e, next) => { failed($, next.error); return next(e) })

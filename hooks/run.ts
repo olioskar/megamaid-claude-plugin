@@ -9,7 +9,7 @@ export function isRunSkill(name: string): boolean {
 }
 
 export function startRun(id: string, skill: string, startedAt: number, costAtStart: number | null = null): MegamaidRun {
-  return { id, skill, startedAt, agents: {}, usage: ZERO, report: null, costAtStart, lastTurnAt: null }
+  return { id, skill, startedAt, agents: {}, usage: ZERO, report: null, costAtStart, lastTurnAt: null, owed: true }
 }
 
 // A run brief: .megamaid/excerpts/<stem>.<lane>.<role>.brief.md, written by megamaid.py brief.
@@ -28,6 +28,7 @@ export function parseBrief(prompt: string): Brief | null {
 }
 
 // seq is the spawn order within the run: Object.values(run.agents) would put an all-digit id first.
+// A recorded spawn is run activity: the next main-loop turn is owed.
 export function addAgent(run: MegamaidRun, agentId: string, agent: Omit<MegamaidAgent, 'seq'>): MegamaidRun {
-  return { ...run, agents: { ...run.agents, [agentId]: { ...agent, seq: Object.keys(run.agents).length } } }
+  return { ...run, agents: { ...run.agents, [agentId]: { ...agent, seq: Object.keys(run.agents).length } }, owed: true }
 }
