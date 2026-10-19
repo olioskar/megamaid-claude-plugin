@@ -37,7 +37,7 @@ The first live run of the plugin in an ordinary session. It yields the orchestra
 | Run | `/megamaid:vacu-suck` (scope: the branch, when asked). Answer only its questions; "run again?" with no | code (skill) |
 | Read, right away | `<paths.reviews>/branch-<slug>-round1-usage.md` (default `docs/megamaid/reviews/`). Record: the `Orchestrator share` line, the `Cost` line, and the table whole | code (ledger) |
 | Bounds | MM-014: every row's `Agents` equals the debug file's `spawned as` lines for that lane/role (nested spawns show as `nested spawn … under`). MM-015: no row with `Turns` below `Agents`. Owed rule: the orchestrator's `Turns` is the number of main-loop turns that dispatched or wrote the report, not the number of prompts typed | code (hooks) |
-| Verdict | Orchestrator share of input tokens against the ideation estimate (20 to 35%); under 20% means only MM-028 is worth doing for tokens | code (MM-010) |
+| Verdict | Orchestrator share of input tokens against the ideation estimate (20 to 35%); under 20% means only MM-028 is worth doing for tokens. The share reads slightly low: the turn that answers "run again?" with no is not counted (it dispatches nothing), and it is one model response reading the whole context, where the orchestrator's counted turns hold one such read per tool round, so the miss is about one round in the orchestrator's total, a percent or two, not the 20% line | code (hooks); unverified (size) |
 | Hand back | The ledger, the debug file and the per-item status list to a session, which records the figures in costs.md, settles MM-014 and MM-015 and MM-010 in issues.yaml, and files what broke | code (dev-flow) |
 
 ## Eval suite
