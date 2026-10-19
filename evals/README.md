@@ -16,7 +16,7 @@ Behavioural regression tests for the megamaid plugin, in the `claude plugin eval
 - Graders that look for git commands match the subcommand (`commit … -m`), not the word `git` (see macOS below).
 - `fix-reviewer-diff-scope` asks for 4 `rev-parse HEAD`, 5 `status --porcelain` and 2 verification runs where the skill mandates 5, 8 and 3 for two items: the margin is for an orchestrator that combines calls (`git rev-parse HEAD && git status --porcelain` counts once per pattern).
 - `module-loaded.md` in every case but `help-overview`: a `not_contains` grader for `MEGAMAID-MODULE-NOT-LOADED`, so a run whose hooks module did not load fails instead of passing its negative graders. `check-contract.sh` §11 keeps the file exact.
-- `usage-ledger.md` in `noncode-shortcircuit` and `plan-native-planner`: a `file_exists` grader for the module's ledger (`docs/megamaid/reviews/*-usage.md` beside the sweep's report; `.megamaid/usage/plan-*.md` for the plan run). Both pass `scripts/test-replay.sh` against synthetic fixtures and no paid run has exercised them; they assume a relative `$.fs.write` lands in the eval workspace and the runner's glob matches a dot-directory (MM-011, MM-012 in `issues.yaml`). If either fails live, drop the grader: the unit tests cover the module.
+- `usage-ledger.md` in `noncode-shortcircuit` and `plan-native-planner`: a `file_exists` grader for the module's ledger (`docs/megamaid/reviews/*-usage.md` beside the sweep's report; `.megamaid/usage/plan-*.md` for the plan run). Both pass `scripts/test-replay.sh` against synthetic fixtures and both passed live in the 0.4.0 suite run (2026-10-18), which settled that a relative `$.fs.write` lands in the eval workspace and the runner's glob matches a dot-directory.
 
 ## Run
 
@@ -26,7 +26,7 @@ claude plugin eval . --scaffold --ablation none --runs 1 --max-cost-usd 15 \
 claude plugin eval . --scaffold --allow-tools Bash Write Edit --case "help-*"
 ```
 
-- Measured: nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge), about 12 minutes and 5.23 USD.
+- Measured: nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge), about 12 minutes and 5.23 USD. The 0.4.0 run (2026-10-18, unpinned, Claude Code 2.1.303): 8/9, 832 s, 4.53 USD; `manifest-slice` missed `orchestrator-never-reads-manifest` once and passed alone on re-run (`issues.yaml` MM-043). The two usage-ledger graders and `no-stray-file` passed live.
 - `--ablation none` for pass/fail; the default `with-without` arm runs every case a second time without the plugin.
 - CI pins `--model` and `--judge-model` so a model rollout is not read as a plugin regression; the local command floats on purpose.
 - Output lands under `evals/results/` (gitignored).

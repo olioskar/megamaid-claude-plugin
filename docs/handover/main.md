@@ -29,5 +29,6 @@ As of 2026-10-18. Rewritten in place at every milestone and on "save progress"; 
 
 - Version: 0.4.0 on `main` and `origin/main` (a5cdccf, the merge of `feat/v0.4.0-usage-ledger`, pushed without a PR on the maintainer's word). Free gates green.
 - Under way: the documentation reset on `chore/reset-docs`, in a PR against `main`; merged on the maintainer's word.
-- Waits on the maintainer: the paid 0.4.0 steps: smoke (MM-008), the eval suite (MM-009), and the baseline measurement of the orchestrator's token share that decides whether deterministic fix orchestration is worth building (MM-010); the run-end rule for the usage ledger (MM-001); a types refresh to Claude Code 2.1.302 (MM-007).
+- The eval suite ran for 0.4.0 on 2026-10-18 (8/9, 4.53 USD, on an API key; `manifest-slice` missed once and passed alone on re-run: MM-043). The replay-only graders pass live; MM-009, MM-011 and MM-012 are closed.
+- Waits on the maintainer: the paid 0.4.0 steps: smoke (MM-008) and the baseline measurement of the orchestrator's token share that decides whether deterministic fix orchestration is worth building (MM-010); the run-end rule for the usage ledger (MM-001); a types refresh to Claude Code 2.1.302 (MM-007).
 - Next work after that: the call-time guarantees (issues.yaml MM-025), approach first.

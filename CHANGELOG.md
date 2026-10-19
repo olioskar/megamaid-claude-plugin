@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The eval suite ran for 0.4.0** (2026-10-18, 8/9, 4.53 USD): the two `usage-ledger` graders and `no-stray-file`, verified by replay only at release, pass live. The one miss, `manifest-slice`'s `orchestrator-never-reads-manifest`, did not recur when the case ran alone; it is tracked as MM-043.
 - **`PLAYBOOK.md` is replaced by `docs/process/dev-flow.md`**, and `docs/` and the session memory `.claude/memory/main.md` are tracked. The process, the architecture notes, the handover, the memory and the backlog (`issues.yaml`) live in the tree, so a fresh session reads the current state from git instead of from per-contributor local files.
 
 ## [0.4.0] — 2026-10-18

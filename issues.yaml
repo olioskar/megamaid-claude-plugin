@@ -52,17 +52,6 @@ issues:
       review with the module off (must stop on the token). Run before the 0.4.0 PR.
     needs_owner: true
 
-  - id: MM-009
-    type: improvement
-    area: evals
-    title: Run the eval suite for 0.4.0 and verify the three replay-only graders live
-    body: |
-      No suite run covers 0.4.0. Pinned like CI, nine cases, about 5 USD. Watch the two usage-ledger graders
-      (noncode-shortcircuit: docs/megamaid/reviews/*-usage.md; plan-native-planner: .megamaid/usage/plan-*.md)
-      and no-stray-file ([!M]*.md glob), all verified by replay only. If a ledger grader fails on MM-011 or MM-012,
-      drop it and note it in evals/README.md (the unit tests cover the module). Record the result in evals/README.md's measured line and under CHANGELOG.md [Unreleased].
-    needs_owner: true
-
   - id: MM-010
     type: feature
     area: evals
@@ -73,23 +62,6 @@ issues:
       the ideation estimate (orchestrator 20 to 35%; under 20% means only Phase 6 (MM-028) is worth doing for tokens).
       While at it, confirm MM-013, MM-014 and MM-015 (the three ledger bounds) from the ledger and the trace. Several USD.
     needs_owner: true
-
-  - id: MM-011
-    type: bug
-    area: evals
-    title: Unverified, a relative $.fs.write from the module lands in the eval workspace
-    body: |
-      plan-native-planner's usage-ledger grader expects .megamaid/usage/plan-*.md in the eval workspace. The
-      types say a relative $.fs.write resolves against the session's working directory; the spike only shows an
-      absolute write reaching outside the sandbox. Not seen. MM-009 (Run the eval suite for 0.4.0) settles it.
-
-  - id: MM-012
-    type: bug
-    area: evals
-    title: Unverified, the eval runner's file_exists glob matches a dot-directory
-    body: |
-      The same grader globs .megamaid/usage/plan-*.md. Offline replay matches it through Python's glob; the
-      runner's own matcher is untested on a dot-directory. Not seen. MM-009 (Run the eval suite for 0.4.0) settles it.
 
   - id: MM-013
     type: bug
@@ -352,3 +324,12 @@ issues:
     body: |
       scripts/manifest.py:1041 takes the flag "for symmetry; unused"; skills/patterns/SKILL.md:323 calls gate
       without it. Drop the flag or use it.
+  - id: MM-043
+    type: bug
+    area: evals
+    title: manifest-slice orchestrator read PATTERNS.md once in the 0.4.0 suite run
+    body: |
+      evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x) while the
+      excerpt and dispatch graders passed, so the review orchestrator read the full manifest on top of slicing it.
+      Not reproduced: the case alone passed on 2026-10-19 (sandbox kept at /private/tmp/e-WPukmN). No trace of the
+      miss (run without --keep-temp). Three passes and one miss across four runs; a prompt fix waits on a second miss.
