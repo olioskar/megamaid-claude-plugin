@@ -25,10 +25,10 @@ A report to the maintainer holds: what was done; what passed, with the gate's la
 
 ## Now
 
-As of 2026-10-18. Rewritten in place at every milestone and on "save progress"; never appended.
+As of 2026-10-19. Rewritten in place at every milestone and on "save progress"; never appended.
 
-- Version: 0.4.0 on `main` and `origin/main` (a5cdccf, the merge of `feat/v0.4.0-usage-ledger`, pushed without a PR on the maintainer's word). Free gates green.
-- Under way: the documentation reset on `chore/reset-docs`, in a PR against `main`; merged on the maintainer's word.
-- The eval suite ran for 0.4.0 on 2026-10-18 (8/9, 4.53 USD, on an API key; `manifest-slice` missed once and passed alone on re-run: MM-043). The replay-only graders pass live; MM-009, MM-011 and MM-012 are closed.
-- Waits on the maintainer: the paid 0.4.0 steps: smoke (MM-008) and the baseline measurement of the orchestrator's token share that decides whether deterministic fix orchestration is worth building (MM-010); the run-end rule for the usage ledger (MM-001); a types refresh to Claude Code 2.1.302 (MM-007).
-- Next work after that: the call-time guarantees (issues.yaml MM-025), approach first.
+- Version: 0.4.0 on `origin/main`; local `main` is ahead by the commits below, unpushed (a push is the maintainer's call). Free gates green on Claude Code 2.1.303.
+- Since 0.4.0, on local `main`: the eval suite ran (8/9, 4.53 USD, API key; `manifest-slice` missed once, passed alone: MM-043); the vendored types are 2.1.303 (MM-007); the ledger counts a main-loop turn only while the run owes one, so chat after a run no longer inflates the orchestrator row (MM-001); review Step 8 pins the Write tool and the closing note names the ledger (MM-013, MM-040); smoke ran green (MM-008); configure keeps its ledger (MM-039 decided).
+- Ready: the first live run, one full `/megamaid:vacu-suck` in a real project of the maintainer's (MM-010). The maintainer runs it; the recipe is [knowledge/live-checks.md](../knowledge/live-checks.md), "Baseline measurement". It settles MM-014 and MM-015 and gives the go/no-go for MM-028.
+- Done: the documentation reset (`chore/reset-docs`, PR #5, merged into `main` on 2026-10-18).
+- Next work after the live run: the call-time guarantees (issues.yaml MM-025), approach first.

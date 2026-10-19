@@ -22,15 +22,6 @@ issues:
       commit a5cdccf, which is pushed, so rewriting is now a history rewrite. Keep as is unless a rewrite is worth it.
     needs_owner: true
 
-  - id: MM-008
-    type: improvement
-    area: release
-    title: Run scripts/smoke.sh once for 0.4.0
-    body: |
-      No smoke run covers 0.4.0. About 0.25 USD: the free gates, help with the module on (proof it loaded),
-      review with the module off (must stop on the token). Run before the 0.4.0 PR.
-    needs_owner: true
-
   - id: MM-010
     type: feature
     area: evals

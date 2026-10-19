@@ -4,7 +4,7 @@ Observed costs in USD, with the model where known. Both kept suite runs carry th
 
 | Run | USD | Model | Checked |
 |---|---|---|---|
-| `scripts/smoke.sh` (free gates plus three `claude -p` runs); the module-off turn is most of it | 0.25 | the session default (smoke passes no `--model`) | unverified |
+| `scripts/smoke.sh` (free gates plus three `claude -p` runs); the module-off turn is most of it. Ran green for 0.4.0 on 2026-10-19 (Claude Code 2.1.303, the owed-turn module); its cost is not printed | 0.25 | the session default (smoke passes no `--model`) | unverified |
 | Eval suite, nine cases (`evals/results/2026-10-14T17-26-56-747Z`: 9/9, 691 s, Claude Code 2.1.299) | 5.23 | Opus 5.5, Sonnet 5.5 judge | machine |
 | of which `plan-native-planner` (`arms.with[0].costUsd`) | 0.62 | Opus 5.5 | machine |
 | Eval suite, nine cases, unpinned, on an API key (`evals/results/2026-10-18T23-42-38-410Z`: 8/9, 832 s, Claude Code 2.1.303; `manifest-slice` missed `orchestrator-never-reads-manifest`, MM-043) | 4.53 | not recorded (the local command floats) | machine |
