@@ -54,8 +54,8 @@ What the file looks like for a user: [usage-ledger.md](../features/usage-ledger.
 | Bound | Status |
 |---|---|
 | A report produced by a shell heredoc or Edit raises no Write call; the ledger never lands. Review Step 8 pins the Write tool; every kept trace uses it. | prose only; no hook enforces it (MM-025 would) |
-| The engine raises `agent.spawn` for a subagent's spawn to this hook (nested attribution rests on it). Symptom: an agent row's Agents below the trace's Agent calls. | unverified live; issues.yaml MM-014: confirm from the baseline measurement |
-| An agent whose turn ends before its spawn record lands counts nowhere. Symptom: Turns below Agents. | unverified live; issues.yaml MM-015: confirm from the baseline measurement |
+| The engine raises `agent.spawn` for a subagent's spawn to this hook (nested attribution rests on it). Symptom: an agent row's Agents below the trace's Agent calls. | unverified live; issues.yaml MM-014: the baseline ran no nested spawn ([costs](../knowledge/costs.md)) |
+| An agent whose turn ends before its spawn record lands counts nowhere. Symptom: Turns below Agents. | not seen live: 84 agents in the baseline, 17 spawned within 0.6 s ([costs](../knowledge/costs.md)) |
 | `$.plugin.root` equals `${CLAUDE_PLUGIN_ROOT}` for a marketplace-installed copy (the Read note keys on it). | unverified; issues.yaml MM-016: probe an installed copy |
 | The stripping `.catch` on `skill.prompt`: a budget overrun cannot be simulated, so removing it passes every test. A throw from `next` itself, or a throwing `.catch`, passes the text unstripped and the model stops. | untested; issues.yaml MM-017: no action until the kit can simulate it |
 | Only the two writer roles withhold `Agent`; reviewers may spawn, and those spawns are nested rows. | verified (agent frontmatter) |

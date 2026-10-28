@@ -4,6 +4,8 @@ Observed costs in USD, with the model where known. Both kept suite runs carry th
 
 | Run | USD | Model | Checked |
 |---|---|---|---|
+| Baseline, `/megamaid:vacu-suck` round 1 in a real project (parts-bin, branch `vacu-suck/tooling`, 2026-10-28, Claude Code 2.1.312): 26 findings, 17 plans, 16 items committed, 53 agents; the ledger's `Cost` line, most likely on the plan (no API key set) | 39.19 | Opus 5.5 | machine |
+| The same, round 2 (a rerun with three carried-in findings): 15 findings, 9 items committed, 31 agents | 28.88 | Opus 5.5 | machine |
 | `scripts/smoke.sh` (free gates plus three `claude -p` runs); the module-off turn is most of it. Ran green for 0.4.0 on 2026-10-19 (Claude Code 2.1.303, the owed-turn module); its cost is not printed | 0.25 | the session default (smoke passes no `--model`) | unverified |
 | Eval suite, nine cases (`evals/results/2026-10-14T17-26-56-747Z`: 9/9, 691 s, Claude Code 2.1.299) | 5.23 | Opus 5.5, Sonnet 5.5 judge | machine |
 | of which `plan-native-planner` (`arms.with[0].costUsd`) | 0.62 | Opus 5.5 | machine |
@@ -21,6 +23,17 @@ Observed costs in USD, with the model where known. Both kept suite runs carry th
 | One release cycle (spec review, branch review, smoke, live check, suite) | about 10.6 | Opus 5.5 | unverified |
 | The three experiments, six runs ([experiments/README.md](../../experiments/README.md)) | 4.88 | Opus 5.5 | unverified |
 | CI `evals` job cap (`--max-cost-usd`) | 20 | pinned | code |
+
+## Baseline: orchestrator share
+
+From the two ledgers of the baseline run (rows above); the ledgers and debug logs stay in that project (`docs/megamaid/reviews/branch-vacu-suck-tooling-round{1,2}-usage.md`, `/tmp/megamaid-live.log` and `.log.1`). Share of input tokens counts input, cache read and cache write; the cost-weighted share uses list-price ratios (cache read 0.1, cache write 1.25, output 5).
+
+| Round | Orchestrator turns | Share of input tokens | Share of output tokens | Cost-weighted share | Checked |
+|---|---|---|---|---|---|
+| 1 | 43 | 45% | 19% | about 26% | machine (ledger); unverified (weighting) |
+| 2 | 30 | 54% | 19% | about 36% | machine (ledger); unverified (weighting) |
+
+Against the ideation estimate (20 to 35%) both rounds are above it, so deterministic fix orchestration (MM-028) pays for tokens. Every row's `Agents` equals the debug logs' `spawned as` lines for its time window and `Turns` never falls below `Agents` (84 agents, 17 planners within 0.6 s); no subagent spawned, so nested attribution (MM-014) was not exercised.
 
 ## Kept runs
 
