@@ -148,9 +148,10 @@ issues:
     title: Phase 6, Deterministic fix orchestration from code (E)
     body: |
       Drive fix batching, dispatch, verification and commits from code through $.agent.spawn and $.process,
-      leaving the model the judgment steps. The largest token saving and also a rewrite. The baseline
-      (docs/knowledge/costs.md) puts the orchestrator at 45% and 54% of input tokens, above the 20% line, so it
-      pays for tokens; the go is the maintainer's.
+      leaving the model the judgment steps. A rewrite. The baseline (docs/knowledge/costs.md) puts the orchestrator
+      at about 26% and 36% of cost (45% and 54% of input tokens): above the 20% line, a saving of about a quarter
+      of a run. Cost is not the only measure: steps the baseline's orchestrator skipped or improvised (MM-044,
+      MM-048) are steps code would take every time. The go is the maintainer's.
     needs_owner: true
 
   - id: MM-029
