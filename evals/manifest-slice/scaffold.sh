@@ -75,6 +75,12 @@ $PROV
 |---|---|---|---|
 | 9 | legacy \`components.css\` | \`--demo-*\` tokens | #1015 |
 EOT
+# One reviewer on a model none of the agents or the session uses: the hooks module must set it at
+# spawn, and the ledger's code-reviewer row shows it (ledger-sonnet).
+mkdir -p .claude
+cat > .claude/megamaid.config.json <<'EOT'
+{ "agents": { "code-reviewer": { "model": "sonnet" } } }
+EOT
 git add -A && git commit -qm "add PATTERNS manifest"
 git checkout -qb feature
 cat > src/pages/entity/order/OrdersPage.tsx <<'EOT'

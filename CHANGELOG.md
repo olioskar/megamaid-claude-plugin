@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Briefed dispatches no longer pass `model`** unless the user named one for the run; patterns' briefless scanner and shaver still do. The fix implementer's prompt carries a `Class: trivial|standard` line, which picks its model lane.
+- **The eval graders that matched `"model"` on the Agent call are gone.** `manifest-slice` sets `code-reviewer` to sonnet in its config and checks the review ledger's row instead, since the model is now set at spawn.
 
 - **Chat after a run no longer inflates the orchestrator's row.** A main-loop turn is counted only when the run did something since the last counted one (the first turn always; then a dispatch, a dispatched agent's turn, or the review report's Write owes the next). The ledger was counting every main-loop turn until the next run or session end, so a question asked after the summary changed a committed ledger. The one turn this misses is an answer to the run's own question that dispatches nothing, such as "run again?" answered no.
 - **Vendored engine types refreshed to Claude Code 2.1.303** (CI installs that version). 2.1.303 dropped the `re-entry` hook-failure kind, so the usage hooks' failure log no longer special-cases it.
