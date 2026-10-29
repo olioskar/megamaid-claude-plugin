@@ -112,8 +112,18 @@ test('a brief spawn after session end (stored null) starts a "none" run', async 
 
 test('five spawns raised at once all land', async ($, on) => {
   const { writes } = rig(on); answerSkills(on)
-  let n = 0; answerSpawns(on, () => 'a' + ++n)
-  // Hold the first five reads until all five arrived, so every writer starts from the same version.
+  // Every spawn reaches next before any record is written; then the first five reads (the records'
+  // updates, not the reads a briefed spawn makes before next) are held until all five arrived, so
+  // every writer starts from the same version.
+  let n = 0
+  let releaseSpawns: () => void = () => {}
+  const spawnGate = new Promise<void>(r => { releaseSpawns = r })
+  on('agent.spawn', async () => {
+    const id = 'a' + ++n
+    if (n === 5) { armed = true; releaseSpawns() }
+    await spawnGate
+    return { model: 'haiku', agentId: id }
+  })
   let armed = false
   let held = 0
   let release: () => void = () => {}
@@ -124,7 +134,6 @@ test('five spawns raised at once all land', async ($, on) => {
     return r
   })
   await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
-  armed = true
   await Promise.all([1, 2, 3, 4, 5].map(i =>
     $.agent.spawn(spawnInput({ tool_use_id: 't' + i, prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))))
   expect(held).toBe(5)
@@ -184,4 +193,64 @@ test('a reviewer spawn stores no boundary', async ($, on) => {
   const r = rig(on); answerSpawns(on, () => 'a1')
   await $.agent.spawn(spawnInput({ prompt: 'Repository: /r\n' + say(briefPath(FIX_STEM, 'fix', 'code-reviewer')) }))
   expect(r.writes.at(-1)?.agents.a1?.boundary).toBeNull()
+})
+
+const RESOLVE = (subagentType: string, model = 'opus') => `subagent_type: ${subagentType}\nmodel: ${model}\neffort: unset\nnative: yes\n`
+const CONFIG = JSON.stringify({ agents: {
+  implementer: { subagent_type: 'megamaid:implementer' }, planner: { subagent_type: 'megamaid:planner' }, 'x-planner': { subagent_type: 'megamaid:planner' } } })
+function answerResolve(r: ReturnType<typeof rig>, subagentType: string, model = 'opus') {
+  r.process = argv => argv.includes('resolve') ? { exitCode: 0, stdout: RESOLVE(subagentType, model) }
+    : argv.includes('config') ? { exitCode: 0, stdout: CONFIG } : { exitCode: 2, stdout: '', stderr: 'megamaid.py: no' }
+}
+
+test('a brief dispatched to the agent config names passes', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1'); answerResolve(r, 'megamaid:planner')
+  const res = await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: say(briefPath(STEM, 'plan', 'planner')) }))
+  expect(res.deny).toBeUndefined()
+  expect(Object.keys(r.writes.at(-1)?.agents ?? {})).toEqual(['a1'])
+})
+
+test('a planner dispatched with the implementer brief is denied', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1'); answerResolve(r, 'megamaid:implementer')
+  const res = await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: implPrompt('Repository: /r\nInstruction file: /r/p/X1.md\n') }))
+  expect(res.deny).toContain('megamaid:implementer')
+  expect(res.deny).toContain('planner, x-planner')
+  expect(res.deny).toContain('megamaid.py brief --skill fix --role <role> --run ' + FIX_STEM)
+  expect(r.writes).toHaveLength(0)
+})
+
+test('a resolve exit 2 passes the spawn and logs it', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1')
+  const res = await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: say(briefPath(STEM, 'plan', 'planner')) }))
+  expect(res.deny).toBeUndefined()
+  expect(r.logs).toContain('resolve plan/planner exited 2: megamaid.py: role x is not in agents (deleted or never defined)')
+})
+
+test('a foreign override resolving to general-purpose passes as general-purpose', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1'); answerResolve(r, 'general-purpose')
+  const res = await $.agent.spawn(spawnInput({ subagentType: 'general-purpose', provider: FOREIGN, prompt: say(briefPath(STEM, 'plan', 'planner')) }))
+  expect(res.deny).toBeUndefined()
+})
+
+test('a throwing spawn hook denies a briefed spawn and passes a briefless one', async ($, on) => {
+  rig(on); answerSkills(on); answerSpawns(on, () => 'a1')
+  on('state.get', () => ({ deny: 'no state' }))
+  const briefed = await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  expect(briefed.deny).toContain('megamaid guard fault')
+  const briefless = await $.agent.spawn(spawnInput({ subagentType: 'megamaid:pattern-scanner' }))
+  expect(briefless.deny).toBeUndefined()
+  expect(briefless.agentId).toBe('a1')
+})
+
+test('vacu-suck coerces the resolve (control: review does not)', async ($, on) => {
+  const r = rig(on); answerSkills(on); answerSpawns(on, () => 'a1')
+  await $.skill.prompt({ skill: 'megamaid:review', text: 'x' })
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  await $.skill.prompt({ skill: 'megamaid:vacu-suck', text: 'x' })
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  const resolves = r.argvs.filter(a => a.includes('resolve')).map(a => a.slice(3))
+  expect(resolves).toEqual([
+    ['resolve', '--role', 'code-reviewer', '--lane', 'review'],
+    ['resolve', '--role', 'code-reviewer', '--lane', 'review', '--coerce', 'vacu_suck'],
+  ])
 })

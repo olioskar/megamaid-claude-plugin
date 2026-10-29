@@ -1,4 +1,39 @@
+import type { Brief } from './run'
+
 // Pure rules for the call-time guards. No $ here: agents.ts and guards.ts call these.
+
+// The models lane a brief's dispatch resolves under: the fix implementer's from the prompt's
+// `Class:` line (standard when absent); null for a lane megamaid.py resolve is not run for.
+export function laneFor(brief: Brief, prompt: string): string | null {
+  if (brief.lane === 'review' || brief.lane === 'plan') return brief.lane
+  if (brief.lane !== 'fix') return null
+  if (brief.role !== 'implementer') return 'fix.reviewer'
+  return /^Class:[ \t]*trivial[ \t]*$/m.test(prompt) ? 'fix.implementer_trivial' : 'fix.implementer_standard'
+}
+
+// megamaid.py resolve's subagent_type and model lines; null when either is missing.
+export function parseResolve(stdout: string): { subagentType: string; model: string } | null {
+  const t = /^subagent_type:[ \t]*(\S+)[ \t]*$/m.exec(stdout)?.[1]
+  const m = /^model:[ \t]*(\S+)[ \t]*$/m.exec(stdout)?.[1]
+  return t === undefined || m === undefined ? null : { subagentType: t, model: m }
+}
+
+// The config roles (megamaid.py config's JSON) whose subagent_type is this one, sorted; none on bad JSON.
+export function rolesFor(configJson: string, subagentType: string): string[] {
+  let cfg: unknown
+  try { cfg = JSON.parse(configJson) } catch { return [] }
+  const agents = (cfg as { agents?: unknown } | null)?.agents
+  if (agents === null || typeof agents !== 'object') return []
+  return Object.entries(agents as Record<string, { subagent_type?: unknown } | null>)
+    .filter(([, spec]) => spec?.subagent_type === subagentType).map(([role]) => role).sort()
+}
+
+export function denyMisfit(brief: Brief, expected: string, actual: string, roles: readonly string[], root: string): string {
+  return `megamaid: the ${brief.lane}/${brief.role} brief is for ${expected}, but this spawn is ${actual}. ` +
+    `Config roles that resolve to ${actual}: ${roles.length === 0 ? 'none' : roles.join(', ')}. ` +
+    `Dispatch ${expected} with this brief, or write the brief for the role you dispatch: ` +
+    `python3 -I ${root}/scripts/megamaid.py brief --skill ${brief.lane} --role <role> --run ${brief.runStem} …`
+}
 
 // The first `<label>: <value>` line of a dispatch prompt's shared context, or null.
 export function field(prompt: string, label: string): string | null {
