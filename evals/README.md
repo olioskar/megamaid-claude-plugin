@@ -26,7 +26,8 @@ claude plugin eval . --scaffold --ablation none --runs 1 --max-cost-usd 15 \
 claude plugin eval . --scaffold --allow-tools Bash Write Edit --case "help-*"
 ```
 
-- Measured: nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge), about 12 minutes and 5.23 USD. The 0.4.0 run (2026-10-18, unpinned, Claude Code 2.1.303): 8/9, 832 s, 4.53 USD; `manifest-slice` missed `orchestrator-never-reads-manifest` once and passed alone on re-run (`issues.yaml` MM-043). The two usage-ledger graders and `no-stray-file` passed live.
+- Measured: nine cases, one run each, pinned like CI (Opus 5.5, Sonnet 5.5 judge), about 12 minutes and 5.23 USD. The 0.4.0 run (2026-10-18, unpinned, Claude Code 2.1.303): 8/9, 832 s, 4.53 USD; `manifest-slice` missed `orchestrator-never-reads-manifest` once and passed alone on re-run (`issues.yaml` MM-043). The two usage-ledger graders and `no-stray-file` passed live. The `feat/call-time-guarantees` run (2026-10-29, Claude Code 2.1.312): 6/9, 752 s, 4.63 USD; `ledger-sonnet` passed live; `config-null-delete`'s judge failed with a subscription weekly-limit error although the key was set (re-run alone: passed, and a one-case judge probe with the key passed, cause unknown); `manifest-slice` missed `orchestrator-never-cats-manifest` (MM-043; passed alone); `fix-auto-off`'s refusal said "`fix.model_invocation` is `false`", not the template's `fix.model_invocation: false`.
+- One `--case` per command: given twice, only one case runs.
 - `--ablation none` for pass/fail; the default `with-without` arm runs every case a second time without the plugin.
 - CI pins `--model` and `--judge-model` so a model rollout is not read as a plugin regression; the local command floats on purpose.
 - Output lands under `evals/results/` (gitignored).

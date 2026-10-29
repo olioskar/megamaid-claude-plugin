@@ -253,12 +253,14 @@ issues:
   - id: MM-043
     type: bug
     area: evals
-    title: manifest-slice orchestrator read PATTERNS.md once in the 0.4.0 suite run
+    title: manifest-slice orchestrator reads PATTERNS.md now and then (two suite misses)
     body: |
-      evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x) while the
-      excerpt and dispatch graders passed, so the review orchestrator read the full manifest on top of slicing it.
-      Not reproduced: the case alone passed on 2026-10-19 (sandbox kept at /private/tmp/e-WPukmN). No trace of the
-      miss (run without --keep-temp). Three passes and one miss across four runs; a prompt fix waits on a second miss.
+      The review orchestrator reads the full manifest on top of slicing it, while the excerpt and dispatch graders
+      pass. evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x).
+      evals/results/2026-10-29T10-37-12-234Z (feat/call-time-guarantees): orchestrator-never-cats-manifest failed
+      (a Bash cat/head/tail/less/awk of PATTERNS.md, 2x). Each time the case alone passed next (2026-10-19; 2026-10-29,
+      kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Two misses in six
+      runs: the second miss the prompt fix was waiting on has happened; the fix is the maintainer's call.
   - id: MM-044
     type: bug
     area: skills
