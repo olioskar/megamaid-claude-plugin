@@ -24,7 +24,10 @@ The prompt itself carries no directive paths, baseline block, or focus text; tho
 
 ## Model and effort delivery
 
-Resolve the model with this priority: `agents.<role>.model` if set; otherwise the dispatching lane's `models.*` value. Pass the resolved model as the Agent tool call's `model` parameter — the per-call parameter overrides the agent definition's `model:` frontmatter. A model that is resolved but not passed does nothing.
+Resolve the model with this priority: `agents.<role>.model` if set; otherwise the dispatching lane's `models.*` value.
+
+- **A dispatch with a run brief** passes no `model`: the hooks module resolves it the same way at spawn and sets it. Pass one only when the user named a model for this run; a model the call names wins.
+- **A dispatch without one** (patterns' scanner and shaver) passes the resolved model as the Agent tool call's `model` parameter — the per-call parameter overrides the agent definition's `model:` frontmatter. A model that is resolved but not passed does nothing.
 
 Effort is unset by default: megamaid passes no `effort`, so the session's default applies. Resolve it only when configured: `agents.<role>.effort` if set; otherwise the dispatching lane's `effort.*` value (the `effort` tree mirrors `models` key for key: `effort.review`, `effort.plan`, `effort.patterns`, `effort.fix.implementer_standard`, `effort.fix.implementer_trivial`, `effort.fix.reviewer`, `effort.vacu_suck`). When one resolves, pass it as the Agent tool call's `effort` parameter (`low` | `medium` | `high` | `xhigh` | `max`); when none does, omit the parameter.
 

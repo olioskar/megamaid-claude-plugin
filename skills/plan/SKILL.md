@@ -219,7 +219,7 @@ Launch all in parallel per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role planner --lane plan
   ```
 
-  Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`; `native:` is the brief's form.
+  Pass `effort:` as the Agent call's `effort` unless `unset`; pass no `model` unless the user named one for this run (the hooks module sets `model:` at spawn); `native:` is the brief's form.
 - **Write the run brief** once per run (every planner shares it):
 
   ```

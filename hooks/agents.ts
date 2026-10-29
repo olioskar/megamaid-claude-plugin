@@ -11,12 +11,14 @@ const RUN = { plugin: 'megamaid', key: 'run' } as const
 // scanner and shaver) a megamaid-provided agent while the stored run is patterns. A spawn nested in
 // a recorded agent is recorded under the parent's lane, role and stem. The stored run is the last
 // run, not an active one, so nothing else is attributed to it. A main-loop briefed spawn is refused
-// when config gives its brief's role another agent; a briefed implementer or planner is recorded with
+// when config gives its brief's role another agent, and gets config's model when the call names none
+// (a model the dispatch names wins: a user's per-run override). A briefed implementer or planner is recorded with
 // its write boundary (guards.ts reads it), worked out before the spawn starts. A nested spawn is
 // never checked: a reviewer's own Explore may quote the reviewer's brief path.
 export function registerAgents(on: On): void {
   on('agent.spawn', async ($, e, next) => {
     const brief = e.parentAgentId === undefined ? parseBrief(e.prompt) : null
+    let spawn = e
     if (brief !== null) {
       const lane = laneFor(brief, e.prompt)
       if (lane !== null) {
@@ -27,10 +29,11 @@ export function registerAgents(on: On): void {
           const roles = cfg.exitCode === 0 ? rolesFor(cfg.stdout, e.subagentType) : []
           return { deny: denyMisfit(brief, resolved.subagentType, e.subagentType, roles, $.plugin.root) }
         }
+        if (resolved !== null && e.model === undefined) spawn = { ...e, model: resolved.model }
       }
     }
     const boundary = brief === null ? null : await boundaryFor($, brief, e.prompt)
-    const r = await next(e)
+    const r = await next(spawn)
     if (r.agentId === undefined) return r
     const agentId = r.agentId
     const parentId = e.parentAgentId

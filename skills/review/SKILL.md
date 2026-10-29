@@ -152,7 +152,7 @@ For each picked role, resolve and construct the dispatch prompt:
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role <role> --lane review
   ```
 
-  Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless it is `unset`; `native:` is the form the brief takes (the script already chose it). Never hardcode a `subagent_type`.
+  Pass `effort:` as the Agent call's `effort` unless it is `unset`; pass no `model` unless the user named one for this run (the hooks module sets `model:` at spawn); `native:` is the form the brief takes (the script already chose it). Never hardcode a `subagent_type`.
 - **Write the run brief:**
 
   ```

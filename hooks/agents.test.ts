@@ -254,3 +254,46 @@ test('vacu-suck coerces the resolve (control: review does not)', async ($, on) =
     ['resolve', '--role', 'code-reviewer', '--lane', 'review', '--coerce', 'vacu_suck'],
   ])
 })
+
+// The model the spawn reaches core with, per call.
+function captureModels(on: On): (string | undefined)[] {
+  const seen: (string | undefined)[] = []
+  let n = 0
+  on('agent.spawn', (_$, e) => { seen.push(e.model); return { model: e.model ?? 'inherit', agentId: 'm' + ++n } })
+  return seen
+}
+// resolve answers the model named after its lane, so each lane's mapping shows in the model.
+function answerLaneModels(r: ReturnType<typeof rig>) {
+  r.process = argv => {
+    if (!argv.includes('resolve')) return { exitCode: 2, stdout: '', stderr: 'megamaid.py: no' }
+    const lane = String(argv[argv.indexOf('--lane') + 1])
+    const coerced = argv.includes('--coerce') ? '+vs' : ''
+    const type = lane.startsWith('fix.implementer') ? 'megamaid:implementer' : lane === 'plan' ? 'megamaid:planner' : 'megamaid:code-reviewer'
+    return { exitCode: 0, stdout: RESOLVE(type, 'model-' + lane + coerced) }
+  }
+}
+
+test("a briefed spawn without a model gets config's, per lane", async ($, on) => {
+  const r = rig(on); answerSkills(on); const seen = captureModels(on); answerLaneModels(r)
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: say(briefPath(STEM, 'plan', 'planner')) }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer', prompt: implPrompt('Class: trivial\n') }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer', prompt: implPrompt('Item: M1\n') }))
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(FIX_STEM, 'fix', 'code-reviewer')) }))
+  expect(seen).toEqual(['model-review', 'model-plan', 'model-fix.implementer_trivial', 'model-fix.implementer_standard', 'model-fix.reviewer'])
+})
+
+test('vacu-suck coerces the model', async ($, on) => {
+  const r = rig(on); answerSkills(on); const seen = captureModels(on); answerLaneModels(r)
+  await $.skill.prompt({ skill: 'megamaid:vacu-suck', text: 'x' })
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  expect(seen).toEqual(['model-review+vs'])
+})
+
+test('a briefed spawn that names a model keeps it; a briefless spawn keeps its own', async ($, on) => {
+  const r = rig(on); answerSkills(on); const seen = captureModels(on); answerLaneModels(r)
+  await $.agent.spawn(spawnInput({ model: 'haiku', prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  await $.agent.spawn(spawnInput({ subagentType: 'Explore', provider: FOREIGN }))
+  await $.agent.spawn(spawnInput({ model: 'sonnet', subagentType: 'Explore', provider: FOREIGN }))
+  expect(seen).toEqual(['haiku', undefined, 'sonnet'])
+})
