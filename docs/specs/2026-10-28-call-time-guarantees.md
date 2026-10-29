@@ -72,7 +72,7 @@ Single source governs: a rule a hook enforces lives in the hook. The model still
 ## Decisions
 
 1. **No main-loop guards** ("the orchestrator never reads PATTERNS.md", "never edits a file in a write-set", "a megamaid agent is never dispatched without a brief"): they would refuse the user's own work after a run ends, since nothing marks a run's end. The maintainer, 2026-10-28: "lets leave it".
-2. **A model named in a dispatch wins over config.** The hook fills a model only when the call names none. The maintainer, 2026-10-28: "its an extra step to update the config for model overwrites. From my experience with writing and using the mother of megamaid, comb:the-desert, that is a useful and often used thing to have".
+2. **A model named in a dispatch wins over config.** The hook fills a model only when the call names none. The maintainer, 2026-10-28: "its an extra step to update the config for model overwrites. From my experience with writing and using the mother of megamaid, […], that is a useful and often used thing to have".
 
 ## Review log
 
