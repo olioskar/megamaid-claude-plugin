@@ -1,0 +1,2 @@
+write-set: src/a.ts
+exit=0

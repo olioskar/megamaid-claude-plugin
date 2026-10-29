@@ -1,0 +1,2 @@
+write-set: src/x.ts lib
+exit=0
