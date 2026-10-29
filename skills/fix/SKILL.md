@@ -156,6 +156,7 @@ An item's **write-set** is what `megamaid.py batches` (Step 2.5) prints for it: 
 - Different-file writes → parallel batch.
 - **Concurrency limit:** max 3 items in flight at any moment.
 - The script's `batch` lines already satisfy all three; split one when you must, never merge two.
+- An item whose write-set is `(none)` is not dispatched: its implementer's every edit would be refused. Announce `{code} — not dispatched: the instruction names no file` and move on.
 
 Three terms the git checks use:
 

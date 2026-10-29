@@ -15,7 +15,13 @@ export type Rig = {
   // When true, fs.write (or fs.exists) is denied.
   failWrites: boolean
   failExists: boolean
+  // What process.run answers for an argv; the default is megamaid.py's exit 2 for a role not in config.
+  process: (argv: readonly string[]) => ProcessAnswer
+  // Every process.run argv, in order.
+  argvs: (readonly string[])[]
 }
+
+export type ProcessAnswer = { exitCode: number; stdout: string; stderr?: string }
 
 // Shared setup. Register every test hook before the test's first $ call (the kit refuses later ones).
 // A clock (unless withheld), a ui.log answer that collects lines, a state.set recorder (unless withheld) that keeps
@@ -32,7 +38,10 @@ export function rig(on: On, opts: { clock?: boolean; usage?: boolean; state?: bo
     if (r.deny === undefined && r.value.isSet) writes.push(e.value as MegamaidRun | null)
     return r
   })
-  const r: Rig = { logs, writes, fsWrites: [], files: {}, exists: new Set(), cost: 3.5, failWrites: false, failExists: false }
+  const r: Rig = {
+    logs, writes, fsWrites: [], files: {}, exists: new Set(), cost: 3.5, failWrites: false, failExists: false,
+    process: () => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents (deleted or never defined)' }), argvs: [],
+  }
   // The kit hands a relative path to fs.write and fs.exists already resolved against the test
   // session's cwd (the plugin folder); the recorder keeps a .megamaid/ path relative so tests
   // match the spec's spelling.
@@ -47,7 +56,30 @@ export function rig(on: On, opts: { clock?: boolean; usage?: boolean; state?: bo
     startedAt: 0, context: { window: 200000 }, rateLimits: [], ...(r.cost === null ? {} : { cost: { usd: r.cost } }),
   } }))
   on('turn.complete', (_$, e) => ({ text: e.answer }))
+  on('process.run', (_$, e) => {
+    r.argvs.push(e.argv)
+    const a = r.process(e.argv)
+    return { value: { exitCode: a.exitCode, stdout: a.stdout, stderr: a.stderr ?? '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
   return r
+}
+
+// Answers state.get with one stored run (the test $ has no state noun).
+export function seedRun(on: On, run: MegamaidRun): void {
+  on('state.get', () => ({ value: { value: run, version: 1 } }))
+}
+
+// Guard tests' fs.stat: a prefix in links is rewritten; a path in or under missing, matched after that
+// rewrite, is refused as ENOENT; anything else resolves to itself, unnormalised.
+export function answerRealpaths(on: On, links: Record<string, string> = {}, missing: readonly string[] = []): void {
+  on('fs.stat', (_$, e) => {
+    let p = e.path
+    for (const [from, to] of Object.entries(links)) {
+      if (p === from || p.startsWith(from + '/')) { p = to + p.slice(from.length); break }
+    }
+    if (missing.some(m => p === m || p.startsWith(m + '/'))) return { deny: 'ENOENT' }
+    return { value: { kind: 'file' as const, size: 1, mtimeMs: 0, isLink: false, ...(e.resolve ? { realPath: p } : {}) } }
+  })
 }
 
 function dotMegamaid(path: string): string {

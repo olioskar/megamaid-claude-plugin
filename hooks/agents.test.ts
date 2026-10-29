@@ -136,3 +136,52 @@ test('parseBrief: free-form role names and backslash paths', () => {
   expect(parseBrief('C:\\w\\.megamaid\\excerpts\\' + STEM + '.fix.implementer.brief.md')).toEqual({ runStem: STEM, lane: 'fix', role: 'implementer' })
   expect(parseBrief('no brief here')).toBeNull()
 })
+
+const implPrompt = (lines: string) => lines + '\nRead these first, in order: /p/shared/fix-implementer-brief.md, ' + briefPath(FIX_STEM, 'fix', 'implementer')
+const writeSetAnswer = (out: string) => (argv: readonly string[]) =>
+  argv.includes('write-set') ? { exitCode: 0, stdout: out } : { exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents' }
+
+test('an implementer spawn stores its write-set', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1')
+  r.process = writeSetAnswer('write-set: src/a.ts src/dir\n')
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer',
+    prompt: implPrompt('Repository: /r\nItem: M1 — x\nInstruction file: /r/plans/M1-a.md\n') }))
+  expect(r.writes.at(-1)?.agents.a1?.boundary).toEqual({ kind: 'write-set', root: '/r', paths: ['src/a.ts', 'src/dir'], note: null })
+  const argv = r.argvs.find(a => a.includes('write-set')) ?? []
+  expect(argv.slice(0, 2)).toEqual(['python3', '-I'])
+  expect(String(argv[2]).endsWith('/scripts/megamaid.py')).toBe(true)
+  expect(argv.slice(3)).toEqual(['write-set', '--file', '/r/plans/M1-a.md'])
+})
+
+test('an implementer spawn without an Instruction file line stores an empty write-set with a note', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1')
+  r.process = writeSetAnswer('write-set: src/a.ts\n')
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer', prompt: implPrompt('Repository: /r\n') }))
+  expect(r.writes.at(-1)?.agents.a1?.boundary).toMatchObject({ kind: 'write-set', paths: [], note: 'the prompt names no Instruction file or Repository line' })
+})
+
+test('a write-set exit 2 stores an empty write-set with the stderr line', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1')
+  r.process = () => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: /r/plans/M1-a.md: No such file or directory\n' })
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:implementer',
+    prompt: implPrompt('Repository: /r\nInstruction file: /r/plans/M1-a.md\n') }))
+  expect(r.writes.at(-1)?.agents.a1?.boundary).toEqual({ kind: 'write-set', root: '/r', paths: [], note: 'megamaid.py: /r/plans/M1-a.md: No such file or directory' })
+})
+
+test('a planner spawn stores its output file, a relative one joined on Repository', async ($, on) => {
+  const r = rig(on); let n = 0; answerSpawns(on, () => 'p' + ++n)
+  const plan = (lines: string) => lines + '\nRead these first, in order: /p/shared/plan-brief.md, ' + briefPath(STEM, 'plan', 'planner')
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: plan('Repository: /r\nOutput file: /r/plans/x/M1-a.md\n') }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: plan('Repository: /r\nOutput file: docs/plans/x/M2-b.md\n') }))
+  await $.agent.spawn(spawnInput({ subagentType: 'megamaid:planner', prompt: plan('Repository: /r\n') }))
+  const agents = r.writes.at(-1)?.agents ?? {}
+  expect(agents.p1?.boundary).toEqual({ kind: 'output-file', root: '/r', paths: ['/r/plans/x/M1-a.md'], note: null })
+  expect(agents.p2?.boundary).toEqual({ kind: 'output-file', root: '/r', paths: ['/r/docs/plans/x/M2-b.md'], note: null })
+  expect(agents.p3?.boundary).toMatchObject({ kind: 'output-file', paths: [], note: 'the prompt names no Output file line' })
+})
+
+test('a reviewer spawn stores no boundary', async ($, on) => {
+  const r = rig(on); answerSpawns(on, () => 'a1')
+  await $.agent.spawn(spawnInput({ prompt: 'Repository: /r\n' + say(briefPath(FIX_STEM, 'fix', 'code-reviewer')) }))
+  expect(r.writes.at(-1)?.agents.a1?.boundary).toBeNull()
+})
