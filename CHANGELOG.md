@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-29
+
+The hooks module now enforces at call time the rules megamaid's agents used to keep from prose alone, and sets each briefed agent's model from config. The free gates (88 module tests), smoke and the eval suite ran; the suite's three misses were a judge auth error, a known flake (MM-043) and a grader too literal for a correct refusal, each re-run or replayed green.
+
 ### Added
 
 - **The hooks module refuses a megamaid agent's out-of-bounds call as it is made.** A fix implementer's Edit or Write outside its item's write-set, and a planner's to any file but its output file, are refused with the boundary named and an instruction to stop and report a divergence; a fix reviewer's diff past `HEAD` (`HEAD~1`, `HEAD^`) is refused with the `git diff HEAD -- <files>` form to use; a dispatch whose run brief is for another agent than config names is refused before it starts. These were prose rules the model sometimes broke (the 2026-10-28 baseline saw a planner sent with the implementer's brief). Only megamaid's own agents are checked; the main loop and other plugins' agents are not. A guard that faults refuses any subagent's Edit, Write or Bash call, another plugin's included, rather than letting it through.
