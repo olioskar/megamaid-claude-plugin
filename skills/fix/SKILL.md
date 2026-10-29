@@ -39,6 +39,7 @@ From it:
 - `models.fix.implementer_trivial`
 - `models.fix.reviewer`
 - `models.plan` and `paths.base_branch` (for the X-item planner dispatch, Step 4f)
+- `paths.reviews` (the review reports, which Step 1.5 does not count as uncommitted work)
 - `directives` and `agents` (for verifier dispatch)
 - `paths.patterns` — the PATTERNS manifest, if it resolves
 
@@ -48,13 +49,13 @@ From it:
 
 Skip this entire step if `fix.commit_per_item` is `false` in merged config.
 
-Run `git status --porcelain`. If the output is empty, the tree is clean — proceed.
+Run `git status --porcelain` and drop the run's own paths (Step 1.6) and anything under `paths.reviews`: in `/megamaid:vacu-suck` the round's report and plans are always there and are not the user's work. If nothing is left, the tree is clean — proceed.
 
 If non-empty, surface a one-shot question with these options:
 
 ```
 Working tree has uncommitted changes before /megamaid:fix starts:
-  <git status --porcelain output>
+  <the remaining git status --porcelain lines>
 
 Pick one:
   (a) Commit existing changes now (suggest a message)
