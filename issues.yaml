@@ -75,7 +75,7 @@ issues:
     body: |
       skill.prompt carries no agentId, so a subagent's megamaid skill replaces the main loop's run; later
       main-loop spawns are recorded under the subagent's skill, and the subagent's own spawns are not recorded.
-      Phase 3 (MM-025) guards that read the run must not take it for the active main-loop run. A fix needs a
+      The 0.5.0 guards read the run only for a recorded agentId, never as the active main-loop run. A fix needs a
       run-per-loop or an agentId on skill.prompt from the engine.
 
   - id: MM-021
@@ -85,7 +85,7 @@ issues:
     body: |
       Run detection records briefless spawns only when the provider is megamaid and the stored run is
       megamaid:patterns. A project that points agents.pattern-scanner at a foreign type gets no row in a
-      patterns run's ledger. Revisit when patterns gets a brief or Phase 3 (MM-025) keys on role another way.
+      patterns run's ledger. Revisit when patterns gets a brief.
 
   - id: MM-022
     type: improvement
@@ -115,13 +115,12 @@ issues:
   - id: MM-025
     type: feature
     area: hooks
-    title: Phase 3, Guarantees, enforce the prose rules at call time (ideas A1 to A4, B5)
+    title: Phase 3, what is left after 0.5.0's call-time guards (effort at spawn, briefs injected at spawn)
     body: |
-      Hooks for: the implementer's file boundary (the instruction's ## Where) and the planner's (one file, the output
-      file its prompt names); the orchestrator never reading the PATTERNS manifest during a run; the fix reviewer never
-      using HEAD~; models and effort set at spawn from resolved config (full ids normalised to aliases); briefs injected
-      at spawn. Remove the prose each replaces and move its graders and gate needles with it (docs/architecture/design-rules.md, "Moving text moves its checks").
-
+      0.5.0 guards the implementer's and planner's writes, the fix reviewer's HEAD~, and brief-to-agent fit, and sets
+      a briefed agent's model at spawn. Not built: effort at spawn (a turn.step rewrite may miss the agent's first
+      request; the orchestrator still passes effort) and briefs injected at spawn. Main-loop guards (the orchestrator
+      never reading PATTERNS.md) were declined: nothing marks a run's end (the maintainer, 2026-10-28: "lets leave it").
   - id: MM-026
     type: feature
     area: hooks
@@ -150,8 +149,8 @@ issues:
       Drive fix batching, dispatch, verification and commits from code through $.agent.spawn and $.process,
       leaving the model the judgment steps. A rewrite. The baseline (docs/knowledge/costs.md) puts the orchestrator
       at about 26% and 36% of cost (45% and 54% of input tokens): above the 20% line, a saving of about a quarter
-      of a run. Cost is not the only measure: steps the baseline's orchestrator skipped or improvised (MM-044,
-      MM-048) are steps code would take every time. The go is the maintainer's.
+      of a run. Cost is not the only measure: steps the baseline's orchestrator skipped or improvised (a brief
+      sent to the wrong agent, a reviewer's touch-up applied by hand) are steps code would take every time. The go is the maintainer's.
     needs_owner: true
 
   - id: MM-029
@@ -261,42 +260,11 @@ issues:
       (a Bash cat/head/tail/less/awk of PATTERNS.md, 2x). Each time the case alone passed next (2026-10-19; 2026-10-29,
       kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Two misses in six
       runs: the second miss the prompt fix was waiting on has happened; the fix is the maintainer's call.
-  - id: MM-044
-    type: bug
-    area: skills
-    title: fix skips the planner run brief for a discovered item, so the ledger counts its planner as fix/implementer
-    body: |
-      skills/fix/SKILL.md:305 says to write a --skill plan --role planner brief before the X-item planner; the
-      2026-10-28 baseline's orchestrator did not, and hooks/agents.ts:43 labels a spawn from the latest brief, so two
-      planners logged as "fix/implementer spawned as megamaid:planner" and round 2's fix/implementer row read 11 for 9.
-  - id: MM-045
-    type: bug
-    area: skills
-    title: fix Step 1.5 counts the sweep's own report and plans as a dirty tree
-    body: |
-      skills/fix/SKILL.md:51 asks on any `git status --porcelain` output; in vacu-suck the untracked report and plan
-      folder (default docs/megamaid/) is always there, so the question fires on every fix by the letter. Seen in the
-      baseline, where the orchestrator logged it instead of asking. Step 1.5 should skip the run's own paths (:76).
-  - id: MM-046
-    type: bug
-    area: scripts
-    title: batches write-set keeps a bare / or // from prose in ## Where
-    body: |
-      scripts/megamaid.py paths_in (:580) keeps any token holding "/", so "`names` / `targets`" yields "/". Seen in the
-      baseline: `write-set G7: tools/build.py tools/viewer.html // tools/photo.py`. overlap() does not treat "/" as
-      covering relative paths, but the orchestrator reads the printed set. Drop tokens with no path part.
+
   - id: MM-047
     type: improvement
     area: scripts
     title: batches orders by severity only and can schedule a plan before the one it was written against
     body: |
-      make_batches (scripts/megamaid.py:623) has no dependency input. In the baseline's round 2 it put D1 before G1
+      make_batches (scripts/megamaid.py:637) has no dependency input. In the baseline's round 2 it put D1 before G1
       though D1's plan built on G1's result in the same file; the orchestrator reordered by hand.
-  - id: MM-048
-    type: improvement
-    area: skills
-    title: A fix reviewer's PASS with a requested touch-up has no route, so the orchestrator edited code
-    body: |
-      skills/fix/SKILL.md:292 sends PASS straight to verify and commit. In the baseline G1's reviewer passed with a
-      whitespace slip to restore and the orchestrator fixed it with sed. Route such a note to an implementer or treat
-      it as FAIL; MM-025 (the implementer and planner file boundaries) does not cover the orchestrator's own edits.
