@@ -297,3 +297,15 @@ test('a briefed spawn that names a model keeps it; a briefless spawn keeps its o
   await $.agent.spawn(spawnInput({ model: 'sonnet', subagentType: 'Explore', provider: FOREIGN }))
   expect(seen).toEqual(['haiku', undefined, 'sonnet'])
 })
+
+test("a nested spawn quoting its parent's brief is not checked and keeps its model", async ($, on) => {
+  const r = rig(on); const seen = captureModels(on); answerResolve(r, 'megamaid:code-reviewer')
+  await $.agent.spawn(spawnInput({ prompt: say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  const resolvesBefore = r.argvs.filter(a => a.includes('resolve')).length
+  const res = await $.agent.spawn(spawnInput({ subagentType: 'Explore', provider: FOREIGN, parentAgentId: 'm1',
+    prompt: 'Look for callers. Context: ' + say(briefPath(STEM, 'review', 'code-reviewer')) }))
+  expect(res.deny).toBeUndefined()
+  expect(r.argvs.filter(a => a.includes('resolve')).length).toBe(resolvesBefore)
+  expect(seen.at(-1)).toBeUndefined()
+  expect(r.writes.at(-1)?.agents.m2).toMatchObject({ parent: 'm1', role: 'code-reviewer' })
+})

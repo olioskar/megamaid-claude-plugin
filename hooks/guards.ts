@@ -38,9 +38,13 @@ async function refuseWrite($: GuardDollar, agentId: string, file: string): Promi
     if (b.paths.length === 0) return denyEmptyWriteSet(b.note)
     const target = await realPath($, file)
     const root = b.root === null ? null : await realPath($, b.root)
-    if (root !== null && target.startsWith(root + '/')) {
-      const rel = target.slice(root.length + 1)
-      if (within(rel, b.paths)) return null
+    const rel = root !== null && target.startsWith(root + '/') ? target.slice(root.length + 1) : null
+    for (const entry of b.paths) {
+      // A ## Where may spell an entry absolutely; it is resolved like the target, not against the root.
+      if (entry.startsWith('/')) {
+        const real = await realPath($, entry)
+        if (target === real || target.startsWith(real + '/')) return null
+      } else if (rel !== null && within(rel, [entry])) return null
     }
     return denyOutsideWriteSet(file, b.paths)
   }

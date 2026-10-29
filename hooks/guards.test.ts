@@ -54,6 +54,14 @@ test('an implementer creating a file in a new folder inside a directory entry pa
   expect((await $.tool.call(write('/r/src/other/x.ts', 'a1'))).deny).toContain('outside')
 })
 
+test('a write-set entry spelled as an absolute path matches the same file', async ($, on) => {
+  rig(on); answerRealpaths(on, { '/tmp/r': '/private/r' }); answerTools(on)
+  seedRun(on, run({ a1: agent({ boundary: { ...IMPL, root: '/tmp/r', paths: ['/tmp/r/src/a.ts', '/tmp/r/src/dir'] } }) }))
+  expect((await $.tool.call(edit('/private/r/src/a.ts', 'a1'))).deny).toBe('answered')
+  expect((await $.tool.call(write('/tmp/r/src/dir/n.ts', 'a1'))).deny).toBe('answered')
+  expect((await $.tool.call(edit('/private/r/src/b.ts', 'a1'))).deny).toContain('outside')
+})
+
 test('an empty write-set denies every edit and says the instruction is defective', async ($, on) => {
   rig(on); answerRealpaths(on); answerTools(on)
   seedRun(on, run({ a1: agent({ boundary: { ...IMPL, paths: [], note: 'megamaid.py: /r/p/M1.md: No such file or directory' } }) }))
