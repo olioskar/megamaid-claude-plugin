@@ -6,13 +6,17 @@
 
 ## Pre-flight
 
-With `commit_per_item` on, a non-empty `git status --porcelain` asks once: commit now, stash and restore at the end, proceed without per-item commits for this run, or abort. Whether or not that question ran, the run records its baseline: the project's verification command (named in `CLAUDE.md`, else the build manifest; `none configured` otherwise) run once, the dirty paths (never touched by the run; an item whose `## Where` overlaps them is not dispatched), and `HEAD`. A verification that is already red asks once: proceed or abort.
+With `commit_per_item` on, uncommitted changes other than the run's own (the instruction folder, and the review reports under `paths.reviews`) ask once: commit now, stash and restore at the end, proceed without per-item commits for this run, or abort. Whether or not that question ran, the run records its baseline: the project's verification command (named in `CLAUDE.md`, else the build manifest; `none configured` otherwise) run once, the dirty paths (never touched by the run; an item whose `## Where` overlaps them is not dispatched), and `HEAD`. A verification that is already red asks once: proceed or abort.
 
 `megamaid.py batches` reads the folder: per-finding files (`C1-…`, `G1-…`, `X1-…`) or a single `revise-*.md` from a non-code report. Items whose `Finding status` is `not reproduced` are listed and not queued (`queue M7` runs one). Order: Critical → High → Medium → Low → Test gaps, confirmed with you; grouping of trivial same-file items is offered once.
 
 ## Batches
 
-An item's write-set is the paths in its `## Where` (else `File(s)`; a revise-doc's `Target spec`). Items with disjoint write-sets run in parallel, at most three in flight; overlapping ones run in sequence. Each batch is announced before launch.
+An item's write-set is the paths in its `## Where` (else `File(s)`; a revise-doc's `Target spec`). Items with disjoint write-sets run in parallel, at most three in flight; overlapping ones run in sequence. Each batch is announced before launch. An item whose write-set is empty is not dispatched (`<code> — not dispatched: the instruction names no file`).
+
+## What the hooks refuse
+
+While the hooks module is loaded, an implementer's Edit or Write outside its item's write-set is refused, and the implementer stops and reports a divergence; a reviewer's `git diff HEAD~1` (any `HEAD~` or `HEAD^`) is refused with the `git diff HEAD -- <files>` form to use instead; a dispatch whose run brief is for another agent (a planner sent with the implementer's brief) is refused before it starts. Each agent's model comes from config at spawn unless you named one for the run.
 
 ## One item
 
@@ -21,7 +25,7 @@ An item's write-set is the paths in its `## Where` (else `File(s)`; a revise-doc
 | Classify | orchestrator | trivial (single-line edit, import reorder, comment, rename within one file) or standard (multi-file, behaviour change, new branch); borderline is standard; you can override |
 | Implement | role `implementer`, lane `fix.implementer_standard` or `fix.implementer_trivial` | reads `shared/fix-implementer-brief.md` and the run brief, applies `## How` inside `## Where`, runs the `Check:` line if it can, reports every file changed and any divergence with its reason |
 | Git checks | orchestrator | `HEAD` unmoved (an implementer that committed stops the batch); reported files equal the dirty paths inside `## Where`; nothing dirty outside every in-flight write-set |
-| Review | the role in the file's `Specialty:` header, lane `fix.reviewer`; `consistency-auditor` for a revise-doc; fallback `test-auditor`, then `code-reviewer` | reads `shared/fix-reviewer-brief.md`, the instruction, the implementer's report, and `git diff HEAD -- <reported files>`; runs the `Check:` line from the project root; returns `PASS` or `FAIL` plus `Unverified: <what it could not check, or nothing>` |
+| Review | the role in the file's `Specialty:` header, lane `fix.reviewer`; `consistency-auditor` for a revise-doc; fallback `test-auditor`, then `code-reviewer` | reads `shared/fix-reviewer-brief.md`, the instruction, the implementer's report, and `git diff HEAD -- <reported files>`; runs the `Check:` line from the project root; returns `PASS` or `FAIL` plus `Unverified: <what it could not check, or nothing>`; any change it wants is a `FAIL`, never a `PASS` with a note, and the orchestrator never makes one itself |
 | Verify | orchestrator | once no implementer of the batch is running, the baseline verification command; failures already in the baseline are ignored; a new failing path inside an item's write-set fails that item; one naming no write-set fails every item waiting |
 | Commit | orchestrator | `git add <reported files>` and `git commit -m "<code>: <title>"`; a revise-doc commits as `revise <spec-stem>: apply review revisions` |
 

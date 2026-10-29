@@ -1,6 +1,6 @@
 # Hook events
 
-`hooks/hooks.json` loads one module, `hooks/register.ts`, which registers seven hooks. Why the module is shaped this way is [../architecture/hooks-module.md](../architecture/hooks-module.md); engine quirks are [../knowledge/engine.md](../knowledge/engine.md). No hook refuses or rewrites a tool call; a fault means a missing note, a missing record or a missing ledger.
+`hooks/hooks.json` loads one module, `hooks/register.ts`, which registers ten hooks. Why the module is shaped this way is [../architecture/hooks-module.md](../architecture/hooks-module.md); engine quirks are [../knowledge/engine.md](../knowledge/engine.md). The guards (`agents.ts`'s spawn checks, `guards.ts`) refuse a megamaid agent's out-of-bounds call and fail closed; every other hook refuses nothing, and its fault means a missing note, a missing record or a missing ledger.
 
 ## Registrations
 
@@ -8,7 +8,9 @@
 |---|---|---|---|
 | `skill.prompt` | `{ skill: /^megamaid:/ }` | `hooks/skill-prompt.ts` | strips the stop line from the skill text; for every skill but `megamaid:help` starts a run in state (`costAtStart` from `$.session.usage()`, null when unavailable) |
 | `tool.call` | `{ tool: 'Read' }` | `hooks/read-note.ts` | on a main-loop Read of `<plugin root>/skills/<name>/SKILL.md` (realpaths), `<name>` in `STOP_SKILLS`, result neither denied nor errored, adds the Read note to the result's `context` |
-| `agent.spawn` | none | `hooks/agents.ts` | records a main-loop spawn whose prompt names a run brief, or a megamaid-provided spawn while the stored run is `megamaid:patterns`; records a spawn nested under a recorded agent under the parent's lane, role and stem |
+| `agent.spawn` | none | `hooks/agents.ts` | for a main-loop spawn whose prompt names a run brief: runs `megamaid.py resolve` for the brief's role and lane (`--coerce vacu_suck` in a sweep) and refuses the spawn when its `subagentType` differs from config's, else sets config's model when the call names none; then records it, with the boundary below for a fix implementer or a planner. Also records a megamaid-provided spawn while the stored run is `megamaid:patterns`, and a spawn nested under a recorded agent under the parent's lane, role and stem (no check, no model, no boundary) |
+| `tool.call` | `{ tool: 'Edit' }`, `{ tool: 'Write' }` | `hooks/guards.ts` | refuses a recorded agent's Edit or Write outside its `boundary`: a fix implementer's write-set (resolved against `Repository:`, a directory entry covering what is under it), a planner's output file; an empty boundary refuses every edit. Paths are compared with symlinks resolved, through the nearest existing parent |
+| `tool.call` | `{ tool: 'Bash' }` | `hooks/guards.ts` | refuses a recorded fix-lane agent other than the implementer a command holding `HEAD~` or `HEAD^` |
 | `turn.complete` | none | `hooks/usage.ts` | adds the turn's usage to the orchestrator (no `agentId`) or to a recorded agent; writes the ledger |
 | `tool.call` | `{ tool: 'Write' }` | `hooks/usage.ts` | in a `megamaid:review` or `megamaid:vacu-suck` run, the main loop's first successful Write of a file named `<pr-N\|branch-…>-round<N>-report.md` sets `run.report` and writes the ledger beside it |
 | `session.start` | none | `hooks/session.ts` | logs `module loaded` |
@@ -44,6 +46,7 @@ Declared in `types/index.d.ts`; `MegamaidRun | null`. The stored run is the last
 | `parent` | `string \| null` | the recorded parent's agentId for a nested spawn, else null |
 | `seq` | `number` | spawn order within the run, 0-based (`hooks/run.ts:31-33`); keys of `agents` are not ordered |
 | `usage` | `MegamaidUsage \| null` | null until the agent's first counted turn |
+| `boundary` | `MegamaidBoundary \| null`, absent on a nested record or a run stored before the field | a fix implementer's `{ kind: 'write-set', root, paths, note }` from `Repository:`, `Instruction file:` and `megamaid.py write-set`; a planner's `{ kind: 'output-file', root, paths: [<Output file>], note }`; empty `paths` with the reason in `note` when a line is missing or `write-set` fails; null for any other agent |
 
 `MegamaidUsage`: `turns`, `input`, `cacheRead`, `cacheWrite`, `output` (integers summed per turn, `hooks/ledger.ts:15-24`), `model` (the last counted turn's model, or null).
 
@@ -66,12 +69,17 @@ Each line is written with `$.ui.log(…, { to: 'debug' })`; the engine prefixes 
 | `module loaded (Claude Code <version>)` | `session.ts:10` | every session start |
 | `run <skill> started (<id>)` | `skill-prompt.ts:20` | a run skill's `skill.prompt` |
 | `run detection failed: <message>` | `skill-prompt.ts:23` | the run start threw; the strip still happened |
-| `<lane>/<role> spawned as <subagentType> (<agentId>)` | `agents.ts:49` | a recorded main-loop spawn; `-/unknown` when briefless |
-| `<lane>/<role> nested spawn <subagentType> (<agentId>) under <parentId>` | `agents.ts:29` | a spawn nested under a recorded agent; lane `-` when the parent has none |
+| `<lane>/<role> spawned as <subagentType> (<agentId>)` | `agents.ts:72` | a recorded main-loop spawn; `-/unknown` when briefless |
+| `<lane>/<role> nested spawn <subagentType> (<agentId>) under <parentId>` | `agents.ts:52` | a spawn nested under a recorded agent; lane `-` when the parent has none |
+| `resolve <lane>/<role> exited <n>: <stderr line>` | `agents.ts:85` | a briefed spawn's `resolve` failed (role or lane not in config); the spawn passes unchecked, with its own model |
 | `usage <key> +<input>/<output> (<turns>)` | `usage.ts:38` | a counted turn; `<key>` is `orchestrator` or the agent's usage key; `<input>` counts what the ledger's share line counts ([working-paths.md](working-paths.md)); `<turns>` the key's total so far |
 | `ledger <path>` | `usage.ts:76` | the ledger file was written |
 | `ledger failed: <message>` | `usage.ts:78` | the write threw |
 | `usage hook failed: <message or kind>` | `usage.ts:64` | a usage hook threw; the hook chain beneath is replayed |
+
+## Deny reasons
+
+Each names the rule and what to do instead (`hooks/guard-rules.ts`): outside the write-set (the set is named), an empty write-set (the instruction is defective), outside the planner's output file, each ending "stop, change nothing more, and report it as a divergence"; a diff past `HEAD` (gives `git diff HEAD -- <files reported by implementer>`); a brief for another agent (names the roles config maps to the spawned agent and the `megamaid.py brief` command). A guard fault refuses with `<rule> (megamaid guard fault)`.
 
 ## Stop line and Read note
 

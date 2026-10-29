@@ -23,6 +23,8 @@ A specialty lens (the reviewer role the finding belongs to, `code-reviewer` by d
 
 Tools: reading, searching, Bash (`git log`, `git blame`, `grep`), and Write for its one file; `Edit` and `Agent` are withheld. It never edits source, never commits, never dispatches. For a revise-doc the prompt carries the job and format itself and names the run brief only.
 
+A planner's Edit or Write to any path but its output file is refused while the hooks module is loaded.
+
 ## Re-check
 
 The planner reproduces the finding before writing: it opens the code, confirms the defect, and re-derives anything the `Verified:` line names as unchecked (an anchor, a count, a fix shape); a finding without the line is treated as unconfirmed throughout. A finding it cannot reproduce gets `Finding status: not reproduced — <what it looked for>`, a one-line `## How` that proposes no change, and `Check: none`; `/megamaid:fix` lists such items and queues one only when asked.

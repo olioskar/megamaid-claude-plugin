@@ -1,6 +1,6 @@
 # The hooks module
 
-`hooks/hooks.json` loads `hooks/register.ts`, which calls one register function per file. Seven registrations, six event kinds; `usage.ts` registers two, and `tool.call` is split between `read-note.ts` (Read) and `usage.ts` (Write). Pure helpers without `$`: `run.ts`, `ledger.ts`, `stop-line.ts`. What each hook reads and writes, the state fields, the brief-path grammar and the debug log lines: [hook-events.md](../api/hook-events.md). This file holds the why and the mechanism.
+`hooks/hooks.json` loads `hooks/register.ts`, which calls one register function per file. Ten registrations, six event kinds; `usage.ts` registers two, `guards.ts` three, and `tool.call` is split between `read-note.ts` (Read), `guards.ts` (Edit, Write, Bash) and `usage.ts` (Write). Pure helpers without `$`: `run.ts`, `ledger.ts`, `stop-line.ts`, `guard-rules.ts`. What each hook reads and writes, the state fields, the brief-path grammar and the debug log lines: [hook-events.md](../api/hook-events.md). This file holds the why and the mechanism.
 
 ## Failure shape per hook
 
@@ -8,17 +8,23 @@
 |---|---|---|---|---|
 | `skill-prompt.ts` | `skill.prompt` (megamaid:*) | guard | replays `next` and strips again: an overrun cannot cost the strip. Run start sits in `try`; its failure is logged and the strip still returns. | writes `run` |
 | `read-note.ts` | `tool.call` Read | observer | pass-through `next(e)`: a fault means no note, and the run stops | none |
-| `agents.ts` | `agent.spawn` | observer | pass-through: a fault means an unrecorded agent | reads and writes `run.agents` |
+| `agents.ts` | `agent.spawn` | guard | `next.called ? next(e)`; else refuses a main-loop briefed spawn (`megamaid: brief check (megamaid guard fault)`) and passes any other, so a user's unrelated spawn is never refused by a fault | reads `run.skill`; reads and writes `run.agents` |
+| `guards.ts` | `tool.call` Edit, Write | guard | `next.called ? next(e)`; else passes a main-loop call, refuses a subagent's (`megamaid: write boundary (megamaid guard fault)`) | reads `run.agents[id].boundary` |
+| `guards.ts` | `tool.call` Bash | guard | same shape (`megamaid: fix reviewer diff base (megamaid guard fault)`) | reads `run.agents[id]` |
 | `usage.ts` | `turn.complete` | observer | logs `usage hook failed: …`, then `next(e)`: a fault means a stale ledger | `run.usage`, `run.agents[id].usage`, `run.lastTurnAt`, `run.owed` |
 | `usage.ts` | `tool.call` Write | observer | same; a denied or errored Write is skipped before any state is read | `run.report` |
 | `session.ts` | `session.start` | observer | none (the site refuses nothing) | none |
 | `session.ts` | `session.end` | observer | pass-through; `next` first because the chain shares one time limit, so the write spends what is left | clears `run` |
 
-Validate's wording for these (`gating hook with .catch` for the three at refusing sites) is in [engine.md](../knowledge/engine.md). No hook returns `deny`.
+Validate's wording for these (`gating hook with .catch` for every hook at a refusing site) is in [engine.md](../knowledge/engine.md). Only the guards return `deny`; each reason is in [hook-events.md](../api/hook-events.md).
+
+## Guards
+
+A guard acts only on megamaid's own work: a `tool.call` guard on a call whose `agentId` is a recorded agent of the stored run, the spawn checks on a main-loop spawn naming a run brief. A nested spawn is not checked, because a reviewer's own Explore may quote the reviewer's brief path. No guard watches the main loop: nothing marks a run's end, so one would refuse the user's own work afterwards. The model and the write-set come from `megamaid.py` run through `$.process.run` before the spawn starts; the boundary is stored on the agent's record after it. A model the dispatch names wins over config, so a user can override one run without editing config.
 
 ## State
 
-One slot, `PluginState.megamaid.run`. Every file that writes it declares `const RUN = { plugin: 'megamaid', key: 'run' } as const`, because validate reads a ref only as a literal const of the file that passes it; check-contract §12 keeps the four copies equal. Every write goes through `update($, RUN, fn)`: read, apply, write with `ifVersion`, retry on a miss. Review dispatches its reviewers in one message, so their `agent.spawn` hooks run at once; a plain get-spread-set loses entries. `costAtStart` is null when the host, or the test rig, answers no cost; the run still starts.
+One slot, `PluginState.megamaid.run`. Every file that reads or writes it declares `const RUN = { plugin: 'megamaid', key: 'run' } as const`, because validate reads a ref only as a literal const of the file that passes it; check-contract §12 keeps the five copies equal. Every write goes through `update($, RUN, fn)`: read, apply, write with `ifVersion`, retry on a miss. Review dispatches its reviewers in one message, so their `agent.spawn` hooks run at once; a plain get-spread-set loses entries. `costAtStart` is null when the host, or the test rig, answers no cost; the run still starts.
 
 ## The stop line
 
@@ -53,10 +59,14 @@ What the file looks like for a user: [usage-ledger.md](../features/usage-ledger.
 
 | Bound | Status |
 |---|---|
-| A report produced by a shell heredoc or Edit raises no Write call; the ledger never lands. Review Step 8 pins the Write tool; every kept trace uses it. | prose only; no hook enforces it (MM-025 would) |
+| A report produced by a shell heredoc or Edit raises no Write call; the ledger never lands. Review Step 8 pins the Write tool; every kept trace uses it. | prose only; no guard covers it |
+| A guard sees only the tools it hooks: an implementer writing through Bash (`sed -i`, a redirect) passes the write boundary; fix 4d.1's git checks stop the item. | by design |
+| A guard knows an agent once its spawn record lands; a call before that passes. | not seen: no turn before its record in the baseline's 84 spawns |
+| A fault in a `tool.call` guard's state read refuses that subagent call, another plugin's included; the agent sees the reason and can retry. A user's own agent dispatched with a megamaid brief is guarded as a megamaid dispatch. | by design |
+| A model the session forces on every subagent outranks the spawn's; an orchestrator that passes a model nobody asked for wins over config, and only the prose checks that. | types; prose |
 | The engine raises `agent.spawn` for a subagent's spawn to this hook (nested attribution rests on it). Symptom: an agent row's Agents below the trace's Agent calls. | unverified live; issues.yaml MM-014: the baseline ran no nested spawn ([costs](../knowledge/costs.md)) |
 | An agent whose turn ends before its spawn record lands counts nowhere. Symptom: Turns below Agents. | not seen live: 84 agents in the baseline, 17 spawned within 0.6 s ([costs](../knowledge/costs.md)) |
-| `$.plugin.root` equals `${CLAUDE_PLUGIN_ROOT}` for a marketplace-installed copy (the Read note keys on it). | unverified; issues.yaml MM-016: probe an installed copy |
+| `$.plugin.root` equals `${CLAUDE_PLUGIN_ROOT}` for a marketplace-installed copy (the Read note keys on it; the guards run `megamaid.py` from it). | unverified; issues.yaml MM-016: probe an installed copy |
 | The stripping `.catch` on `skill.prompt`: a budget overrun cannot be simulated, so removing it passes every test. A throw from `next` itself, or a throwing `.catch`, passes the text unstripped and the model stops. | untested; issues.yaml MM-017: no action until the kit can simulate it |
 | Only the two writer roles withhold `Agent`; reviewers may spawn, and those spawns are nested rows. | verified (agent frontmatter) |
 | Usage is counted only while the module is loaded; a session cost from the host is optional. | verified (code) |
