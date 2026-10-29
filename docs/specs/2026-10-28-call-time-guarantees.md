@@ -1,6 +1,6 @@
 # Call-time guarantees (MM-025), with the baseline's small fixes (MM-044, MM-045, MM-046, MM-048)
 
-Status: draft for the maintainer's go; contract review settled in three rounds (log below). Branch `feat/call-time-guarantees`. The maintainer's ask (2026-10-28): "goahead with all and the smaller issues as you recommend"; the measure: "we need to make sure megamaid does a perfect job". Deterministic fix orchestration (MM-028) is the next spec, built on this one; MM-047 (batches ignore plan order) moves there, because the code that batches will own ordering.
+Status: the maintainer's go, 2026-10-29 ("lets go"); contract review settled in three rounds (log below). Plan: [2026-10-28-call-time-guarantees-plan.md](2026-10-28-call-time-guarantees-plan.md). Branch `feat/call-time-guarantees`. The maintainer's ask (2026-10-28): "goahead with all and the smaller issues as you recommend"; the measure: "we need to make sure megamaid does a perfect job". Deterministic fix orchestration (MM-028) is the next spec, built on this one; MM-047 (batches ignore plan order) moves there, because the code that batches will own ordering.
 
 ## Why
 
