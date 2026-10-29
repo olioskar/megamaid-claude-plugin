@@ -16,7 +16,7 @@
 - A function that takes `$` lives in the file that registers the hook (validate). Imports between hook files are extensionless.
 - One `agent.spawn` registration (`agents.ts`). Every state write goes through `update($, RUN, fn)`. Every file that reads or writes state declares `const RUN = { plugin: 'megamaid', key: 'run' } as const`; check-contract §12's file list follows.
 - New guards' `.catch`: `tool.call` → `next.called ? next(e) : e.agentId === undefined ? next(e) : { deny: '<rule> (megamaid guard fault)' }`; `agent.spawn` → `next.called ? next(e) : e.parentAgentId === undefined && parseBrief(e.prompt) !== null ? { deny: 'megamaid: brief check (megamaid guard fault)' } : next(e)`.
-- Guards act only on a recorded agent (`tool.call`) or a main-loop spawn naming a run brief (`agent.spawn`). No main-loop guard.
+- Guards act only on a recorded agent (`tool.call`) or a main-loop spawn naming a run brief (`agent.spawn`). No main-loop guard. Deviation from spec part 5, which names any briefed spawn: a nested spawn is left to the existing nested flow (no fit check, no model, no boundary), because a reviewer's nested Explore whose prompt quotes its brief path would otherwise be refused as a misfit.
 - A model the Agent call names wins (`e.model !== undefined` is left alone).
 - Script: `python3 -I <$.plugin.root>/scripts/megamaid.py …` through `$.process.run(argv)` (session cwd, default timeout).
 - LF line endings; commits `type(scope): summary`, by path (`git add PATHS && git commit -- PATHS`); no push.
@@ -36,7 +36,7 @@
 |---|---|
 | `scripts/megamaid.py` | `paths_in` drops tokens with no letter or digit; new `write-set --file` subcommand; docstring |
 | `scripts/test-megamaid.sh`, `scripts/fixtures/megamaid/project/plans/{slash,writeset}/`, `scripts/fixtures/megamaid/expected/` | fixture cases |
-| `types/index.d.ts` | `MegamaidAgent.boundary?: Boundary \| null` |
+| `types/index.d.ts` | `MegamaidAgent.boundary?: MegamaidBoundary \| null` |
 | `hooks/guard-rules.ts` (new, pure) | prompt fields, lane mapping, resolve parsing, path rules, deny texts |
 | `hooks/agents.ts` | resolve, brief fit, model fill, boundary on the record; new `.catch` |
 | `hooks/guards.ts` (new) | `tool.call` Edit, Write, Bash guards |
@@ -52,12 +52,10 @@
 
 ### Task 1: Probe (paid, under 0.10 USD, on the maintainer's word)
 
-No repo change except `docs/knowledge/engine.md`. Work in the scratchpad.
+No repo change except `docs/knowledge/engine.md`.
 
-- [ ] **Step 1:** Build a scratch plugin `probe` (`.claude-plugin/plugin.json`, `agents/writer.md` with tools `Write, Bash`, `hooks/hooks.json` → `register.ts`). The module: on `agent.spawn`, record `e.subagentType`, run `$.process.run(['python3', '-I', '-c', 'print(1)'])` and record `exitCode`/`stdout`, set `model: 'haiku'`, `await next(e)`, record `r.model`; on `tool.call {tool:'Write'}` with `e.agentId !== undefined`, return `{ deny: 'probe-deny' }`. Accumulate records in a module array and `$.fs.write('probe.json', JSON.stringify(records))` after each.
-- [ ] **Step 2:** `claude plugin validate <probe>` passes. Then, after the maintainer's word: `claude -p --plugin-dir <probe> --model haiku --allowedTools "Agent" "Dispatch the probe:writer agent: write hi to a.txt, then report the Write tool's result verbatim."` from a scratch cwd.
-- [ ] **Step 3:** Expected: `probe.json` shows `subagentType: "probe:writer"`, `exitCode: 0`, `stdout: "1\n"`, `r.model` naming haiku; the final answer quotes `probe-deny`. Write each confirmed fact into engine.md's Runtime table (`machine`), replacing the `$.process.run` row's `unverified`. A fact not confirmed stops the plan and goes to the maintainer.
-- [ ] **Step 4:** Commit `docs(engine): probe process.run, spawn model rewrite and subagent deny` (engine.md).
+- [x] **Steps 1–3: ran 2026-10-29 on the maintainer's word, 0.007 USD, Claude Code 2.1.312.** A scratch plugin `probe`: `agents/writer.md` (tools `Write`, frontmatter `model: sonnet`); `agent.spawn` hook rewrote `model: 'haiku'`, ran `$.process.run(['python3', '-I', '-c', …])`, stat'ed a missing path and `/tmp`; a `tool.call {tool:'Write'}` guard denied every subagent Write, beside a second `{tool:'Write'}` registration. Seen: `subagentType: "probe:writer"`; process exit 0, cwd the session's; `r.model: "claude-haiku-5-5"` over the frontmatter's sonnet; the subagent read the deny as `<tool_use_error>probe-deny: …</tool_use_error>`; `$.fs.stat` of a missing path throws `HooksError: … failed: ENOENT`; `/tmp` resolves to `/private/tmp`; validate lists two `tool.call{tool=Write}` gating hooks from one module.
+- [ ] **Step 4:** Write those facts into engine.md (Runtime rows `machine`, the `$.process.run` row's `unverified` replaced; the second-registration fact in the validate table). Commit `docs(engine): probe process.run, spawn model rewrite and subagent deny`.
 
 ### Task 2: `paths_in` drops a bare `/` (MM-046)
 
@@ -86,11 +84,11 @@ No repo change except `docs/knowledge/engine.md`. Work in the scratchpad.
 **Interfaces (produced):**
 - `types/index.d.ts`: `export type MegamaidBoundary = { kind: 'write-set' | 'output-file'; root: string | null; paths: string[]; note: string | null }`; `MegamaidAgent.boundary?: MegamaidBoundary | null`.
 - `guard-rules.ts`: `field(prompt: string, label: string): string | null` (first `^<label>:\s*(.+?)\s*$` line); `normalize(path: string): string` (lexical: `.`, `..`, repeated and trailing `/`); `within(rel: string, entries: readonly string[]): boolean` (equal, or under `entry + '/'`); `parseWriteSet(stdout: string): string[] | null` (`write-set: (none)` → `[]`, no such line → null); `denyOutsideWriteSet(file, paths)`, `denyEmptyWriteSet(note)`, `denyOutsideOutputFile(file, output)`: strings, each stating the rule and "stop, change nothing more, and report it as a divergence".
-- `test-rig.ts`: `Rig.process: (argv: readonly string[]) => { exitCode: number; stdout: string; stderr?: string }`, default `() => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents' })`, answered on `process.run`; `answerRealpaths(on, links: Record<string, string>)` (a prefix in `links` is rewritten, anything else resolves to itself); `seedRun(on, run: MegamaidRun)`.
+- `test-rig.ts`: `Rig.process: (argv: readonly string[]) => { exitCode: number; stdout: string; stderr?: string }`, default `() => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents' })`, answered on `process.run`; `answerRealpaths(on, links: Record<string, string>, missing: readonly string[] = [])` (a prefix in `links` is rewritten, a path in or under `missing` answers `{ deny: 'ENOENT' }`, anything else resolves to itself, unnormalised); `seedRun(on, run: MegamaidRun)`.
 
 Spawn side (`agents.ts`, main-loop briefed spawn, computed before `next(e)`, stored on the record after): lane `fix` + role `implementer` → `root = field('Repository')`, `instruction = field('Instruction file')`; either missing → `{ kind: 'write-set', root, paths: [], note: 'the prompt names no Instruction file or Repository line' }`; else run `write-set --file <instruction>`, exit 0 → `paths = parseWriteSet(stdout)`, otherwise `paths: []`, `note` = the stderr's first line. Lane `plan` + role `planner` → `output = field('Output file')`, relative ones joined on `field('Repository')`; missing → `paths: []` with a note. Any other agent → `boundary: null`. Nested records get no boundary.
 
-Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{tool:'Write'}`): pass when `e.agentId === undefined`, the agent is unrecorded, or its `boundary` is null/absent. Real target = `realPath(dirname(file_path)) + '/' + basename`, real root = `realPath(root)` (`$.fs.stat(p, { resolve: true }).realPath`, falling back to `normalize(p)` when the stat is refused or has no `realPath`). Write-set: relative = target under real root; allowed when `within(relative, paths)`. Output file: allowed when target equals the real output path. Empty `paths` → `denyEmptyWriteSet(note)`.
+Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{tool:'Write'}`): pass when `e.agentId === undefined`, the agent is unrecorded, or its `boundary` is null/absent. One helper, `realPath($, p): Promise<string>` in `guards.ts`, applied to the target, the root and the output file alike: stat `normalize(p)` with `{ resolve: true }`; when that throws (ENOENT, probed) or has no `realPath`, resolve the nearest existing parent the same way and append the rest; when none resolves, `normalize(p)`; the result is normalised. Write-set: relative = real target under real root + `/`; allowed when `within(relative, paths)`. Output file: allowed when real target equals `realPath(output)`. Empty `paths` → `denyEmptyWriteSet(note)`.
 
 - [ ] **Step 1: `guard-rules.test.ts`:** `normalize('/r/./a//b/../c/')` is `/r/a/c`; `within('src/x/y.ts', ['src/x'])` true, `within('src/xy.ts', ['src/x'])` false, `within('src/a.ts', ['src/a.ts'])` true; `field` reads `Repository: /r` and returns null when absent; `parseWriteSet('write-set: a b\n')` is `['a','b']`, `'write-set: (none)\n'` is `[]`, `''` is null.
 - [ ] **Step 2: `guards.test.ts`** (each seeds a run whose agent `a1` is a fix implementer with `boundary { kind: 'write-set', root: '/r', paths: ['src/a.ts', 'src/dir'], note: null }` and answers the tool with a plain result):
@@ -99,12 +97,14 @@ Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{t
   - `a symlinked spelling of the root is the same file` (`answerRealpaths({'/tmp/r': '/private/r'})`, root `/tmp/r`, edit `/private/r/./src/a.ts` passes)
   - `an empty write-set denies every edit and says the instruction is defective`
   - `a planner writes only its output file` (`boundary { kind: 'output-file', root: '/r', paths: ['/r/plans/M1-a.md'] }`; that path passes, `/r/src/a.ts` denied)
+  - `a planner's first write into a folder that does not exist yet passes` (`missing: ['/r/plans/plan-for-x']`, output `/r/plans/plan-for-x/M1-a.md`, root `/tmp/r` linked to `/private/r`)
+  - `an implementer creating a file in a new folder inside a directory entry passes` (`missing: ['/r/src/dir/new']`, `/r/src/dir/new/x.ts`)
   - `main-loop, unrecorded and unbounded calls pass` (no `agentId`; `agentId: 'zz'`; a recorded `fix/code-reviewer` with `boundary: null`)
   - `a throwing guard denies a subagent's call and passes a main-loop call` (`state.get` answers `{ deny: 'x' }`)
-- [ ] **Step 3: `agents.test.ts`:** `an implementer spawn stores its write-set` (rig.process answers `write-set: src/a.ts` for argv containing `write-set`; prompt carries `Repository: /r` and `Instruction file: /r/plans/M1-a.md`; record has the boundary; argv is `['python3', '-I', <root>/scripts/megamaid.py, 'write-set', '--file', '/r/plans/M1-a.md']`); `an implementer spawn without an Instruction file line stores an empty write-set with a note`; `a write-set exit 2 stores an empty write-set with the stderr line`; `a planner spawn stores its output file, a relative one joined on Repository`; `a reviewer spawn stores no boundary`.
+- [ ] **Step 3: `agents.test.ts`:** `an implementer spawn stores its write-set` (rig.process answers `write-set: src/a.ts` for argv containing `write-set`; prompt carries `Repository: /r` and `Instruction file: /r/plans/M1-a.md`; record has the boundary; argv[0..1] are `python3`, `-I`, argv[2] ends with `/scripts/megamaid.py`, the rest is `write-set --file /r/plans/M1-a.md`); `an implementer spawn without an Instruction file line stores an empty write-set with a note`; `a write-set exit 2 stores an empty write-set with the stderr line`; `a planner spawn stores its output file, a relative one joined on Repository`; `a reviewer spawn stores no boundary`.
 - [ ] **Step 4:** `claude plugin test .` fails on the new tests.
 - [ ] **Step 5:** Implement the type, `guard-rules.ts`, the spawn side, `guards.ts`, `register.ts`. Add `hooks/guards.ts` to §12's RUN file list.
-- [ ] **Step 6:** `claude plugin validate .` passes and lists the new gating hooks; if it refuses a second `tool.call {tool:'Write'}` registration (usage.ts has one), move the Write guard into one RegExp-matched registration `{ tool: /^(Edit|Write)$/ }` and note the fact in engine.md. `scripts/check-contract.sh` ends `check-contract: OK`.
+- [ ] **Step 6:** `claude plugin validate .` passes and lists the new gating hooks (a second `tool.call {tool:'Write'}` beside usage.ts's is accepted, Task 1). `scripts/check-contract.sh` ends `check-contract: OK`.
 - [ ] **Step 7: Prose:** implementer.md's `## Where` bullet → one line: edits outside `## Where` are refused by a hook; report a divergence. planner.md's first Boundaries bullet → writes other than the output file are refused; drop "elsewhere nothing checks". Fix 4a: an item whose write-set is `(none)` is announced `{code} — not dispatched: the instruction names no file` instead of dispatched.
 - [ ] **Step 8:** Commit `feat(hooks): refuse an implementer's or planner's write outside its boundary`.
 
@@ -112,16 +112,16 @@ Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{t
 
 **Interfaces:** `guard-rules.ts`: `pastHead(command: string): boolean` (`/HEAD[~^]/`); `DENY_PAST_HEAD` string giving `git diff HEAD -- <files reported by implementer>`. `guards.ts`: `tool.call {tool:'Bash'}`, denies when the recorded agent's lane is `fix`, role is not `implementer`, and `pastHead(String(e.command))`.
 
-- [ ] **Step 1: Tests:** `a fix reviewer's git diff HEAD~1 is denied` (also `HEAD^`); `git diff HEAD -- src/a.ts passes`; `an implementer's and a review-lane reviewer's HEAD~1 pass`; `a throwing Bash guard denies a subagent's call`.
+- [ ] **Step 1: Tests:** `a fix reviewer's git diff HEAD~1 is denied` (also `HEAD^`); `git diff HEAD -- src/a.ts passes`; `an implementer's and a review-lane reviewer's HEAD~1 pass`; `an unrecorded agent's and the main loop's HEAD~1 pass`; `a throwing Bash guard denies a subagent's call`.
 - [ ] **Step 2:** Tests fail. **Step 3:** Implement. **Step 4:** `claude plugin test .` and check-contract pass.
 - [ ] **Step 5: Prose:** plan-brief.md's `Check:` line gains "a `Check:` never diffs past `HEAD`".
 - [ ] **Step 6:** Commit `feat(hooks): refuse a fix reviewer's diff past HEAD`.
 
 ### Task 6: The brief fits the agent (part 5)
 
-**Interfaces:** `guard-rules.ts`: `laneFor(brief: Brief, prompt: string): string | null` (review → `review`; plan → `plan`; fix + implementer → `fix.implementer_<trivial|standard>` from `^Class:\s*(trivial|standard)\s*$`, standard when absent; fix + other → `fix.reviewer`; anything else null); `parseResolve(stdout): { subagentType: string; model: string } | null`; `rolesFor(configJson: string, subagentType: string): string[]` (sorted config roles whose `subagent_type` equals it); `denyMisfit(brief, expected, actual, roles, root)`. `agents.ts`: `resolveBrief($, brief, lane, coerce)` runs `resolve --role <role> --lane <lane>` plus `--coerce vacu_suck` when the stored run's skill is `megamaid:vacu-suck`; returns the parse or null on a non-zero exit (logged `resolve <lane>/<role> exited <n>: <stderr line>`, to debug).
+**Interfaces:** `guard-rules.ts`: `laneFor(brief: Brief, prompt: string): string | null` (review → `review`; plan → `plan`; fix + implementer → `fix.implementer_<trivial|standard>` from `^Class:\s*(trivial|standard)\s*$`, standard when absent; fix + other → `fix.reviewer`; anything else null); `parseResolve(stdout): { subagentType: string; model: string } | null`; `rolesFor(configJson: string, subagentType: string): string[]` (sorted config roles whose `subagent_type` equals it); `denyMisfit(brief, expected, actual, roles, root)`. `agents.ts`: `resolveBrief($, brief, lane, coerce)` runs `resolve --role <role> --lane <lane>` plus `--coerce vacu_suck` when the stored run's skill is `megamaid:vacu-suck`; returns the parse or null on a non-zero exit (logged `resolve <lane>/<role> exited <n>: <stderr line>`, to debug). A null `laneFor` means no resolve, no fit check and no model. Only on a misfit, `agents.ts` runs `python3 -I <root>/scripts/megamaid.py config` for `rolesFor`; a non-zero exit or unparsable JSON still denies, with the role list `none`.
 
-- [ ] **Step 1: Tests:** `a brief dispatched to the agent config names passes` (resolve answers `subagent_type: megamaid:planner`, spawn `megamaid:planner`); `a planner dispatched with the implementer brief is denied` (MM-044's shape; reason names `megamaid:implementer`, the roles config maps to `megamaid:planner` from a `config` answer, and `megamaid.py brief`); `a resolve exit 2 passes the spawn and logs it`; `a foreign override resolving to general-purpose passes as general-purpose`; `a throwing spawn hook denies a briefed spawn and passes a briefless one` (the existing patterns-run briefless spawn with `state.get` refused); laneFor's five mappings and the vacu-suck `--coerce` argv.
+- [ ] **Step 1: Tests:** `a brief dispatched to the agent config names passes` (resolve answers `subagent_type: megamaid:planner`, spawn `megamaid:planner`); `a planner dispatched with the implementer brief is denied` (MM-044's shape; reason names `megamaid:implementer`, the roles config maps to `megamaid:planner` from a `config` answer, and `megamaid.py brief`); `a resolve exit 2 passes the spawn and logs it`; `a foreign override resolving to general-purpose passes as general-purpose`; `a throwing spawn hook denies a briefed spawn and passes a briefless one` (the existing patterns-run briefless spawn with `state.get` refused); laneFor's five mappings and the vacu-suck `--coerce` argv. 'five spawns raised at once all land' (agents.test.ts:113) holds only the `state.get` reads made after `next` (the coerce read before it would otherwise take the five holds), so it still exercises `update`'s retry.
 - [ ] **Step 2:** Fail. **Step 3:** Implement; replace agents.ts's `.catch` with the Global Constraints one. **Step 4:** test, validate, check-contract pass.
 - [ ] **Step 5:** Commit `feat(hooks): refuse a spawn whose brief is for another agent`.
 
@@ -136,7 +136,7 @@ Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{t
 
 ### Task 8: Fix pre-flight ignores the run's own output (part 7, MM-045)
 
-- [ ] **Step 1: Check:** `grep -c 'paths.reviews' skills/fix/SKILL.md` counts the Step 1 and Step 1.5 mentions; seen at its current value first.
+- [ ] **Step 1: Check:** `grep -c 'paths.reviews' skills/fix/SKILL.md` prints 0 before and 2 after (Step 1's list, Step 1.5's rule).
 - [ ] **Step 2:** Step 1 also reads `paths.reviews`; Step 1.5 ignores the run's own paths (Step 1.6) and anything under `paths.reviews` before asking.
 - [ ] **Step 3:** check-contract passes. Commit `fix(skills): fix pre-flight ignores the run's own reports and plans`.
 
@@ -148,17 +148,21 @@ Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{t
 
 ### Task 10: Docs and the test floor
 
-- [ ] **Step 1:** hook-events.md (registrations; drop "No hook refuses or rewrites a tool call"; the `agent.spawn` row; the new `tool.call` rows; the debug lines), hooks-module.md (registration count, failure-shape rows for the guards, `agent.spawn` as guard; the report-Write Bounds row unchanged: no guard covers it), design-rules.md ("Guards fail closed" and "Observers refuse nothing" rows list them; drop "No hook returns `deny`"), features fix/plan/review where a user sees a refusal, hooks-module Bounds rows from the spec's Bounds.
-- [ ] **Step 2:** `MIN_TESTS` to the `N pass` that `claude plugin test .` prints.
+- [ ] **Step 1:** hook-events.md (registrations; drop "No hook refuses or rewrites a tool call"; the `agent.spawn` row; the new `tool.call` rows; the debug lines), hooks-module.md (registration count, failure-shape rows for the guards, `agent.spawn` as guard; the report-Write Bounds row's status becomes "prose only; no guard covers it", dropping "MM-025 would"), design-rules.md ("Guards fail closed" and "Observers refuse nothing" rows list them; drop "No hook returns `deny`"), features fix/plan/review where a user sees a refusal, hooks-module Bounds rows from the spec's Bounds.
+- [ ] **Step 2:** `MIN_TESTS` to the `N pass` that `claude plugin test .` prints. `CHANGELOG.md` `[Unreleased]`: Added (the guards: write boundaries, diff past HEAD, brief fit; the model set at spawn; `megamaid.py write-set`), Changed (briefed dispatches no longer pass `model` unless the user named one), Fixed (MM-044, MM-045, MM-046, MM-048), each bullet with what a user sees.
 - [ ] **Step 3:** check-contract passes. Commit `docs(hooks): the call-time guards`.
 
 ### Task 11: Graders follow the model off the dispatch (spec task 6)
 
 Deviation from the spec's first choice, which the spec provides for: `scripts/replay-graders.py:131-137` reads a `regex` file target with `os.path.join` and `open`, no glob, so a plan ledger (`.megamaid/usage/plan-<startedAt>.md`) cannot be matched. The grader goes to `manifest-slice`, a review whose ledger has a fixed path.
 
-- [ ] **Step 1:** Delete the three `model-passed.md`; drop them from evals/README.md's table. `manifest-slice/scaffold.sh` writes `.claude/megamaid.config.json` `{ "models": { "review": "sonnet" } }`. New `manifest-slice/graders/ledger-sonnet.md`: `type: regex`, `target: { source: file, path: docs/megamaid/reviews/branch-feature-round1-usage.md }`, `pattern: '\| review/[a-z-]+ \|[^\n]*claude-sonnet'` (Model is the last column, `ledger.ts:87`).
+- [ ] **Step 1:** Delete the three `model-passed.md`; drop them from evals/README.md's table. `manifest-slice/scaffold.sh` writes `.claude/megamaid.config.json` `{ "agents": { "code-reviewer": { "model": "sonnet" } } }` (one role, so the other reviewers keep their model; `deep_merge` keeps `subagent_type`, `resolve` reads `agents.R.model` first). New `manifest-slice/graders/ledger-sonnet.md`: `type: regex`, `target: { source: file, path: docs/megamaid/reviews/branch-feature-round1-usage.md }`, `pattern: '\| review/code-reviewer \|[^\n]*claude-sonnet'` (Model is the last column, `ledger.ts:87`).
 - [ ] **Step 2:** Fixtures `scripts/fixtures/replay/review-sonnet-pass/` and `-fail/` (a `home/cwd/` ledger with and without a sonnet reviewer row, and an empty `out/trace.jsonl`); `test-replay.sh` expects exit 1 for both with `✓ ledger-sonnet` and `✗ ledger-sonnet`. Run it: fails before the grader file exists, passes after.
 - [ ] **Step 3:** check-contract passes. Commit `test(evals): grade the configured model in the ledger, not on the dispatch`.
+
+## Review log
+
+Round 1 (2026-10-29): the probe could not tell a rewrite from inheritance → ran with `model: sonnet` in the agent file (Task 1); a planner's first Write lands in a folder that does not exist → one `realPath` helper walking to the nearest existing parent, two missing-folder tests; the concurrency test's holds → after `next` only; misfit `config` call, null lane → stated; main-loop narrowing → recorded as a deviation; Task 5 unrecorded and main-loop cases; the report-Write Bounds row; Task 8's target; one type name and an argv suffix assertion; one reviewer on sonnet instead of the lane; CHANGELOG entries in Task 10.
 
 ## After the tasks (dev-flow 6–7)
 
