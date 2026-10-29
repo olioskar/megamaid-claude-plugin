@@ -8,6 +8,6 @@ Short and current: what this session learned that the docs do not carry. Rewrite
 - Paid runs: the maintainer has API credits (about 200 USD on 2026-10-18) and runs evals from their own terminal with `ANTHROPIC_API_KEY=$(cat ~/keys/.anthropic-key)` prefixed; the key never passes through a session. Smoke (0.25 USD) may run on the session login.
 - An interactive `claude --plugin-dir .` can be driven from a session under `expect` (spawn, wait, send `/exit`) to lay the engine types; `claude -p` does not lay them.
 - Live runs happen in the maintainer's other sessions (2026-10-28: "overseer" ran the baseline in ~/Development/hardware/parts-bin). Ask that session by SendMessage for the ledger and debug lines, then check them against the files on disk; they are local and readable.
-- State at the last save (2026-10-29): on branch `feat/call-time-guarantees`, spec approved, plan reviewed (none open), probe run; waiting on the maintainer's go for the plan. Order agreed: MM-025 first, then MM-028.
+- State at the last save (2026-10-29): on branch `feat/call-time-guarantees`, plan built (tasks 1–11), branch review under way; smoke and suite wait on the maintainer's word. Order agreed: MM-025 first, then MM-028.
 - A scratch probe plugin under the session scratchpad (`claude -p --plugin-dir <probe> --model haiku --max-budget-usd 0.10`) tests engine facts for under a cent; validate on it is free.
 - Waits: the handover's Now section.

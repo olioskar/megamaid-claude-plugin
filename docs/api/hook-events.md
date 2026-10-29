@@ -72,9 +72,9 @@ Each line is written with `$.ui.log(…, { to: 'debug' })`; the engine prefixes 
 | `<lane>/<role> spawned as <subagentType> (<agentId>)` | `agents.ts:72` | a recorded main-loop spawn; `-/unknown` when briefless |
 | `<lane>/<role> nested spawn <subagentType> (<agentId>) under <parentId>` | `agents.ts:52` | a spawn nested under a recorded agent; lane `-` when the parent has none |
 | `resolve <lane>/<role> exited <n>: <stderr line>` | `agents.ts:85` | a briefed spawn's `resolve` failed (role or lane not in config); the spawn passes unchecked, with its own model |
-| `usage <key> +<input>/<output> (<turns>)` | `usage.ts:38` | a counted turn; `<key>` is `orchestrator` or the agent's usage key; `<input>` counts what the ledger's share line counts ([working-paths.md](working-paths.md)); `<turns>` the key's total so far |
-| `ledger <path>` | `usage.ts:76` | the ledger file was written |
-| `ledger failed: <message>` | `usage.ts:78` | the write threw |
+| `usage <key> +<input>/<output> (<turns>)` | `usage.ts:41` | a counted turn; `<key>` is `orchestrator` or the agent's usage key; `<input>` counts what the ledger's share line counts ([working-paths.md](working-paths.md)); `<turns>` the key's total so far |
+| `ledger <path>` | `usage.ts:78` | the ledger file was written |
+| `ledger failed: <message>` | `usage.ts:80` | the write threw |
 | `usage hook failed: <message or kind>` | `usage.ts:64` | a usage hook threw; the hook chain beneath is replayed |
 
 ## Deny reasons
