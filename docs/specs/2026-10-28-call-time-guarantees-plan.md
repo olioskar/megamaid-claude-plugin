@@ -10,6 +10,8 @@
 
 **Spec:** [2026-10-28-call-time-guarantees.md](2026-10-28-call-time-guarantees.md). Read it first; this plan does not repeat its reasons.
 
+**Status:** the maintainer's go 2026-10-29 ("continue"); tasks 1–11 built and committed (b75e440..ed23d58), free gates green; branch review next.
+
 ## Global Constraints
 
 - Vendored types are Claude Code 2.1.303; tsc is `typescript@5.9.3` via check-contract; no package.json.
