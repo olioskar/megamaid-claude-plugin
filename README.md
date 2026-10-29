@@ -4,7 +4,7 @@ A Claude Code plugin for code review. `/megamaid:review` finds issues, `/megamai
 
 Reviewers follow eight shipped directives plus your own, and a layered config lets each project override the defaults.
 
-Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin). megamaid adds a hooks module (a load guard and a usage ledger) and requires a Claude Code build with hooks modules, with the module loaded; comb stays for builds without them.
+Forked from [comb](https://github.com/olioskar/comb-the-desert-claude-plugin). megamaid adds a hooks module (a load guard, call-time guards on its own agents, the configured model set at spawn, and a usage ledger) and requires a Claude Code build with hooks modules, with the module loaded; comb stays for builds without them.
 
 With [comb](https://github.com/olioskar/comb-the-desert-claude-plugin) also installed, both plugins' model-invocable skills trigger on the same phrases; install one, or use explicit `/megamaid:*` commands.
 
@@ -61,7 +61,7 @@ Three layers are deep-merged, later layers winning: `config/defaults.json` in th
   "agents": { "simplifier": { "model": "haiku" } } }
 ```
 
-- **Models** can be `sonnet`, `opus`, `haiku`, or `fable`. The agent dispatch rejects a full model ID.
+- **Models** can be `sonnet`, `opus`, `haiku`, or `fable`. Use an alias: patterns' scanner and shaver pass the model on the Agent call, which rejects a full model ID.
 - **Where to save:** the planner is the senior of the pair. A good instruction lets a cheaper implementer apply it, so lower `models.fix.implementer_standard` or `models.fix.implementer_trivial` and keep `models.plan` strong.
 - **Effort** can be `low`, `medium`, `high`, `xhigh`, or `max`. When it is unset, agents use your session's effort. On one fixture ([experiments/README.md](experiments/README.md)) `medium` matched `high` for about 8% less.
 - **Per-role settings** beat the lane setting.
@@ -133,7 +133,7 @@ Before a finding enters the report, `/megamaid:review` opens every cited line an
 
 ## How it works
 
-The skills in `skills/` are the contract; bundled stdlib scripts do the bookkeeping (config merge, model resolution, directive matching, report naming, batching), and a hooks module gates the commands and writes a usage ledger per run. Per-command behavior is in [docs/features/](docs/features/INDEX.md); the design is in [docs/architecture/overview.md](docs/architecture/overview.md).
+The skills in `skills/` are the contract; bundled stdlib scripts do the bookkeeping (config merge, model resolution, directive matching, report naming, batching), and a hooks module gates the commands, refuses a megamaid agent's out-of-bounds call, sets each briefed agent's model from config, and writes a usage ledger per run. Per-command behavior is in [docs/features/](docs/features/INDEX.md); the design is in [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## Development
 

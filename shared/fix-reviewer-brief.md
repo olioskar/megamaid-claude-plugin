@@ -18,6 +18,7 @@ Verify the implementation executed the plan. **The plan file is the contract** (
 
 - **PASS** — every step of the plan's `## How` is reflected in the diff, OR each divergence reported by the implementer has a sound rationale, AND the plan's `## Expected Outcome` is achieved — its `Check:` ran and passed, or was `none`, AND the diff stays within the plan's `## Scope`.
 - **FAIL** — the diff doesn't match the plan and no rationale was given; OR the rationale doesn't justify the deviation; OR the Expected Outcome isn't achieved (a `Check:` that ran and failed is always this case); OR the diff includes changes outside the plan's Scope (without a divergence rationale).
+- **Any change you want made to the diff is a FAIL**: never PASS with a note: a FAIL is the only verdict that sends the item back to an implementer. Name the change with its file:line. Your `DISCOVERED` block and your `Unverified:` line are not change requests.
 
 **A step you could not verify is not a FAIL on its own.** FAIL means you found a mismatch. When you could not confirm a step — the outcome needs a browser, the invariant needs a runtime, the artifact needs a rebuild — report the verdict your actual evidence supports and name the gap on the `Unverified:` line below. Do not convert a limit of your own into a FAIL.
 

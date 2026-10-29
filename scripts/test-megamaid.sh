@@ -86,6 +86,13 @@ run batches-ceiling      batches --folder "$R/plans/ceiling"
 run batches-latin1       batches --folder "$R/plans/latin1"
 run batches-tworevise    batches --folder "$R/plans/tworevise"
 run batches-dupcode      batches --folder "$R/plans/dupcode"
+run batches-slash        batches --folder "$R/plans/slash"
+# write-set: one instruction's write-set, the same rules batches prints per item
+run writeset-where       write-set --file "$R/plans/code/M1-a.md"
+run writeset-files       write-set --file "$R/plans/writeset/H2-files-only.md"
+run writeset-revise      write-set --file "$R/plans/revise/revise-spec.md"
+run writeset-none        write-set --file "$R/plans/code/T1-e.md"
+run writeset-missing     write-set --file "$R/plans/code/no-such.md"
 mkdir -p noperm && cp "$R/plans/code/M1-a.md" noperm/ && chmod 000 noperm/M1-a.md
 run batches-noperm       batches --folder "$T/noperm"
 chmod 644 noperm/M1-a.md

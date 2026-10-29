@@ -4,7 +4,7 @@ Two stdlib-only Python tools do the deterministic work the skills must not re-de
 
 ## scripts/megamaid.py
 
-Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plugin-root P` (default: the script's parent directory), `--home H` (default `~`), `--project-root R` (default: git toplevel, else cwd). The full contract is the docstring, `scripts/megamaid.py:1-98`.
+Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plugin-root P` (default: the script's parent directory), `--home H` (default `~`), `--project-root R` (default: git toplevel, else cwd). The full contract is the docstring, `scripts/megamaid.py:1-103`.
 
 | Subcommand | Arguments | Prints (stdout) | Exit 2 | Called by |
 |---|---|---|---|---|
@@ -14,11 +14,12 @@ Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plug
 | `brief` | `--skill review\|plan\|fix\|patterns --role R [--run <stem>] [--excerpt <path>] [--manifest <path>] [--brief "<text>"]` | `run: <stem>` (only when minted), `brief: <abs path>`, `form: native\|foreign`, `directives: <n> plugin, <m> user; primary: <basenames\|none>`, `baseline: <excerpt> (excerpt) + <manifest> (full manifest)` / `<manifest> (full manifest, no excerpt)` / `none`; writes `.megamaid/excerpts/<stem>.<skill>.<role>.brief.md` under the cwd | role absent, `--run` not `<skill>-<digits>-<hex4>`, `--excerpt` or `--manifest` not a file, `--excerpt` without `--manifest`; the `user_path` warning as for `directives` | review, plan, fix (vacu-suck through them) |
 | `report-name` | `--reviews <dir> (--pr N \| --branch <name>)` | `report: <dir>/<pr-N\|branch-<slug>>-round<R>-report.md`, `round: <R>`; R = 1 + highest round parsed from matching filenames, 1 when none or no directory | `--branch` empty after slugging, unreadable directory | review |
 | `batches` | `--folder <plan folder>` | `shape: per-finding\|single-revise-doc\|empty`, `write-set <code>: <paths>\|(none)` per item, `not-reproduced: <codes>\|none`, `batch <n>: <codes>` | folder missing or unreadable; per-finding and `revise-*.md` mixed; two files with one code; two `revise-*.md` | fix |
+| `write-set` | `--file <instruction>` | `write-set: <paths>\|(none)`, by `batches`' per-item rules (`revise-*.md` reads `**Target spec:**`) | file missing or unreadable | the hooks module, at an implementer's spawn |
 | `findings` | `--report <path>` | `{"count", "shape": "code-shaped\|non-code\|unknown", "findings": [{code, title, source, files, verified}]}`, indent 1; a parse surprise is count 0, never a traceback | report missing or unreadable | plan |
 | `migrate config` | `--layer home\|project` | the layer's earlier config translated, JSON indent 2, input order; stderr `dropped: <key>` | missing, invalid JSON, not an object | configure |
 | `migrate manifest` | `--move \| --copy` | `moved\|copied <src> -> <dst>` | no earlier manifest, `paths.patterns` null, target exists, OS error | configure via `shared/manifest-migration.md` |
 
-Primary directives (`megamaid.py:348-371`): the brief is split into lowercase words; a word of four or more characters makes a directive primary when it is a substring of the file's basename (without `.md`), a shorter word only when it equals a whole hyphen-separated segment of it. The batch rule (`:623-643`) in [../features/fix.md](../features/fix.md). Slug rule (`:532-536`): `/`, whitespace, `\ : ? * < > | "` become `-`, runs collapse, ends trimmed. Any `migrate` command, and `config`, exits 2 with `cannot load scripts/migrate.py: <error>` when `scripts/migrate.py` is not beside the script.
+Primary directives (`megamaid.py:353-376`): the brief is split into lowercase words; a word of four or more characters makes a directive primary when it is a substring of the file's basename (without `.md`), a shorter word only when it equals a whole hyphen-separated segment of it. The batch rule (`:637-657`) in [../features/fix.md](../features/fix.md). Slug rule (`:537-541`): `/`, whitespace, `\ : ? * < > | "` become `-`, runs collapse, ends trimmed. Any `migrate` command, and `config`, exits 2 with `cannot load scripts/migrate.py: <error>` when `scripts/migrate.py` is not beside the script.
 
 Real output: `scripts/fixtures/megamaid/expected/*.out` (each ends with `exit=<code>`); `batches-code.out` whole:
 
@@ -52,7 +53,7 @@ Operates on a PATTERNS manifest; working files land under `.megamaid/excerpts/` 
 | `apply` | `--manifest M --index I --edits <passing set> [--stamp]` | `apply: <n> edits applied; <before> → <after> bytes (~<t> tokens, bytes/4)`; re-verifies first, all-or-nothing; `--stamp` writes or replaces a `**Shaved:** <date> (<before> → <after> bytes)` header line | 1 empty passing set or an edit no longer verifies (nothing written); 2 bad file | patterns |
 | `clean` | `--run <stem>` | `clean: <n> file(s) removed for run <stem>`; removes `.megamaid/excerpts/<stem>*` | 2 when `--run` is not a run stem | review, plan, fix, patterns |
 
-Run stems are `<skill>-<epoch seconds>-<4 hex>` (`manifest.py:88-89`, `megamaid.py:450-451`); `clean` accepts nothing else, so an empty id cannot sweep the directory. Real output: `scripts/fixtures/expected/*.out`.
+Run stems are `<skill>-<epoch seconds>-<4 hex>` (`manifest.py:88-89`, `megamaid.py:455-456`); `clean` accepts nothing else, so an empty id cannot sweep the directory. Real output: `scripts/fixtures/expected/*.out`.
 
 ## Fixture tests
 

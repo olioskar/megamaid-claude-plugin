@@ -22,17 +22,6 @@ issues:
       commit a5cdccf, which is pushed, so rewriting is now a history rewrite. Keep as is unless a rewrite is worth it.
     needs_owner: true
 
-  - id: MM-010
-    type: feature
-    area: evals
-    title: Take the Phase 2 baseline measurement, one full vacu-suck loop and its orchestrator share
-    body: |
-      One ordinary /megamaid:vacu-suck on a code-shaped branch, "run again?" answered no. Read <report>-usage.md;
-      record the orchestrator share of input and output tokens and the cost as the baseline; compare with
-      the ideation estimate (orchestrator 20 to 35%; under 20% means only Phase 6 (MM-028) is worth doing for tokens).
-      While at it, confirm MM-014 and MM-015 (the two ledger bounds) from the ledger and the trace. Several USD.
-    needs_owner: true
-
   - id: MM-014
     type: bug
     area: hooks
@@ -41,16 +30,7 @@ issues:
       Nested-spawn attribution relies on it (the types say parentAgentId is set and turn.complete is heard for
       every agent). If it does not, nested usage is missing from the split and the ledger under-counts the
       subagent side. Symptom: an agent row whose Agents count is below the trace's Agent calls under that role.
-      Not seen. Checked by MM-010 (the baseline measurement).
-
-  - id: MM-015
-    type: bug
-    area: hooks
-    title: An agent whose turn ends before its spawn record lands counts nowhere
-    body: |
-      The spawn hook's state write races the agent's first API call; a turn.complete whose agentId is not yet
-      recorded is dropped. Symptom: a row whose Turns is below its Agents. Not seen. Checked by MM-010 (the
-      baseline measurement).
+      Not seen. Not exercised by the baseline (docs/knowledge/costs.md): no subagent spawned, no nested line.
 
   - id: MM-016
     type: improvement
@@ -165,12 +145,13 @@ issues:
   - id: MM-028
     type: feature
     area: hooks
-    title: Phase 6, Deterministic fix orchestration from code, only if the baseline (MM-010) says it pays (E)
+    title: Phase 6, Deterministic fix orchestration from code (E)
     body: |
       Drive fix batching, dispatch, verification and commits from code through $.agent.spawn and $.process,
-      leaving the model the judgment steps. The largest token saving and also a rewrite. Go/no-go depends on
-      the orchestrator share from MM-010 (the baseline measurement; under 20% means this is the only phase
-      worth doing for tokens).
+      leaving the model the judgment steps. A rewrite. The baseline (docs/knowledge/costs.md) puts the orchestrator
+      at about 26% and 36% of cost (45% and 54% of input tokens): above the 20% line, a saving of about a quarter
+      of a run. Cost is not the only measure: steps the baseline's orchestrator skipped or improvised (MM-044,
+      MM-048) are steps code would take every time. The go is the maintainer's.
     needs_owner: true
 
   - id: MM-029
@@ -179,7 +160,7 @@ issues:
     title: Phase 7, First public release, marketplace entry, README install line, usage measurement against the baseline
     body: |
       A separate entry in the olioskar/claude-plugins marketplace; the README install line; a usage
-      measurement compared with the baseline (MM-010); and the installed-copy probe for $.plugin.root (MM-016).
+      measurement compared with the baseline (docs/knowledge/costs.md); and the installed-copy probe for $.plugin.root (MM-016).
       Until that release the plugin installs with --plugin-dir only.
 
   - id: MM-030
@@ -272,9 +253,50 @@ issues:
   - id: MM-043
     type: bug
     area: evals
-    title: manifest-slice orchestrator read PATTERNS.md once in the 0.4.0 suite run
+    title: manifest-slice orchestrator reads PATTERNS.md now and then (two suite misses)
     body: |
-      evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x) while the
-      excerpt and dispatch graders passed, so the review orchestrator read the full manifest on top of slicing it.
-      Not reproduced: the case alone passed on 2026-10-19 (sandbox kept at /private/tmp/e-WPukmN). No trace of the
-      miss (run without --keep-temp). Three passes and one miss across four runs; a prompt fix waits on a second miss.
+      The review orchestrator reads the full manifest on top of slicing it, while the excerpt and dispatch graders
+      pass. evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x).
+      evals/results/2026-10-29T10-37-12-234Z (feat/call-time-guarantees): orchestrator-never-cats-manifest failed
+      (a Bash cat/head/tail/less/awk of PATTERNS.md, 2x). Each time the case alone passed next (2026-10-19; 2026-10-29,
+      kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Two misses in six
+      runs: the second miss the prompt fix was waiting on has happened; the fix is the maintainer's call.
+  - id: MM-044
+    type: bug
+    area: skills
+    title: fix skips the planner run brief for a discovered item, so the ledger counts its planner as fix/implementer
+    body: |
+      skills/fix/SKILL.md:305 says to write a --skill plan --role planner brief before the X-item planner; the
+      2026-10-28 baseline's orchestrator did not, and hooks/agents.ts:43 labels a spawn from the latest brief, so two
+      planners logged as "fix/implementer spawned as megamaid:planner" and round 2's fix/implementer row read 11 for 9.
+  - id: MM-045
+    type: bug
+    area: skills
+    title: fix Step 1.5 counts the sweep's own report and plans as a dirty tree
+    body: |
+      skills/fix/SKILL.md:51 asks on any `git status --porcelain` output; in vacu-suck the untracked report and plan
+      folder (default docs/megamaid/) is always there, so the question fires on every fix by the letter. Seen in the
+      baseline, where the orchestrator logged it instead of asking. Step 1.5 should skip the run's own paths (:76).
+  - id: MM-046
+    type: bug
+    area: scripts
+    title: batches write-set keeps a bare / or // from prose in ## Where
+    body: |
+      scripts/megamaid.py paths_in (:580) keeps any token holding "/", so "`names` / `targets`" yields "/". Seen in the
+      baseline: `write-set G7: tools/build.py tools/viewer.html // tools/photo.py`. overlap() does not treat "/" as
+      covering relative paths, but the orchestrator reads the printed set. Drop tokens with no path part.
+  - id: MM-047
+    type: improvement
+    area: scripts
+    title: batches orders by severity only and can schedule a plan before the one it was written against
+    body: |
+      make_batches (scripts/megamaid.py:623) has no dependency input. In the baseline's round 2 it put D1 before G1
+      though D1's plan built on G1's result in the same file; the orchestrator reordered by hand.
+  - id: MM-048
+    type: improvement
+    area: skills
+    title: A fix reviewer's PASS with a requested touch-up has no route, so the orchestrator edited code
+    body: |
+      skills/fix/SKILL.md:292 sends PASS straight to verify and commit. In the baseline G1's reviewer passed with a
+      whitespace slip to restore and the orchestrator fixed it with sed. Route such a note to an implementer or treat
+      it as FAIL; MM-025 (the implementer and planner file boundaries) does not cover the orchestrator's own edits.

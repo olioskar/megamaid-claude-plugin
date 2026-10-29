@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""megamaid resolver: config, resolve, directives, brief, report-name, batches, findings, migrate.
+"""megamaid resolver: config, resolve, directives, brief, report-name, batches, write-set, findings, migrate.
 
 Deterministic resolution of what every megamaid skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
@@ -69,13 +69,18 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             batch <n>: <codes>                         severity order C H M L T D X G, then number
     A write-set is the file paths named in `## Where` (backticked spans split on whitespace, or
     bare tokens, with a `/` or a 2-5 letter extension; `:12`/`:L12`/`#L12` dropped; `./a` and
-    trailing `/` normalised), else those in `**File(s):**`; a revise
+    trailing `/` normalised; a token with no letter or digit, a bare `/` or `//` from prose, dropped), else those in `**File(s):**`; a revise
     doc's is its `**Target spec:**`. Items whose `**Finding status:**` starts with
     `not reproduced` are listed and left out of the batches. A batch holds at most three items
     with pairwise-disjoint write-sets (a directory covers everything under it); an item with no
     write-set runs alone. Batches are a ceiling: the skill may split one, never merge two.
     exit 2: missing or unreadable folder; a folder mixing per-finding files and revise-*.md; two files
     with the same code; more than one revise-*.md.
+
+  megamaid.py write-set --file <instruction>
+    stdout: write-set: <path> … | (none)    the item's write-set by the rules batches uses; a file named
+    revise-*.md reads its `**Target spec:**`. The hooks module runs it at an implementer's spawn.
+    exit 2: `megamaid.py: <path>: <os error>`.
 
   megamaid.py findings --report <path>
     stdout: {"count": N, "shape": "code-shaped|non-code|unknown", "findings": [{code, title,
@@ -582,7 +587,7 @@ def paths_in(text):
     """File paths named in a span: backticked spans (split on whitespace, so a span that
     holds a sentence still yields its paths) and bare tokens, kept when they carry a `/` or
     a 2-5 letter extension; `:12`, `:L12`, `#L12` line parts dropped; `./a/b` normalised to
-    `a/b` and `src/x/` to `src/x`; order kept, duplicates removed."""
+    `a/b` and `src/x/` to `src/x`; a token with no letter or digit dropped; order kept, duplicates removed."""
     out = []
     spans = re.findall(r"`([^`\n]+)`", text)
     bare = re.sub(r"`[^`\n]*`", " ", text)
@@ -593,6 +598,8 @@ def paths_in(text):
             continue
         if "/" in tok or EXT.search(tok):
             tok = os.path.normpath(tok)
+            if not re.search(r"[A-Za-z0-9]", tok):
+                continue
             if tok not in out:
                 out.append(tok)
     return out
@@ -603,6 +610,13 @@ def write_set_of(text):
     if not ws:
         ws = paths_in(header_value(text, "File(s)"))
     return ws
+
+
+def item_write_set(name, text):
+    """An instruction's write-set: a revise doc's `**Target spec:**`, any other's ## Where else File(s)."""
+    if REVISE_FILE.match(name):
+        return paths_in(header_value(text, "Target spec"))
+    return write_set_of(text)
 
 
 def overlap(a, b):
@@ -673,7 +687,7 @@ def cmd_batches(a):
             die("%s holds %d revise-*.md files; a single-revise-doc folder holds one" % (folder, len(revises)))
         n = revises[0]
         code = n[:-3]
-        ws = paths_in(header_value(read(n), "Target spec"))
+        ws = item_write_set(n, read(n))
         print("shape: single-revise-doc")
         print("write-set %s: %s" % (code, " ".join(ws) if ws else "(none)"))
         print("not-reproduced: none")
@@ -693,7 +707,7 @@ def cmd_batches(a):
         m = ITEM_FILE.match(n)
         code = m.group(1) + m.group(2)
         text = read(n)
-        ws = write_set_of(text)
+        ws = item_write_set(n, text)
         print("write-set %s: %s" % (code, " ".join(ws) if ws else "(none)"))
         if header_value(text, "Finding status").lower().startswith("not reproduced"):
             not_repro.append(code)
@@ -703,6 +717,17 @@ def cmd_batches(a):
     parsed.sort(key=lambda it: severity_key(it[0]))
     for i, b in enumerate(make_batches(parsed), 1):
         print("batch %d: %s" % (i, " ".join(b)))
+
+
+def cmd_write_set(a):
+    path = os.path.abspath(a.file)
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError as ex:
+        die("%s: %s" % (path, ex.strerror))
+    ws = item_write_set(os.path.basename(path), text)
+    print("write-set: %s" % (" ".join(ws) if ws else "(none)"))
 
 
 # ----------------------------------------------------------------- findings
@@ -831,6 +856,10 @@ def main(argv=None):
     s = sub.add_parser("batches", help="folder shape, per-item write-sets, not-reproduced items, and disjoint batches")
     s.add_argument("--folder", required=True)
     s.set_defaults(fn=cmd_batches)
+
+    s = sub.add_parser("write-set", help="one instruction file's write-set, as batches prints it per item")
+    s.add_argument("--file", required=True)
+    s.set_defaults(fn=cmd_write_set)
 
     s = sub.add_parser("findings", help="findings of a review report as JSON (count 0 when the template is absent)")
     s.add_argument("--report", required=True)

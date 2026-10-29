@@ -39,6 +39,7 @@ From it:
 - `models.fix.implementer_trivial`
 - `models.fix.reviewer`
 - `models.plan` and `paths.base_branch` (for the X-item planner dispatch, Step 4f)
+- `paths.reviews` (the review reports, which Step 1.5 does not count as uncommitted work)
 - `directives` and `agents` (for verifier dispatch)
 - `paths.patterns` — the PATTERNS manifest, if it resolves
 
@@ -48,13 +49,13 @@ From it:
 
 Skip this entire step if `fix.commit_per_item` is `false` in merged config.
 
-Run `git status --porcelain`. If the output is empty, the tree is clean — proceed.
+Run `git status --porcelain` and drop the run's own paths (Step 1.6) and anything under `paths.reviews`: in `/megamaid:vacu-suck` the round's report and plans are always there and are not the user's work. If nothing is left, the tree is clean — proceed.
 
 If non-empty, surface a one-shot question with these options:
 
 ```
 Working tree has uncommitted changes before /megamaid:fix starts:
-  <git status --porcelain output>
+  <the remaining git status --porcelain lines>
 
 Pick one:
   (a) Commit existing changes now (suggest a message)
@@ -156,6 +157,7 @@ An item's **write-set** is what `megamaid.py batches` (Step 2.5) prints for it: 
 - Different-file writes → parallel batch.
 - **Concurrency limit:** max 3 items in flight at any moment.
 - The script's `batch` lines already satisfy all three; split one when you must, never merge two.
+- An item whose write-set is `(none)` is not dispatched: its implementer's every edit would be refused. Announce `{code} — not dispatched: the instruction names no file` and move on.
 
 Three terms the git checks use:
 
@@ -204,7 +206,7 @@ For trivial items: announce "(trivial — implementer `{resolved models.fix.impl
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role implementer --lane fix.implementer_standard      # fix.implementer_trivial for trivial items
   ```
 
-  Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`.
+  Pass `effort:` as the Agent call's `effort` unless `unset`; pass no `model` unless the user named one for this run (the hooks module sets `model:` at spawn).
 - **Write the implementer run brief** once per run (every implementer shares it):
 
   ```
@@ -226,6 +228,7 @@ You're an implementer. Execute this fix instruction precisely and completely.
 Repository: {project-root}
 Branch: {branch}
 Item: {reference_code} — {title}
+Class: {trivial|standard, from 4c}
 Instruction file: {instruction-path}
 
 Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.md, {run brief path printed by `megamaid.py brief` (skill fix, role implementer)}
@@ -256,7 +259,7 @@ Bound: these checks compare paths and one SHA. They do not read diffs; the revie
   python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" resolve --role <picked role> --lane fix.reviewer
   ```
 
-  Pass `model:` as the Agent call's `model` and `effort:` as `effort` unless `unset`.
+  Pass `effort:` as the Agent call's `effort` unless `unset`; pass no `model` unless the user named one for this run (the hooks module sets `model:` at spawn).
 - **Write the reviewer run brief**, one per distinct picked role per run:
 
   ```
@@ -302,7 +305,7 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, 
      ```
      The section is append-only. If the instruction is wrong, change `## How` and say so here; the next reviewer verifies against the changed How and can see it changed.
   3. **Retry.** Send a new implementer (Step 4d), then review again (4e). **After three FAILs on one item, stop and ask the user** — trivial or standard alike — printing the per-item status list from 4f.1 first, so the other in-flight items are not lost in the question. Three failures mean the instruction or the classification is wrong, and that is the user's call. A 4f.0 verification FAIL counts as one of the three.
-- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/megamaid:plan` Step 6 does for one finding. Resolve the planner with `megamaid.py resolve --role planner --lane plan`, write a planner run brief with `megamaid.py brief --skill plan --role planner --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other). Announce:
+- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/megamaid:plan` Step 6 does for one finding. Resolve the planner with `megamaid.py resolve --role planner --lane plan` (its `effort:` and model as in 4d), write a planner run brief with `megamaid.py brief --skill plan --role planner --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other). Announce:
   ```
   M3 — PASS (5/15 complete)
   Discovered issue added: X1 — {title} (planned by {planner model}; queue is now 16 items)
@@ -399,6 +402,7 @@ All {N} items complete:
 
 - **Fresh agents, fresh tree.** Each implementer and reviewer is a new subagent, and a retry starts after the failed attempt is reverted (4f). No accumulated state in either.
 - **Git is the orchestrator's.** Implementers never commit; the HEAD check (4d.1) stops an item whose implementer did.
+- **The orchestrator never edits a file in a write-set**, except to revert an attempt (4f). A change, however small, goes through an implementer: a reviewer that wants one returns FAIL.
 - **The instruction is the spec.** Implementer follows it. Reviewer verifies against it. If the doc is wrong, fix the doc first, then re-implement.
 - **Scope is sacred.** Implementers don't make changes outside scope. Reviewers flag scope violations as FAIL.
 - **Don't loop forever.** Three failures on one item means the instruction or its classification is wrong. Stop and ask — there is no orchestrator-applied fix.

@@ -7,13 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The hooks module refuses a megamaid agent's out-of-bounds call as it is made.** A fix implementer's Edit or Write outside its item's write-set, and a planner's to any file but its output file, are refused with the boundary named and an instruction to stop and report a divergence; a fix reviewer's diff past `HEAD` (`HEAD~1`, `HEAD^`) is refused with the `git diff HEAD -- <files>` form to use; a dispatch whose run brief is for another agent than config names is refused before it starts. These were prose rules the model sometimes broke (the 2026-10-28 baseline saw a planner sent with the implementer's brief). Only megamaid's own agents are checked; the main loop and other plugins' agents are not. A guard that faults refuses any subagent's Edit, Write or Bash call, another plugin's included, rather than letting it through.
+- **The configured model is set at spawn.** A briefed dispatch that names no model runs on what `megamaid.py resolve` gives for its role and lane, so the model no longer depends on the orchestrator passing it. A model the dispatch names still wins, for a one-run override.
+- **`megamaid.py write-set --file <instruction>`** prints one instruction's write-set by `batches`' rules; the hooks module runs it when an implementer starts.
+
 ### Changed
+
+- **Briefed dispatches no longer pass `model`** unless the user named one for the run; patterns' briefless scanner and shaver still do. The fix implementer's prompt carries a `Class: trivial|standard` line, which picks its model lane.
+- **Fix skips an item whose instruction names no file** and announces `<code> — not dispatched: the instruction names no file`; it used to run alone, and its implementer's every edit would now be refused.
+- **The eval graders that matched `"model"` on the Agent call are gone.** `manifest-slice` sets `code-reviewer` to sonnet in its config and checks the review ledger's row instead, since the model is now set at spawn.
+- **`fix-auto-off`'s `refuses-naming-flag` accepts the flag named in prose** ("`fix.model_invocation` is `false`") as well as the template's `fix.model_invocation: false`; a correct refusal worded the first way failed the 2026-10-29 suite.
 
 - **Chat after a run no longer inflates the orchestrator's row.** A main-loop turn is counted only when the run did something since the last counted one (the first turn always; then a dispatch, a dispatched agent's turn, or the review report's Write owes the next). The ledger was counting every main-loop turn until the next run or session end, so a question asked after the summary changed a committed ledger. The one turn this misses is an answer to the run's own question that dispatches nothing, such as "run again?" answered no.
 - **Vendored engine types refreshed to Claude Code 2.1.303** (CI installs that version). 2.1.303 dropped the `re-entry` hook-failure kind, so the usage hooks' failure log no longer special-cases it.
 - **Review Step 8 names the Write tool for the report.** The hooks module finds the report by its Write call to place the usage ledger beside it; a report assembled with a shell heredoc or Edit left no ledger. Review's closing note now lists the ledger among the files a run creates.
 - **The eval suite ran for 0.4.0** (2026-10-18, 8/9, 4.53 USD): the two `usage-ledger` graders and `no-stray-file`, verified by replay only at release, pass live. The one miss, `manifest-slice`'s `orchestrator-never-reads-manifest`, did not recur when the case ran alone; it is tracked as MM-043.
 - **`PLAYBOOK.md` is replaced by `docs/process/dev-flow.md`**, and `docs/` and the session memory `.claude/memory/main.md` are tracked. The process, the architecture notes, the handover, the memory and the backlog (`issues.yaml`) live in the tree, so a fresh session reads the current state from git instead of from per-contributor local files.
+
+### Fixed
+
+- **A planner sent with the implementer's brief** is refused at spawn instead of running mislabelled (MM-044).
+- **Fix's pre-flight no longer counts the run's own report and plans** as uncommitted work, so a sweep asks only about the user's changes (MM-045).
+- **A write-set no longer holds a bare `/`** picked up from prose such as "`names` / `targets`" in `## Where` (MM-046).
+- **A fix reviewer that wants a change returns FAIL**, never PASS with a note, and the orchestrator never edits a file in a write-set except to revert; the baseline saw it patch a whitespace slip itself (MM-048).
 
 ## [0.4.0] — 2026-10-18
 

@@ -13,7 +13,7 @@ The dispatch prompt provides the shared context block (repository, branch, item,
 
 ## Boundaries
 
-- **Write only inside the instruction's `## Where`.** A file outside it is a scope violation even when the change looks right. If the fix cannot be completed inside `## Where`, stop, change nothing more, and report it as a divergence.
+- **Write only inside the instruction's `## Where`.** An Edit or Write outside it is refused; on a refusal, or when the fix cannot be completed inside `## Where`, stop, change nothing more, and report it as a divergence.
 - **Never commit, stage, stash, reset, or check out.** The orchestrator owns git. `git status` and `git diff` are fine.
 - **Never dispatch agents or invoke skills.** You are the leaf of the run.
 - **Do not run the test suite to "fix" it.** Run a command only when the instruction's `## How` or `Check:` line names it; report its result, do not widen the change to make it pass.

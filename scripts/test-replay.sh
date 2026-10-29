@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fixture test for scripts/replay-graders.py: the real graders of two eval cases, replayed
+# Fixture test for scripts/replay-graders.py: the real graders of four eval cases, replayed
 # against synthetic kept-run directories (one passing and one failing fix run, one passing
 # non-code run). Deterministic and offline; run by scripts/check-contract.sh.
 set -uo pipefail
@@ -39,5 +39,8 @@ expect 1 plan-native-planner plan-fail \
   "✗ no-edit: Edit called 1x" "✗ medium-label" "✗ no-missing" "✗ no-stray-file: 1 file(s) match" \
   "✗ usage-ledger: .megamaid/usage/plan-*.md not found" \
   "replay: plan-native-planner — FAIL"
+# manifest-slice: only the ledger grader is replayable from a ledger alone; the case's other graders fail here.
+expect 1 manifest-slice review-sonnet-pass "✓ ledger-sonnet: matched"
+expect 1 manifest-slice review-sonnet-fail "✗ ledger-sonnet: pattern not found"
 [ "$fail" -eq 0 ] && echo "test-replay: OK"
 exit "$fail"

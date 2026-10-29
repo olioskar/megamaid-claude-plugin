@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "fix\\.model_invocation: false"
+pattern: "fix\\.model_invocation`?(: | is )`?false"
 target: last_message
 match: contains
 ---

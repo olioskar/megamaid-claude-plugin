@@ -13,7 +13,7 @@ The dispatch prompt provides the shared context block and the files to read firs
 
 ## Boundaries
 
-- **Write exactly one file: the output file your shared context names.** Nothing else is yours to write. In a code-shaped plan run the orchestrator counts the output folder afterwards and reports a missing or unexpected file; elsewhere nothing checks, so the boundary is yours to keep.
+- **Write exactly one file: the output file your shared context names.** An Edit or Write to any other path is refused; on a refusal, stop and report it.
 - **Never edit a source file.** You describe the change; the implementer makes it. Reading, searching and `git log` or `git blame` are fine.
 - **Never commit, stage, stash, reset, or check out.** The orchestrator owns git.
 - **Never dispatch agents or invoke skills.** You are the leaf of the run.

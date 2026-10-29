@@ -9,6 +9,7 @@ Checked against the vendored 2.1.303 types and `claude` 2.1.303 with this plugin
 | `$` is followed only into functions declared in the same file | A helper that takes `$` lives in the file that registers the hook; validate prints it as `$.fs.write (via writeLedger)` | machine |
 | A state ref must be a literal const in the file that passes it to `$.state.*` or `update` | The `RUN` copies ([hooks-module](../architecture/hooks-module.md), State) | code |
 | Two matcherless registrations of one event are refused | One `skill.prompt`, one `turn.complete`, one `agent.spawn` registration | code |
+| Two registrations with one matcher (`tool.call {tool:'Write'}` twice) are accepted and both listed | The Write guard and the usage observer register separately | machine (2.1.312) |
 | `$.ui.log?.()` is rejected: "`$.ui.log` is used as a value (an event of `$` bound, passed or read) instead of called; `$` is always spelled `$.noun.event(...)` at the call site" | `$` events are called directly | machine |
 | Gating hooks are listed as `gating hook with .catch: tool.call{tool=Read}`, `agent.spawn`, `tool.call{tool=Write}`; `turn.complete` is listed as a plain hook | An observer's pass-through `.catch` changes validate's wording only | machine |
 | Any text passes in an agent's `disallowedTools`; eval cases are not validated (a misspelled grader key passes) | check-contract §8 pins the frontmatter lines; replay fixtures pin the graders | machine |
@@ -40,7 +41,11 @@ Checked against the vendored 2.1.303 types and `claude` 2.1.303 with this plugin
 | After `/compact` the re-attached skill text is the stripped text | No second strip point | unverified |
 | A `tool.call` Read hook that awaits `next` and returns `{ ...r, context: [...] }` reaches the model; haiku and Opus follow such a note past a stop line | `read-note.ts` | unverified |
 | `skill.prompt` fires for a `disable-model-invocation` skill (plugin-qualified name); a slash invocation raises no `tool.call`; a model's Skill tool call raises `tool.call { tool: "Skill", skill }` and `{ deny }` refuses it | A skill can drop `disable-model-invocation` and be gated by a hook instead | unverified |
-| `$.process.run` runs `python3` and `git` from a hook, cwd = session cwd | | unverified |
+| `$.process.run` runs `python3` from a hook, cwd = session cwd | The guards run `megamaid.py` this way | machine (2.1.312) |
+| An `agent.spawn` rewrite of `model` wins over the agent file's `model:`; the result's `model` is the resolved id (`claude-haiku-5-5`) | The model is set at spawn | machine (2.1.312) |
+| A plugin agent's `e.subagentType` is `<plugin>:<name>` (`probe:writer`) | Compared with `resolve`'s `subagent_type` | machine (2.1.312) |
+| A `tool.call` `{ deny }` for a subagent's call reaches it as `<tool_use_error><text></tool_use_error>` | Deny reasons say what to do instead | machine (2.1.312) |
+| `$.fs.stat` of a missing path throws `HooksError: <plugin>: $.fs.stat(<path>) failed: ENOENT`; `/tmp` resolves to `/private/tmp` | The guards resolve the nearest existing parent | machine (2.1.312) |
 | `$.session.version()` answers `{ version, base, builtAt }`; no minimum-version field exists in the manifest or types | The load line logs `version` | code |
 | `agent.spawn`'s `provider.plugin` reads `<plugin>@<source>` (`megamaid@inline`) | `agents.ts` compares the part before `@` | code |
 | `agent.spawn`'s result carries `agentId`; the subagent's tool calls and `turn.complete` carry the same id | Usage is attributed by `e.agentId` | code |
