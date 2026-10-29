@@ -55,7 +55,7 @@
 No repo change except `docs/knowledge/engine.md`.
 
 - [x] **Steps 1–3: ran 2026-10-29 on the maintainer's word, 0.007 USD, Claude Code 2.1.312.** A scratch plugin `probe`: `agents/writer.md` (tools `Write`, frontmatter `model: sonnet`); `agent.spawn` hook rewrote `model: 'haiku'`, ran `$.process.run(['python3', '-I', '-c', …])`, stat'ed a missing path and `/tmp`; a `tool.call {tool:'Write'}` guard denied every subagent Write, beside a second `{tool:'Write'}` registration. Seen: `subagentType: "probe:writer"`; process exit 0, cwd the session's; `r.model: "claude-haiku-5-5"` over the frontmatter's sonnet; the subagent read the deny as `<tool_use_error>probe-deny: …</tool_use_error>`; `$.fs.stat` of a missing path throws `HooksError: … failed: ENOENT`; `/tmp` resolves to `/private/tmp`; validate lists two `tool.call{tool=Write}` gating hooks from one module.
-- [ ] **Step 4:** Write those facts into engine.md (Runtime rows `machine`, the `$.process.run` row's `unverified` replaced; the second-registration fact in the validate table). Commit `docs(engine): probe process.run, spawn model rewrite and subagent deny`.
+- [ ] **Step 4:** Write those facts into engine.md (Runtime rows `machine (2.1.312)`, the `$.process.run` row's `unverified` replaced; the second-registration fact in the validate table). Commit `docs(engine): probe process.run, spawn model rewrite and subagent deny`.
 
 ### Task 2: `paths_in` drops a bare `/` (MM-046)
 
@@ -84,7 +84,7 @@ No repo change except `docs/knowledge/engine.md`.
 **Interfaces (produced):**
 - `types/index.d.ts`: `export type MegamaidBoundary = { kind: 'write-set' | 'output-file'; root: string | null; paths: string[]; note: string | null }`; `MegamaidAgent.boundary?: MegamaidBoundary | null`.
 - `guard-rules.ts`: `field(prompt: string, label: string): string | null` (first `^<label>:\s*(.+?)\s*$` line); `normalize(path: string): string` (lexical: `.`, `..`, repeated and trailing `/`); `within(rel: string, entries: readonly string[]): boolean` (equal, or under `entry + '/'`); `parseWriteSet(stdout: string): string[] | null` (`write-set: (none)` → `[]`, no such line → null); `denyOutsideWriteSet(file, paths)`, `denyEmptyWriteSet(note)`, `denyOutsideOutputFile(file, output)`: strings, each stating the rule and "stop, change nothing more, and report it as a divergence".
-- `test-rig.ts`: `Rig.process: (argv: readonly string[]) => { exitCode: number; stdout: string; stderr?: string }`, default `() => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents' })`, answered on `process.run`; `answerRealpaths(on, links: Record<string, string>, missing: readonly string[] = [])` (a prefix in `links` is rewritten, a path in or under `missing` answers `{ deny: 'ENOENT' }`, anything else resolves to itself, unnormalised); `seedRun(on, run: MegamaidRun)`.
+- `test-rig.ts`: `Rig.process: (argv: readonly string[]) => { exitCode: number; stdout: string; stderr?: string }`, default `() => ({ exitCode: 2, stdout: '', stderr: 'megamaid.py: role x is not in agents' })`, answered on `process.run`; `answerRealpaths(on, links: Record<string, string>, missing: readonly string[] = [])` (a prefix in `links` is rewritten; a path in or under `missing`, matched after that rewrite, answers `{ deny: 'ENOENT' }`; anything else resolves to itself, unnormalised); `seedRun(on, run: MegamaidRun)`.
 
 Spawn side (`agents.ts`, main-loop briefed spawn, computed before `next(e)`, stored on the record after): lane `fix` + role `implementer` → `root = field('Repository')`, `instruction = field('Instruction file')`; either missing → `{ kind: 'write-set', root, paths: [], note: 'the prompt names no Instruction file or Repository line' }`; else run `write-set --file <instruction>`, exit 0 → `paths = parseWriteSet(stdout)`, otherwise `paths: []`, `note` = the stderr's first line. Lane `plan` + role `planner` → `output = field('Output file')`, relative ones joined on `field('Repository')`; missing → `paths: []` with a note. Any other agent → `boundary: null`. Nested records get no boundary.
 
@@ -97,14 +97,14 @@ Guard side (`guards.ts`, `registerGuards(on)`, `tool.call {tool:'Edit'}` and `{t
   - `a symlinked spelling of the root is the same file` (`answerRealpaths({'/tmp/r': '/private/r'})`, root `/tmp/r`, edit `/private/r/./src/a.ts` passes)
   - `an empty write-set denies every edit and says the instruction is defective`
   - `a planner writes only its output file` (`boundary { kind: 'output-file', root: '/r', paths: ['/r/plans/M1-a.md'] }`; that path passes, `/r/src/a.ts` denied)
-  - `a planner's first write into a folder that does not exist yet passes` (`missing: ['/r/plans/plan-for-x']`, output `/r/plans/plan-for-x/M1-a.md`, root `/tmp/r` linked to `/private/r`)
+  - `a planner's first write into a folder that does not exist yet passes` (links `{'/tmp/r': '/private/r'}`, `missing: ['/private/r/plans/plan-for-x']`, output `/tmp/r/plans/plan-for-x/M1-a.md`, target `/private/r/plans/plan-for-x/M1-a.md`)
   - `an implementer creating a file in a new folder inside a directory entry passes` (`missing: ['/r/src/dir/new']`, `/r/src/dir/new/x.ts`)
   - `main-loop, unrecorded and unbounded calls pass` (no `agentId`; `agentId: 'zz'`; a recorded `fix/code-reviewer` with `boundary: null`)
   - `a throwing guard denies a subagent's call and passes a main-loop call` (`state.get` answers `{ deny: 'x' }`)
 - [ ] **Step 3: `agents.test.ts`:** `an implementer spawn stores its write-set` (rig.process answers `write-set: src/a.ts` for argv containing `write-set`; prompt carries `Repository: /r` and `Instruction file: /r/plans/M1-a.md`; record has the boundary; argv[0..1] are `python3`, `-I`, argv[2] ends with `/scripts/megamaid.py`, the rest is `write-set --file /r/plans/M1-a.md`); `an implementer spawn without an Instruction file line stores an empty write-set with a note`; `a write-set exit 2 stores an empty write-set with the stderr line`; `a planner spawn stores its output file, a relative one joined on Repository`; `a reviewer spawn stores no boundary`.
 - [ ] **Step 4:** `claude plugin test .` fails on the new tests.
 - [ ] **Step 5:** Implement the type, `guard-rules.ts`, the spawn side, `guards.ts`, `register.ts`. Add `hooks/guards.ts` to §12's RUN file list.
-- [ ] **Step 6:** `claude plugin validate .` passes and lists the new gating hooks (a second `tool.call {tool:'Write'}` beside usage.ts's is accepted, Task 1). `scripts/check-contract.sh` ends `check-contract: OK`.
+- [ ] **Step 6:** `claude plugin validate .` passes and lists the new gating hooks (a second `tool.call {tool:'Write'}` beside usage.ts's is accepted on 2.1.312, Task 1; CI's 2.1.303 validate confirms it before merge, and if it refuses, the Edit and Write guards become one registration matched `{ tool: /^(Edit|Write)$/ }`). `scripts/check-contract.sh` ends `check-contract: OK`.
 - [ ] **Step 7: Prose:** implementer.md's `## Where` bullet → one line: edits outside `## Where` are refused by a hook; report a divergence. planner.md's first Boundaries bullet → writes other than the output file are refused; drop "elsewhere nothing checks". Fix 4a: an item whose write-set is `(none)` is announced `{code} — not dispatched: the instruction names no file` instead of dispatched.
 - [ ] **Step 8:** Commit `feat(hooks): refuse an implementer's or planner's write outside its boundary`.
 
@@ -163,6 +163,8 @@ Deviation from the spec's first choice, which the spec provides for: `scripts/re
 ## Review log
 
 Round 1 (2026-10-29): the probe could not tell a rewrite from inheritance → ran with `model: sonnet` in the agent file (Task 1); a planner's first Write lands in a folder that does not exist → one `realPath` helper walking to the nearest existing parent, two missing-folder tests; the concurrency test's holds → after `next` only; misfit `config` call, null lane → stated; main-loop narrowing → recorded as a deviation; Task 5 unrecorded and main-loop cases; the report-Write Bounds row; Task 8's target; one type name and an argv suffix assertion; one reviewer on sonnet instead of the lane; CHANGELOG entries in Task 10.
+
+Round 2 (2026-10-29): all eleven closed; the missing-folder planner test now spells its output under the linked root, `missing` matched after the rewrite; probe facts marked 2.1.312, CI's 2.1.303 validate confirms the second Write registration, with the RegExp fallback.
 
 ## After the tasks (dev-flow 6–7)
 
