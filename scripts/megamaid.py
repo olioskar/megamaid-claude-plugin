@@ -69,7 +69,7 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             batch <n>: <codes>                         severity order C H M L T D X G, then number
     A write-set is the file paths named in `## Where` (backticked spans split on whitespace, or
     bare tokens, with a `/` or a 2-5 letter extension; `:12`/`:L12`/`#L12` dropped; `./a` and
-    trailing `/` normalised), else those in `**File(s):**`; a revise
+    trailing `/` normalised; a token with no letter or digit, a bare `/` or `//` from prose, dropped), else those in `**File(s):**`; a revise
     doc's is its `**Target spec:**`. Items whose `**Finding status:**` starts with
     `not reproduced` are listed and left out of the batches. A batch holds at most three items
     with pairwise-disjoint write-sets (a directory covers everything under it); an item with no
@@ -582,7 +582,7 @@ def paths_in(text):
     """File paths named in a span: backticked spans (split on whitespace, so a span that
     holds a sentence still yields its paths) and bare tokens, kept when they carry a `/` or
     a 2-5 letter extension; `:12`, `:L12`, `#L12` line parts dropped; `./a/b` normalised to
-    `a/b` and `src/x/` to `src/x`; order kept, duplicates removed."""
+    `a/b` and `src/x/` to `src/x`; a token with no letter or digit dropped; order kept, duplicates removed."""
     out = []
     spans = re.findall(r"`([^`\n]+)`", text)
     bare = re.sub(r"`[^`\n]*`", " ", text)
@@ -593,6 +593,8 @@ def paths_in(text):
             continue
         if "/" in tok or EXT.search(tok):
             tok = os.path.normpath(tok)
+            if not re.search(r"[A-Za-z0-9]", tok):
+                continue
             if tok not in out:
                 out.append(tok)
     return out

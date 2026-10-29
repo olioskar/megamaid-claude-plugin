@@ -1,0 +1,5 @@
+shape: per-finding
+write-set G7: tools/build.py tools/viewer.html tools/photo.py
+not-reproduced: none
+batch 1: G7
+exit=0
