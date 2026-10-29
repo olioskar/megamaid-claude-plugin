@@ -1,6 +1,6 @@
 import type { CoreEngineInterface, On } from 'claude-code'
 import type { MegamaidBoundary } from '../types'
-import { denyEmptyWriteSet, denyOutsideOutputFile, denyOutsideWriteSet, normalize, within } from './guard-rules'
+import { DENY_PAST_HEAD, denyEmptyWriteSet, denyOutsideOutputFile, denyOutsideWriteSet, normalize, pastHead, within } from './guard-rules'
 
 const RUN = { plugin: 'megamaid', key: 'run' } as const
 
@@ -18,6 +18,13 @@ export function registerGuards(on: On): void {
     const reason = await refuseWrite($, e.agentId, String(e.file_path))
     return reason === null ? next(e) : { deny: reason }
   }).catch(($, e, next) => next.called ? next(e) : e.agentId === undefined ? next(e) : { deny: 'megamaid: write boundary (megamaid guard fault)' })
+  on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+    if (e.agentId === undefined) return next(e)
+    const { value: run } = await $.state.get(RUN)
+    const a = run?.agents[e.agentId]
+    if (a === undefined || a.lane !== 'fix' || a.role === 'implementer' || !pastHead(String(e.command))) return next(e)
+    return { deny: DENY_PAST_HEAD }
+  }).catch(($, e, next) => next.called ? next(e) : e.agentId === undefined ? next(e) : { deny: 'megamaid: fix reviewer diff base (megamaid guard fault)' })
 }
 
 type GuardDollar = Pick<CoreEngineInterface, 'fs' | 'state'>

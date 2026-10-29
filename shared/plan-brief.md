@@ -66,6 +66,8 @@ ADR-style: list alternatives you considered but rejected, one bullet each, with 
 - **<Alternative title>** — Rejected because <one-line rationale>
 ```
 
+**`Check:` never diffs past `HEAD`.** The fix reviewer runs it while the item is still uncommitted and `HEAD` may hold a batch-mate's commit, so `HEAD~` or `HEAD^` reaches the wrong change and is refused; diff against `HEAD` itself.
+
 **Not reproduced.** When `**Finding status:**` is `not reproduced`, `## What` states what the finding claimed and what you found instead, `## How` is the single line `No change — finding not reproduced (see Finding status).`, and `## Expected Outcome` has `Check: none — no change proposed`. `/megamaid:fix` lists such items separately and queues one only when the user asks.
 
 Be concise and precise. No fluff. These instructions are the single source of truth for this fix.

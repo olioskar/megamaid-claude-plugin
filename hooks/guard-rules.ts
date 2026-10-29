@@ -48,6 +48,13 @@ export function firstLine(text: string): string | null {
   return line === undefined ? null : line.trim()
 }
 
+// A fix reviewer diffs the item's uncommitted change against HEAD; HEAD~ or HEAD^ reaches a batch-mate's commit.
+export function pastHead(command: string): boolean {
+  return /HEAD[~^]/.test(command)
+}
+
+export const DENY_PAST_HEAD = "megamaid: a fix reviewer diffs against HEAD, never past it: HEAD may hold a batch-mate's commit and the item is uncommitted. Run git diff HEAD -- <files reported by implementer>, and git status --porcelain -- <those files> for new ones."
+
 const STOP = 'stop, change nothing more, and report it as a divergence.'
 
 export function denyOutsideWriteSet(file: string, paths: readonly string[]): string {

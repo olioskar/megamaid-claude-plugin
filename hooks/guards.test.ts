@@ -94,3 +94,31 @@ test("a throwing guard denies a subagent's call and passes a main-loop call", as
   expect((await $.tool.call(write('/r/src/a.ts', 'a1'))).deny).toContain('megamaid guard fault')
   expect((await $.tool.call(edit('/r/src/a.ts'))).deny).toBe('answered')
 })
+
+function bash(command: string, agentId?: string) {
+  return { tool: 'Bash' as const, command, ...(agentId === undefined ? {} : { agentId }) }
+}
+const REVIEWERS = { r1: agent({ role: 'code-reviewer' }), i1: agent({ boundary: IMPL }), v1: agent({ role: 'code-reviewer', lane: 'review' }) }
+
+test("a fix reviewer's diff past HEAD is denied with the HEAD form named", async ($, on) => {
+  rig(on); answerTools(on); seedRun(on, run(REVIEWERS))
+  for (const c of ['git diff HEAD~1 -- src/a.ts', 'git diff HEAD^ src/a.ts']) {
+    const r = await $.tool.call(bash(c, 'r1'))
+    expect(r.deny).toContain('git diff HEAD -- <files reported by implementer>')
+  }
+  expect((await $.tool.call(bash('git diff HEAD -- src/a.ts', 'r1'))).deny).toBe('answered')
+})
+
+test("an implementer's, a review-lane reviewer's, an unrecorded agent's and the main loop's HEAD~1 pass", async ($, on) => {
+  rig(on); answerTools(on); seedRun(on, run(REVIEWERS))
+  for (const id of ['i1', 'v1', 'zz', undefined]) {
+    expect((await $.tool.call(bash('git diff HEAD~1', id))).deny).toBe('answered')
+  }
+})
+
+test("a throwing Bash guard denies a subagent's call and passes a main-loop call", async ($, on) => {
+  rig(on); answerTools(on)
+  on('state.get', () => ({ deny: 'no state' }))
+  expect((await $.tool.call(bash('git status', 'r1'))).deny).toContain('megamaid guard fault')
+  expect((await $.tool.call(bash('git status'))).deny).toBe('answered')
+})
