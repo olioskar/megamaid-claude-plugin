@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-28-call-time-guarantees.md](2026-10-28-call-time-guarantees.md). Read it first; this plan does not repeat its reasons.
 
-**Status:** the maintainer's go 2026-10-29 ("continue"); tasks 1–11 built and committed (b75e440..ed23d58), free gates green; branch review next.
+**Status:** the maintainer's go 2026-10-29 ("continue"); tasks 1–11 built and committed (b75e440..ed23d58), free gates green; branch review done (contract: 7 findings; code and tests: 2), all fixed and re-checked, none open; smoke and the full suite wait on the maintainer's word.
 
 ## Global Constraints
 
