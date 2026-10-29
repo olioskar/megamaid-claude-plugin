@@ -402,6 +402,7 @@ All {N} items complete:
 
 - **Fresh agents, fresh tree.** Each implementer and reviewer is a new subagent, and a retry starts after the failed attempt is reverted (4f). No accumulated state in either.
 - **Git is the orchestrator's.** Implementers never commit; the HEAD check (4d.1) stops an item whose implementer did.
+- **The orchestrator never edits a file in a write-set**, except to revert an attempt (4f). A change, however small, goes through an implementer: a reviewer that wants one returns FAIL.
 - **The instruction is the spec.** Implementer follows it. Reviewer verifies against it. If the doc is wrong, fix the doc first, then re-implement.
 - **Scope is sacred.** Implementers don't make changes outside scope. Reviewers flag scope violations as FAIL.
 - **Don't loop forever.** Three failures on one item means the instruction or its classification is wrong. Stop and ask — there is no orchestrator-applied fix.
