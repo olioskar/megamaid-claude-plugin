@@ -1,6 +1,6 @@
 ---
 type: tool_used
 tool: Bash
-input_match: 'megamaid\.py(\\")? fix check'
+input_match: '\bfix check\b'
 min: 2
 ---
