@@ -203,6 +203,22 @@ runf fix-gate-not "$T/r-gate" fix gate --folder plans/p --code M1 "${FX[@]}"
 mkrepo r-rs; fstart r-rs; (cd "$T/r-rs" && echo hand >> src/b.js && git commit -qam hand)
 runf fix-resync "$T/r-rs" fix resync --folder plans/p "${FX[@]}"
 (cd "$T/r-rs" && grep -q "\"head\": \"$(git rev-parse HEAD)\"" .megamaid/fix/plans-p.json && echo "state head: HEAD" || echo "state head: stale") >> "$OUT/fix-resync.out"
+# fix check: the three checks after an implementer returns (HEAD, reported list, allowed set)
+mkrepo r-ck; fstart r-ck; echo e >> "$T/r-ck/src/a.js"
+runf fix-check-ok "$T/r-ck" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-ckh; fstart r-ckh; (cd "$T/r-ckh" && echo e >> src/a.js && git commit -qam implementer)
+runf fix-check-head "$T/r-ckh" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-cku; fstart r-cku; echo e >> "$T/r-cku/src/a.js"
+runf fix-check-unreported "$T/r-cku" fix check --folder plans/p --code M1 --reported "${FX[@]}"
+mkrepo r-ckw; fstart r-ckw; echo e >> "$T/r-ckw/src/a.js"; echo e >> "$T/r-ckw/src/b.js"
+runf fix-check-outside-where "$T/r-ckw" fix check --folder plans/p --code M1 --reported src/a.js src/b.js "${FX[@]}"
+runf fix-check-batchmate "$T/r-ckw" fix check --folder plans/p --code M1 --reported src/a.js src/b.js --in-flight M2 "${FX[@]}"
+mkrepo r-cka; fstart r-cka; echo e >> "$T/r-cka/src/a.js"; echo n > "$T/r-cka/src/c.js"
+runf fix-check-outside-allowed "$T/r-cka" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-cks; fstart r-cks; echo e >> "$T/r-cks/src/a.js"; echo r > "$T/r-cks/docs/megamaid/reviews/pr-1-round2-report.md"; echo a >> "$T/r-cks/plans/p/M1-a.md"
+runf fix-check-sweep "$T/r-cks" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-ckn
+runf fix-check-nostate "$T/r-ckn" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

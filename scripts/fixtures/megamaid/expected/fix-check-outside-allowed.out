@@ -1,0 +1,2 @@
+check M1: stop-batch — src/c.js changed outside every in-flight write-set (M1)
+exit=0

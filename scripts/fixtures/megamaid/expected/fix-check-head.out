@@ -1,0 +1,3 @@
+check M1: stop-batch — HEAD moved during implementer (SHA → SHA)
+reason src/a.js reported but unchanged
+exit=0

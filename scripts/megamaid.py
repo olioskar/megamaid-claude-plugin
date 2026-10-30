@@ -113,6 +113,16 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   Failing lines: exit 0 is green; else lines matching fail|failed|failing|error|not ok
                                   or starting ✗, or every non-empty line when none does.
     fix gate --code C             `gate C: ok` or `gate C: not-dispatched — <paths>` (C queued after start).
+    fix check --code C --reported [<paths>…] [--in-flight <codes>…]
+                                  Step 4d.1's three checks, all run: HEAD equals the recorded head; the reported
+                                  paths inside C's write-set equal the changed ones there; every changed path is in
+                                  the allowed set (D0, the run's own paths, the finished paths, C's and the
+                                  in-flight write-sets). First line `check C: ok`, or the strongest verdict with its
+                                  reason, `check C: stop-batch — <why>` beating `check C: stop-item — <why>`; then
+                                  `reason <why>` per further failure. Reasons: `HEAD moved during implementer
+                                  (<old> → <new>)` (batch); `<paths> changed but not reported`, `<paths> reported
+                                  but unchanged` (item); `<path> reported outside ## Where` (item; batch inside an
+                                  in-flight write-set); `<paths> changed outside every in-flight write-set (<codes>)` (batch).
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
                                   keeping the finished list: `head:`, `d0:` as for start.
@@ -1036,6 +1046,10 @@ def main(argv=None):
     t.add_argument("--commits", required=True, choices=["on", "off"])
     t = fsub.add_parser("gate", parents=[fcommon], help="the not-dispatched rule for one item queued after start")
     t.add_argument("--code", required=True)
+    t = fsub.add_parser("check", parents=[fcommon], help="Step 4d.1: the three git checks after an implementer returns")
+    t.add_argument("--code", required=True)
+    t.add_argument("--reported", nargs="*", required=True, help="the implementer's reported files; may be empty")
+    t.add_argument("--in-flight", nargs="*", default=[])
     t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
     t.add_argument("--in-flight", nargs="*", default=[])
     s.set_defaults(fn=cmd_fix)

@@ -176,6 +176,27 @@ def baseline_d0(ctx, folder, st, extra=()):
     return [p for p in dirty(ctx["git"], ctx["root"]) if not under(p, skip)]
 
 
+def reported_paths(root, paths):
+    """Reported files as repo-relative paths (an implementer reports them from the repo root)."""
+    out = []
+    for p in paths or []:
+        r = os.path.relpath(p, root) if os.path.isabs(p) else os.path.normpath(p)
+        if r not in out:
+            out.append(r)
+    return out
+
+
+def changed(git, root, st, prefixes):
+    """Paths under `prefixes` that differ from HEAD."""
+    return {p for p in dirty(git, root) if under(p, prefixes)}
+
+
+def allowed(ctx, folder, st, code, flight):
+    """The allowed set: D0, the run's own paths, the finished paths, C's and the in-flight write-sets."""
+    return (list(st["d0"]) + own_paths(ctx["root"], folder, ctx["cfg"]) + list(st.get("finished", {}))
+            + write_set(ctx, folder, code) + in_flight_paths(ctx, folder, flight))
+
+
 def print_head_d0(st):
     print("head: %s" % st["head"])
     print("d0: %s" % (" ".join(st["d0"]) if st["d0"] else "none"))
@@ -226,7 +247,44 @@ def cmd_resync(a, ctx, folder):
     print_head_d0(st)
 
 
-COMMANDS = {"preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
+def cmd_check(a, ctx, folder):
+    st = load_state(ctx, folder)
+    git, root = ctx["git"], ctx["root"]
+    flight = [c for c in a.in_flight if c != a.code]
+    ws = write_set(ctx, folder, a.code)
+    rep_ = reported_paths(root, a.reported)
+    fails = []  # (strength, why): 2 stop-batch, 1 stop-item
+    now = head(git, root)
+    if now != st["head"]:
+        fails.append((2, "HEAD moved during implementer (%s → %s)" % (st["head"], now)))
+    inside = [p for p in rep_ if under(p, ws)]
+    got = changed(git, root, st, ws)
+    missed = sorted(got - set(inside))
+    if missed:
+        fails.append((1, "%s changed but not reported" % " ".join(missed)))
+    stale = [p for p in inside if p not in got]
+    if stale:
+        fails.append((1, "%s reported but unchanged" % " ".join(stale)))
+    mates = in_flight_paths(ctx, folder, flight)
+    for p in rep_:
+        if p not in inside:
+            fails.append((2 if under(p, mates) else 1, "%s reported outside ## Where" % p))
+    ok = allowed(ctx, folder, st, a.code, flight)
+    out = [p for p in dirty(git, root) if not under(p, ok)]
+    if out:
+        fails.append((2, "%s changed outside every in-flight write-set (%s)"
+                      % (" ".join(out), " ".join([a.code] + flight))))
+    if not fails:
+        print("check %s: ok" % a.code)
+        return
+    first = max(fails, key=lambda f: f[0])
+    print("check %s: %s — %s" % (a.code, "stop-batch" if first[0] == 2 else "stop-item", first[1]))
+    for f in fails:
+        if f is not first:
+            print("reason %s" % f[1])
+
+
+COMMANDS = {"check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
 
 
 def run(a, ctx):

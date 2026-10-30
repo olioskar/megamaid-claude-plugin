@@ -1,0 +1,3 @@
+check M1: stop-batch — src/b.js changed outside every in-flight write-set (M1)
+reason src/b.js reported outside ## Where
+exit=0
