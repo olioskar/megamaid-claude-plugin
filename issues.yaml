@@ -265,6 +265,9 @@ issues:
       cause: the read came in Step 7's verification gate, which names a check for anchors, counts, fixes and
       directive citations but none for a convention claim; the never-read rule sat in Step 2 only. Fix on
       feat/fix-mechanics: Step 7 item 6, convention claims checked against the excerpt or a banner line range.
+      Then 4 runs (2026-10-30): the orchestrator read the manifest only by range each time; one run's grader miss
+      was a subagent's ranged Read, which the rules allow; the Read grader now skips ranged reads. Resolved;
+      the entry goes at release.
 
   - id: MM-047
     type: improvement
