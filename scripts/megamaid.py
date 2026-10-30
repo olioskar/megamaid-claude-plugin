@@ -75,8 +75,8 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     doc's is its `**Target spec:**`. Items whose `**Finding status:**` starts with
     `not reproduced` are listed and left out of the batches. A batch holds at most three items
     with pairwise-disjoint write-sets (a directory covers everything under it); an item with no
-    write-set runs alone. An item runs in a batch after every item its `**Depends on:**` names (codes split on
-    `,` or `+`; a code a group's `**Consolidates:**` lists stands for the group), never with or before one.
+    write-set runs alone. An item runs in a batch after every item its `**Depends on:**` names (every `<letter><digits>`
+    token; a code a group's `**Consolidates:**` lists stands for the group), never with or before one.
     Batches are a ceiling: the skill may split one, never merge two.
     exit 2: missing or unreadable folder; a folder mixing per-finding files and revise-*.md; two files
     with the same code; more than one revise-*.md.
@@ -100,7 +100,8 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     call; no command reads an earlier verdict; the orchestrator may act against any verdict. git is the
     first of `git` on PATH, /opt/homebrew/bin/git, /usr/local/bin/git whose `--version` exits 0
     (`MEGAMAID_GIT_CANDIDATES`, colon-separated, replaces the two fallbacks; tests only). The project root
-    is git's top level, never the cwd. Paths are repo-relative; --folder resolves against the cwd. The
+    is git's top level, never the cwd; git takes every path literally (GIT_LITERAL_PATHSPECS).
+    Paths are repo-relative; --folder resolves against the cwd. The
     run's own paths are the folder and paths.reviews. State: .megamaid/fix/<folder slug>.json under the
     repo root (keys folder, head, d0, verify {cmd, exit, failing} | null, commits, finished {path: blob |
     "absent"}), overwritten by the next `fix start` on that folder. A `--code` or listed code may be a Step 3
@@ -121,25 +122,29 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   in-flight write-sets). First line `check C: ok`, or the strongest verdict with its
                                   reason, `check C: stop-batch — <why>` beating `check C: stop-item — <why>`; then
                                   `reason <why>` per further failure. Reasons: `HEAD moved during implementer
-                                  (<old> → <new>)` (batch); `<paths> changed but not reported`, `<paths> reported
+                                  (<old> → <new>)` (batch); `<paths> in D0, the user's uncommitted changes` (item); `<paths> changed but not reported`, `<paths> reported
                                   but unchanged` (item); `<path> reported outside ## Where` (item; batch inside an
                                   in-flight write-set); `<paths> changed outside every in-flight write-set (<codes>)` (batch).
     fix revert --code C --reported [<paths>…] [--in-flight <codes>…] --reviewer-file <path> [--plan-change "<text>"]
                                   Step 4f FAIL 1-2: each reported path back to HEAD (`restored <p>`; `deleted <p>`
                                   when HEAD lacks it), never one inside another in-flight write-set (`skipped <p> —
-                                  in <code>'s write-set`); appends `### Attempt <n> — FAIL` with `**Reviewer:**` (the
+                                  in <code>'s write-set`, or a directory holding one; `skipped <p> — in D0, the user's uncommitted changes`); appends `### Attempt <n> — FAIL` with `**Reviewer:**` (the
                                   file's text) and `**Plan change:**` (default none) under `## Attempts` (created on the
                                   first): `attempt <n> recorded`; then `revert C: clean` or `revert C: dirty — <paths>`
-                                  (C's write-set still changed).
+                                  (C's write-set still changed outside D0). A reported path outside the repository exits 2
+                                  before any is touched (every command; an absolute one is resolved through symlinks).
     fix verify [--waiting <codes>…] [--reviewing <codes>…]
                                   Step 4f.0: runs the command `fix start` recorded and compares its failing lines with
                                   the baseline's: `verify: green` (exit 0), `verify: red before the run (unchanged)` (no
                                   new failing line), `verify: none configured`, or `verify: fail <codes> (exit <n>) —
-                                  <first new failing line>` then `line <text>` per further one. A new line naming a
+                                  <first new failing line>` then `line <text>` per further one (50 shown, then `line …
+                                  <n> more`). Durations (`0.87s`, `12 ms`) are ignored in the comparison; an exit code
+                                  that differs from the baseline's with no new line is the line `exit <n>, was <m> before
+                                  the run`; a red run with no output, `(exit <n>, no output)`. stdin is /dev/null. A new line naming a
                                   path inside a waiting or reviewing item's write-set fails that item; one naming none
                                   fails every waiting item and no reviewing one (`fail none` when none is waiting).
     fix commit --code C --title "<t>" --reported [<paths>…] [--in-flight <codes>…]
-                                  Step 4f.1. Commits on: `git add -A` and `git commit -- <reported>` with `C: <t>`
+                                  Step 4f.1. A D0 path is skipped (`skipped <p> — in D0, …`). Commits on: `git add -A`, `git commit -- <reported>`, with `C: <t>`
                                   (`revise <stem>: apply review revisions` for revise-<stem>), the recorded head
                                   advanced: `commit C: <full sha>`, then `commit C: tree not clean — <paths>` when a
                                   path is left outside the allowed set; `commit C: failed — <git's first stderr line |
@@ -149,7 +154,7 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   An empty list: `commit C: skipped (no changes)`.
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
-                                  keeping the finished list: `head:`, `d0:` as for start.
+                                  keeping the finished list: `head:`, `d0:` and `not-dispatched` lines as for start.
     exit 2: `no runnable git (tried: …)`, not a repository, --folder missing or outside the repository,
     `no fix state for <folder>; run megamaid.py fix start first`, `no instruction for <code> in <folder>`.
 
@@ -711,7 +716,8 @@ def severity_key(code):
 
 
 def depends_of(text):
-    """Codes named on `**Depends on:**` (split on `,` or `+`; `none` or absent → [])."""
+    """Codes named on `**Depends on:**` (every `<letter><digits>` token, so `M1 (its helper)` reads M1;
+    `none` or absent → [])."""
     return codes_on(header_value(text, "Depends on"))
 
 
@@ -721,7 +727,7 @@ def consolidates_of(text):
 
 
 def codes_on(value):
-    return [c for c in (x.strip(" `") for x in re.split(r"[,+]", value)) if re.match(r"^[A-Z]\d+$", c)]
+    return re.findall(r"\b[A-Z]\d+\b", value)
 
 
 def cycles(deps):

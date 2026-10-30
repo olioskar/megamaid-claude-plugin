@@ -180,7 +180,7 @@ Three terms the git checks use:
 - **Changed** means different from `HEAD`, or, for a finished path, from its recorded content; a revert restores the same.
 - **Stop the item** means dispatch no further stage for it and leave its edits in place; its write-set stays in the allowed set until the user resolves it. **Stop the batch** means dispatch nothing further for any item in the batch, let the implementers already running return, print the per-item status list from 4f.1 for the batch, and hand the tree to the user. A HEAD stop (4d.1 check 1) stops the batch: `HEAD_expected` is stale for every batch-mate until the user resolves it. The orchestrator cannot interrupt a running agent; a stop is a promise about what it will not start.
 
-**Verdicts and overrides.** The `fix` commands below report a verdict; they never decide the next step. Act on the verdict by default. When you have a reason to act otherwise (a verdict built on a wrong input, a hole in this skill), do so, and log one line: `override <step> <code>: <verdict> → <what was done> — <why>`. Any git step of your own or the user's that these commands did not make (keeping an implementer's commit, a hand commit, a stash) is an override too: log it, then run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix resync --folder <instruction folder> --in-flight <in-flight codes>`, which re-reads `HEAD_expected` and `D0` and keeps the finished paths; without it every later check reads stale facts. Every override lands in the `Overrides:` list (Step 5). A group from Step 3 is passed as one code, `L1+L2+L3`.
+**Verdicts and overrides.** The `fix` commands below report a verdict; they never decide the next step. Act on the verdict by default. When you have a reason to act otherwise (a verdict built on a wrong input, a hole in this skill), do so, and log one line: `override <step> <code>: <verdict> → <what was done> — <why>`. Any git step of your own or the user's that these commands did not make (keeping an implementer's commit, a hand commit, a stash) is an override too: log it, then run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix resync --folder <instruction folder> --in-flight <in-flight codes>`, which re-reads `HEAD_expected` and `D0`, keeps the finished paths, and lists `not-dispatched <code>: <paths>` for every item whose write-set now meets `D0` (do not dispatch those); without it every later check reads stale facts. Every override lands in the `Overrides:` list (Step 5). A group from Step 3 is passed as one code, `L1+L2+L3`.
 
 Launch a parallel batch per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`) — one Agent call per item, batched in a single assistant message.
 
@@ -261,6 +261,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix check --folder <instr
 
 1. **HEAD unchanged** — equals `HEAD_expected`. If not, the implementer committed: `stop-batch — HEAD moved during implementer ({HEAD_expected} → {new})`. Do not revert (a commit is not the orchestrator's to undo); surface `{code} — stopped: HEAD moved during implementer ({HEAD_expected} → {new}); resolve by hand before continuing`.
 2. **Reported list equals the changed paths inside the write-set.** A changed path inside `## Where` that was not reported, or a reported path that is not changed → `stop-item`, naming which. A reported path outside `## Where` → `stop-item`, or `stop-batch` when it lies inside a batch-mate's write-set. The reported list is what the reviewer scopes, the revert restores, and the commit stages, so it must be exact; write-sets are disjoint within a batch, so attribution inside `## Where` is exact too.
+   The user's `D0` paths inside the write-set (a resync can add them) → `stop-item — {paths} in D0, the user's uncommitted changes`.
 3. **Tree inside the allowed set** (4a). A path outside → `stop-batch — {paths} changed outside every in-flight write-set ({codes})`. Do not guess which item did it.
 
 `check {code}: ok` → dispatch the reviewer. Otherwise the first line is the strongest verdict and its reason, and each `reason` line after it is another failed check; stop the item or the batch (4a) and surface them.
@@ -305,6 +306,7 @@ Branch: {branch}
 Item: {reference_code} — {title}
 Instruction file: {instruction-path}
 Batch-mates' write-sets: {for each other in-flight item: "{code}: {paths}"; or "none — this item runs alone"}
+Finished earlier on these files: {with commits off, each finished item whose reported paths meet this item's write-set: "{code}: {paths}"; or "none"}
 
 Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, {run brief path printed by `megamaid.py brief` (skill fix, role = the picked reviewer role)}
 
@@ -321,7 +323,7 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, 
      ```
      python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix revert --folder <instruction folder> --code <code> --reported <reported files> --in-flight <the other in-flight codes> --reviewer-file <that file> --plan-change "<what you changed in ## How and why | none>"
      ```
-     It restores each reported path (deleting one the item created), never touches a path inside another in-flight item's write-set (`skipped`), and appends to the instruction file, creating the section on the first FAIL:
+     It restores each reported path (deleting one the item created), never touches a path inside another in-flight item's write-set or in `D0` (`skipped`), and appends to the instruction file, creating the section on the first FAIL:
      ```markdown
      ## Attempts
 
@@ -368,7 +370,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix commit --folder <inst
 
 The orchestrator runs the commit, not the implementer subagent. The command:
 
-- **Stages and commits only the reported list** as `<code>: <title>` (`revise {spec-stem}: apply review revisions` for the revise doc). Step 4d.1 check 2 confirmed the list equals the item's changed footprint inside `## Where`, so it is complete for this item. It prints `commit {code}: {sha}` and advances `HEAD_expected`.
+- **Stages and commits only the reported list**, never a path in `D0` (`skipped`), as `<code>: <title>` (`revise {spec-stem}: apply review revisions` for the revise doc). Step 4d.1 check 2 confirmed the list equals the item's changed footprint inside `## Where`, so it is complete for this item. It prints `commit {code}: {sha}` and advances `HEAD_expected`.
 - **Checks the tree after the commit:** the tree minus the allowed set (4a; this item is no longer in flight) must be empty. `commit {code}: tree not clean — {paths}` → stop the run and surface `tree not clean after {code}'s commit: {paths}` (a hook that rewrites files, or an edit nobody reported).
 - **Reports a failed commit** as `commit {code}: failed — {git's message}` (pre-commit hook reject, signing failure, conflict, anything non-zero): abort the run and surface the error, then print the per-item status list so nothing is lost (the same list a batch stop prints, 4a):
   ```

@@ -4,7 +4,7 @@ Two stdlib-only Python tools do the deterministic work the skills must not re-de
 
 ## scripts/megamaid.py
 
-Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plugin-root P` (default: the script's parent directory), `--home H` (default `~`), `--project-root R` (default: git toplevel, else cwd). The full contract is the docstring, `scripts/megamaid.py:1-166`.
+Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plugin-root P` (default: the script's parent directory), `--home H` (default `~`), `--project-root R` (default: git toplevel, else cwd). The full contract is the docstring, `scripts/megamaid.py:1-171`.
 
 | Subcommand | Arguments | Prints (stdout) | Exit 2 | Called by |
 |---|---|---|---|---|
@@ -19,15 +19,15 @@ Config flags on `config`, `resolve`, `directives`, `brief`, `migrate *`: `--plug
 | `fix preflight` | `--folder F` (every `fix` command; no `--project-root`: the root is git's top level) | `preflight: clean` or `dirty <path>` per path: `git status` minus the run's own paths (the folder, `paths.reviews`) | no runnable git, not a repository, folder missing or outside it (every `fix` command) | fix Step 1.5 |
 | `fix start` | `--verify "<cmd>"\|none --commits on\|off` | `head: <sha>`, `d0: <paths>\|none`, `verification: green\|red (<n> failing lines)\|none configured`, `commits: on\|off`, `not-dispatched <code>: <paths>` per item meeting `D0`; writes `.megamaid/fix/<folder slug>.json` | — | fix Step 1.6 |
 | `fix gate` | `--code C` | `gate C: ok\|not-dispatched — <paths>` | no state for the folder; no instruction C | fix Step 4f (an X item) |
-| `fix check` | `--code C --reported [<paths>…] [--in-flight <codes>…]` | `check C: ok`, or `check C: stop-batch\|stop-item — <why>` (the strongest), then `reason <why>` per further failure: HEAD moved; changed but not reported; reported but unchanged; reported outside `## Where`; changed outside every in-flight write-set | no state for the folder; no instruction C | fix Step 4d.1 |
-| `fix revert` | `--code C --reported [<paths>…] [--in-flight <codes>…] --reviewer-file <path> [--plan-change "<text>"]` | `restored <p>`, `deleted <p>`, `skipped <p> — in <code>'s write-set`, `attempt <n> recorded` (appended under `## Attempts` in C's instruction), `revert C: clean\|dirty — <paths>` | no state; no instruction C; reviewer file unreadable | fix Step 4f (FAIL) |
-| `fix verify` | `[--waiting <codes>…] [--reviewing <codes>…]` | `verify: green`, `verify: red before the run (unchanged)`, `verify: none configured`, or `verify: fail <codes> (exit <n>) — <first new failing line>` and `line <text>` per further one; a line naming a write-set fails that item, one naming none every waiting item | no state for the folder | fix Step 4f.0 |
+| `fix check` | `--code C --reported [<paths>…] [--in-flight <codes>…]` | `check C: ok`, or `check C: stop-batch\|stop-item — <why>` (the strongest), then `reason <why>` per further failure: HEAD moved; a `D0` path in C's write-set; changed but not reported; reported but unchanged; reported outside `## Where`; changed outside every in-flight write-set | no state for the folder; no instruction C | fix Step 4d.1 |
+| `fix revert` | `--code C --reported [<paths>…] [--in-flight <codes>…] --reviewer-file <path> [--plan-change "<text>"]` | `restored <p>`, `deleted <p>`, `skipped <p> — in <code>'s write-set\|in D0, the user's uncommitted changes`, `attempt <n> recorded` (appended under `## Attempts` in C's instruction), `revert C: clean\|dirty — <paths>` | no state; no instruction C; reviewer file unreadable | fix Step 4f (FAIL) |
+| `fix verify` | `[--waiting <codes>…] [--reviewing <codes>…]` | `verify: green`, `verify: red before the run (unchanged)`, `verify: none configured`, or `verify: fail <codes> (exit <n>) — <first new failing line>` and `line <text>` per further one (50 shown); durations ignored, a changed exit code or a silent red run is a new line; a line naming a write-set fails that item, one naming none every waiting item | no state for the folder | fix Step 4f.0 |
 | `fix commit` | `--code C --title "<t>" --reported [<paths>…] [--in-flight <codes>…]` | commits on: `commit C: <full sha>` (message `C: <t>`, or `revise <stem>: apply review revisions`; only the reported paths), then `commit C: tree not clean — <paths>` if any; `commit C: failed — <git's first stderr line>`; commits off: `commit C: skipped (commits off)`, the paths snapshotted as finished; `commit C: skipped (no changes)` | no state for the folder | fix Step 4f.1 |
-| `fix resync` | `[--in-flight <codes>…]` | `head:`, `d0:` re-read, the finished list kept | no state for the folder | fix, after an override's git step |
+| `fix resync` | `[--in-flight <codes>…]` | `head:`, `d0:` re-read, the finished list kept, `not-dispatched <code>: <paths>` per item meeting the new `D0` | no state for the folder | fix, after an override's git step |
 | `migrate config` | `--layer home\|project` | the layer's earlier config translated, JSON indent 2, input order; stderr `dropped: <key>` | missing, invalid JSON, not an object | configure |
 | `migrate manifest` | `--move \| --copy` | `moved\|copied <src> -> <dst>` | no earlier manifest, `paths.patterns` null, target exists, OS error | configure via `shared/manifest-migration.md` |
 
-Primary directives (`megamaid.py:428-451`): the brief is split into lowercase words; a word of four or more characters makes a directive primary when it is a substring of the file's basename (without `.md`), a shorter word only when it equals a whole hyphen-separated segment of it. The batch rule (`:758-783`) in [../features/fix.md](../features/fix.md). Slug rule (`:613-617`): `/`, whitespace, `\ : ? * < > | "` become `-`, runs collapse, ends trimmed. Any `migrate` command, and `config`, exits 2 with `cannot load scripts/migrate.py: <error>` when `scripts/migrate.py` is not beside the script.
+Primary directives (`megamaid.py:433-456`): the brief is split into lowercase words; a word of four or more characters makes a directive primary when it is a substring of the file's basename (without `.md`), a shorter word only when it equals a whole hyphen-separated segment of it. The batch rule (`:764-789`) in [../features/fix.md](../features/fix.md). Slug rule (`:618-622`): `/`, whitespace, `\ : ? * < > | "` become `-`, runs collapse, ends trimmed. Any `migrate` command, and `config`, exits 2 with `cannot load scripts/migrate.py: <error>` when `scripts/migrate.py` is not beside the script.
 
 Real output: `scripts/fixtures/megamaid/expected/*.out` (each ends with `exit=<code>`); `batches-code.out` whole:
 
@@ -61,7 +61,7 @@ Operates on a PATTERNS manifest; working files land under `.megamaid/excerpts/` 
 | `apply` | `--manifest M --index I --edits <passing set> [--stamp]` | `apply: <n> edits applied; <before> → <after> bytes (~<t> tokens, bytes/4)`; re-verifies first, all-or-nothing; `--stamp` writes or replaces a `**Shaved:** <date> (<before> → <after> bytes)` header line | 1 empty passing set or an edit no longer verifies (nothing written); 2 bad file | patterns |
 | `clean` | `--run <stem>` | `clean: <n> file(s) removed for run <stem>`; removes `.megamaid/excerpts/<stem>*` | 2 when `--run` is not a run stem | review, plan, fix, patterns |
 
-Run stems are `<skill>-<epoch seconds>-<4 hex>` (`manifest.py:88-89`, `megamaid.py:531-532`); `clean` accepts nothing else, so an empty id cannot sweep the directory. Real output: `scripts/fixtures/expected/*.out`.
+Run stems are `<skill>-<epoch seconds>-<4 hex>` (`manifest.py:88-89`, `megamaid.py:536-537`); `clean` accepts nothing else, so an empty id cannot sweep the directory. Real output: `scripts/fixtures/expected/*.out`.
 
 ## Fixture tests
 

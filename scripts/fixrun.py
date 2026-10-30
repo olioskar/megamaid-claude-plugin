@@ -44,8 +44,11 @@ def find_git():
     die("no runnable git (tried: %s)" % ", ".join(tried))
 
 
+GIT_ENV = dict(os.environ, GIT_LITERAL_PATHSPECS="1")  # `app/[id]/page.tsx` is a path, never a glob
+
+
 def git_run(git, root, *args, check=True):
-    p = subprocess.run([git, "-C", root] + list(args), capture_output=True, text=True)
+    p = subprocess.run([git, "-C", root] + list(args), capture_output=True, text=True, env=GIT_ENV)
     if check and p.returncode != 0:
         die("git %s: %s" % (" ".join(args), (p.stderr.strip().splitlines() or ["exited %d" % p.returncode])[0]))
     return p
@@ -109,6 +112,11 @@ def own_paths(root, folder, cfg):
     return own
 
 
+def touches(path, prefixes):
+    """The path lies under a prefix, or is a directory holding one."""
+    return under(path, prefixes) or any(under(x, [path]) for x in prefixes)
+
+
 def meets(paths, ws):
     """Paths among `paths` inside the write-set `ws` (a directory entry covers everything under it)."""
     return [p for p in paths if under(p, ws)]
@@ -147,12 +155,21 @@ def failing_lines(output, exit_code):
         return []
     lines = [l.rstrip() for l in output.splitlines() if l.strip()]
     hits = [l for l in lines if FAILING.search(l) or l.lstrip().startswith("✗")]
-    return hits or lines
+    return hits or lines or ["(exit %d, no output)" % exit_code]
+
+
+DURATION = re.compile(r"\b\d+(\.\d+)?\s?(ms|s|sec|secs|seconds|m|min)\b")
+SHOWN = 50
+
+
+def same_line(line):
+    """A failing line as compared with the baseline: durations (`in 0.87s`, `12 ms`) change every run."""
+    return DURATION.sub("<t>", line)
 
 
 def run_verify(root, cmd):
-    p = subprocess.run(cmd, shell=True, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                       text=True, errors="replace")
+    p = subprocess.run(cmd, shell=True, cwd=root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT, text=True, errors="replace")
     return {"cmd": cmd, "exit": p.returncode, "failing": failing_lines(p.stdout, p.returncode)}
 
 
@@ -181,13 +198,21 @@ def baseline_d0(ctx, folder, st, extra=()):
 
 
 def reported_paths(root, paths):
-    """Reported files as repo-relative paths (an implementer reports them from the repo root)."""
+    """Reported files as repo-relative paths (relative ones are from the repo root; an absolute one may run
+    through a symlink, such as macOS /tmp). Every path is checked before any command acts on one."""
     out = []
     for p in paths or []:
-        r = os.path.relpath(p, root) if os.path.isabs(p) else os.path.normpath(p)
+        full = p if os.path.isabs(p) else os.path.join(root, p)
+        full = os.path.join(os.path.realpath(os.path.dirname(full)), os.path.basename(full))
+        r = os.path.relpath(full, root)
+        if r == ".." or r.startswith("../"):
+            die("%s is outside the repository %s" % (p, root))
         if r not in out:
             out.append(r)
     return out
+
+
+USERS = "in D0, the user's uncommitted changes"
 
 
 def blob_of(git, root, path, write=False):
@@ -277,6 +302,13 @@ def print_head_d0(st):
     print("d0: %s" % (" ".join(st["d0"]) if st["d0"] else "none"))
 
 
+def print_not_dispatched(ctx, folder, st):
+    for code, ws in ctx["write_sets"](os.path.join(ctx["root"], folder)).items():
+        hit = meets(st["d0"], ws)
+        if hit:
+            print("not-dispatched %s: %s" % (code, " ".join(hit)))
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_preflight(a, ctx, folder):
@@ -302,10 +334,7 @@ def cmd_start(a, ctx, folder):
     else:
         print("verification: red (%d failing lines)" % len(verify["failing"]))
     print("commits: %s" % a.commits)
-    for code, ws in ctx["write_sets"](os.path.join(ctx["root"], folder)).items():
-        hit = meets(st["d0"], ws)
-        if hit:
-            print("not-dispatched %s: %s" % (code, " ".join(hit)))
+    print_not_dispatched(ctx, folder, st)
 
 
 def cmd_gate(a, ctx, folder):
@@ -320,6 +349,7 @@ def cmd_resync(a, ctx, folder):
     st["d0"] = baseline_d0(ctx, folder, st, in_flight_paths(ctx, folder, a.in_flight))
     save_state(ctx, folder, st)
     print_head_d0(st)
+    print_not_dispatched(ctx, folder, st)
 
 
 def cmd_check(a, ctx, folder):
@@ -332,6 +362,9 @@ def cmd_check(a, ctx, folder):
     now = head(git, root)
     if now != st["head"]:
         fails.append((2, "HEAD moved during implementer (%s → %s)" % (st["head"], now)))
+    users = meets(st["d0"], ws)
+    if users:
+        fails.append((1, "%s %s" % (" ".join(users), USERS)))
     inside = [p for p in rep_ if under(p, ws)]
     got = changed(git, root, st, ws)
     missed = sorted(got - set(inside))
@@ -370,16 +403,19 @@ def cmd_revert(a, ctx, folder):
     ws = write_set(ctx, folder, a.code)
     mates = {c: write_set(ctx, folder, c) for c in a.in_flight if c != a.code}
     for p in reported_paths(root, a.reported):
-        owner = next((c for c, w in mates.items() if under(p, w)), None)
+        owner = next((c for c, w in mates.items() if touches(p, w)), None)
         if owner:
             print("skipped %s — in %s's write-set" % (p, owner))
+            continue
+        if touches(p, st["d0"]):
+            print("skipped %s — %s" % (p, USERS))
             continue
         done = restore(git, root, st, p)
         if done:
             print("%s %s" % (done, p))
     n = [record_attempt(instruction_file(root, folder, c), reviewer, a.plan_change) for c in a.code.split("+")]
     print("attempt %d recorded" % max(n))
-    left = sorted(changed(git, root, st, ws))
+    left = sorted(p for p in changed(git, root, st, ws) if not under(p, st["d0"]))
     print("revert %s: %s" % (a.code, "dirty — %s" % " ".join(left) if left else "clean"))
 
 
@@ -393,7 +429,10 @@ def cmd_verify(a, ctx, folder):
     if now["exit"] == 0:
         print("verify: green")
         return
-    new = [l for l in now["failing"] if l not in base["failing"]]
+    seen = {same_line(l) for l in base["failing"]}
+    new = [l for l in now["failing"] if same_line(l) not in seen]
+    if not new and now["exit"] != base["exit"]:
+        new = ["exit %d, was %d before the run" % (now["exit"], base["exit"])]
     if not new:
         print("verify: red before the run (unchanged)")
         return
@@ -406,8 +445,10 @@ def cmd_verify(a, ctx, folder):
                 failed.append(c)
     order = [c for c in a.waiting + a.reviewing if c in failed]
     print("verify: fail %s (exit %d) — %s" % (" ".join(order) or "none", now["exit"], new[0]))
-    for line in new[1:]:
+    for line in new[1:SHOWN]:
         print("line %s" % line)
+    if len(new) > SHOWN:
+        print("line … %d more" % (len(new) - SHOWN))
 
 
 def commit_message(code, title):
@@ -419,7 +460,12 @@ def commit_message(code, title):
 def cmd_commit(a, ctx, folder):
     st = load_state(ctx, folder)
     git, root = ctx["git"], ctx["root"]
-    paths = reported_paths(root, a.reported)
+    paths = []
+    for p in reported_paths(root, a.reported):
+        if touches(p, st["d0"]):
+            print("skipped %s — %s" % (p, USERS))
+        else:
+            paths.append(p)
     if not paths:
         print("commit %s: skipped (no changes)" % a.code)
         return

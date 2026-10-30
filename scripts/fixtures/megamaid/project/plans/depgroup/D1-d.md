@@ -4,7 +4,7 @@
 **File(s):** `src/g.ts`
 **Specialty:** code-reviewer
 **Finding status:** confirmed — src/g.ts:1
-**Depends on:** M4
+**Depends on:** M4 (the group's parser)
 
 ---
 

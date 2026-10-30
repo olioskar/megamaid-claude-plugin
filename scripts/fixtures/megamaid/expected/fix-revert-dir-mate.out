@@ -1,0 +1,6 @@
+skipped src — in M2's write-set
+attempt 1 recorded
+revert M1: dirty — src/a.js
+exit=0
+ M src/a.js
+ M src/b.js

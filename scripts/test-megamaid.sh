@@ -285,6 +285,37 @@ mkrepo r-grp; fstart r-grp; echo e >> "$T/r-grp/src/a.js"; echo e >> "$T/r-grp/s
 runf fix-group-check "$T/r-grp" fix check --folder plans/p --code M1+M2 --reported src/a.js src/b.js "${FX[@]}"
 runf fix-group-revert "$T/r-grp" fix revert --folder plans/p --code M1+M2 --reported src/a.js src/b.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
 grep -c '^### Attempt 1 — FAIL' "$T/r-grp/plans/p/M1-a.md" "$T/r-grp/plans/p/M2-b.md" | sed 's#.*/##' >> "$OUT/fix-group-revert.out"
+# review fixes: literal pathspecs, the user's D0 never touched, symlinked absolute paths, verify's edge cases
+mkrepo r-br; mkdir -p "$T/r-br/app/[id]" "$T/r-br/app/d"; echo p > "$T/r-br/app/[id]/page.tsx"; echo p > "$T/r-br/app/d/page.tsx"
+sed 's#src/a.js#app/[id]/page.tsx#g; s/^# M1 — Fix a/# M3 — Bracketed route/' "$T/r-br/plans/p/M1-a.md" > "$T/r-br/plans/p/M3-r.md"
+(cd "$T/r-br" && git add -A && git commit -qm routes); echo user >> "$T/r-br/app/d/page.tsx"; fstart r-br; echo m3 >> "$T/r-br/app/[id]/page.tsx"
+cp -R "$T/r-br" "$T/r-br2"
+runf fix-bracket-revert "$T/r-br" fix revert --folder plans/p --code M3 --reported "app/[id]/page.tsx" --reviewer-file "$T/rev1.txt" "${FX[@]}"
+(cd "$T/r-br" && git status --porcelain -- app) >> "$OUT/fix-bracket-revert.out"
+runf fix-bracket-commit "$T/r-br2" fix commit --folder plans/p --code M3 --title "Route" --reported "app/[id]/page.tsx" "${FX[@]}"
+(cd "$T/r-br2" && git show --name-only --format=%s HEAD; git status --porcelain -- app) >> "$OUT/fix-bracket-commit.out"
+mkrepo r-d0; fstart r-d0; (cd "$T/r-d0" && echo hand >> src/a.js && git commit -qam hand); echo wip >> "$T/r-d0/src/b.js"
+runf fix-resync-notdispatched "$T/r-d0" fix resync --folder plans/p "${FX[@]}"
+runf fix-check-d0 "$T/r-d0" fix check --folder plans/p --code M2 --reported src/b.js "${FX[@]}"
+runf fix-revert-d0 "$T/r-d0" fix revert --folder plans/p --code M2 --reported src/b.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c wip "$T/r-d0/src/b.js" >> "$OUT/fix-revert-d0.out"
+runf fix-commit-d0 "$T/r-d0" fix commit --folder plans/p --code M2 --title "Fix b" --reported src/b.js "${FX[@]}"
+mkrepo r-dir; fstart r-dir; echo e >> "$T/r-dir/src/a.js"; echo e >> "$T/r-dir/src/b.js"
+runf fix-revert-dir-mate "$T/r-dir" fix revert --folder plans/p --code M1 --reported src --in-flight M2 --reviewer-file "$T/rev1.txt" "${FX[@]}"
+(cd "$T/r-dir" && git status --porcelain -- src) >> "$OUT/fix-revert-dir-mate.out"
+mkrepo r-abs; fstart r-abs; echo e >> "$T/r-abs/src/a.js"
+runf fix-check-abs "$T/r-abs" fix check --folder plans/p --code M1 --reported "$TL/r-abs/src/a.js" "${FX[@]}"
+runf fix-revert-outside "$T/r-abs" fix revert --folder plans/p --code M1 --reported src/a.js ../outside.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c e "$T/r-abs/src/a.js" >> "$OUT/fix-revert-outside.out"
+vs emp 'exit 0'; mkrepo r-ve; fstart r-ve "sh $T/vs/emp.sh"; vs emp 'exit 1'
+runf fix-verify-silent-empty "$T/r-ve" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs ex 'echo "FAIL test/x.test.js"; exit 1'; mkrepo r-vx; fstart r-vx "sh $T/vs/ex.sh"; vs ex 'echo "FAIL test/x.test.js"; exit 2'
+runf fix-verify-exit-changed "$T/r-vx" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs tm 'echo "FAILED tests/test_x.py::test_a"; echo "==== 1 failed, 3 passed in 0.87s ===="; exit 1'; mkrepo r-vt; fstart r-vt "sh $T/vs/tm.sh"
+vs tm 'echo "FAILED tests/test_x.py::test_a"; echo "==== 1 failed, 3 passed in 1.02s ===="; exit 1'
+runf fix-verify-timing "$T/r-vt" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs many 'exit 0'; mkrepo r-vm; fstart r-vm "sh $T/vs/many.sh"; vs many 'i=1; while [ $i -le 60 ]; do echo "error $i"; i=$((i+1)); done; exit 1'
+runf fix-verify-many "$T/r-vm" fix verify --folder plans/p --waiting M1 "${FX[@]}"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale
