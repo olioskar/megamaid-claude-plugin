@@ -252,14 +252,17 @@ issues:
   - id: MM-043
     type: bug
     area: evals
-    title: manifest-slice orchestrator reads PATTERNS.md now and then (two suite misses)
+    title: manifest-slice orchestrator reads PATTERNS.md now and then (three suite misses)
     body: |
       The review orchestrator reads the full manifest on top of slicing it, while the excerpt and dispatch graders
       pass. evals/results/2026-10-18T23-42-38-410Z: orchestrator-never-reads-manifest failed (Read called 1x).
       evals/results/2026-10-29T10-37-12-234Z (feat/call-time-guarantees): orchestrator-never-cats-manifest failed
       (a Bash cat/head/tail/less/awk of PATTERNS.md, 2x). Each time the case alone passed next (2026-10-19; 2026-10-29,
-      kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Two misses in six
-      runs: the second miss the prompt fix was waiting on has happened; the fix is the maintainer's call.
+      kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Third miss:
+      evals/results/2026-10-30T15-28-13-614Z (feat/fix-mechanics), kept at /private/tmp/e-J48Fnt: after cutting the
+      excerpt and writing both briefs, the orchestrator ran `cat -n docs/megamaid/PATTERNS.md` beside the changed
+      files and the directive headings, to read the code itself. Three misses in seven runs; the prompt fix is the
+      maintainer's call.
 
   - id: MM-047
     type: improvement
