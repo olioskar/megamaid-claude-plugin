@@ -8,6 +8,7 @@ Short and current: what this session learned that the docs do not carry. Rewrite
 - Paid runs: the maintainer has API credits (about 380 USD on 2026-10-29) and runs evals from their own terminal with `ANTHROPIC_API_KEY=$(cat ~/keys/.anthropic-key)` prefixed; the key never passes through a session. Smoke (0.25 USD) may run on the session login. `claude plugin eval` keeps one `--case` per command; the maintainer runs `!`-prefixed eval commands from this session too.
 - An interactive `claude --plugin-dir .` can be driven from a session under `expect` (spawn, wait, send `/exit`) to lay the engine types; `claude -p` does not lay them.
 - Live runs happen in the maintainer's other sessions (2026-10-28: "overseer" ran the baseline in ~/Development/hardware/parts-bin). Ask that session by SendMessage for the ledger and debug lines, then check them against the files on disk; they are local and readable.
-- State at the last save (2026-10-29): 0.5.0 released (call-time guards); next is MM-028's spec. Order agreed: MM-025 first, then MM-028.
+- State at the last save (2026-10-30): 0.5.0 released; MM-028 step 1 spec on `feat/fix-mechanics`, reviewed, waiting on the maintainer's go.
+- On MM-028 (2026-10-29): "we need the orchestrator to be flexible still"; verdicts can be overridden, overrides listed in the summary. Order agreed: MM-025 first, then MM-028.
 - A scratch probe plugin under the session scratchpad (`claude -p --plugin-dir <probe> --model haiku --max-budget-usd 0.10`) tests engine facts for under a cent; validate on it is free.
 - Waits: the handover's Now section.
