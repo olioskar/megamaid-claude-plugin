@@ -1,0 +1,7 @@
+restored src/a.js
+restored src/b.js
+attempt 1 recorded
+revert M1+M2: clean
+exit=0
+M1-a.md:1
+M2-b.md:1

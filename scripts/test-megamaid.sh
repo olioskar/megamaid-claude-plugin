@@ -280,6 +280,11 @@ mkrepo r-rso; fstart r-rso none off; echo m1 >> "$T/r-rso/src/a.js"; fx r-rso co
 (cd "$T/r-rso" && echo hand >> src/b.js && git commit -qm hand -- src/b.js)
 runf fix-resync-off "$T/r-rso" fix resync --folder plans/p "${FX[@]}"
 runf fix-resync-off-check "$T/r-rso" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+# a Step 3 group runs as one item: --code M1+M2 is the union of their write-sets; the attempt lands in each file
+mkrepo r-grp; fstart r-grp; echo e >> "$T/r-grp/src/a.js"; echo e >> "$T/r-grp/src/b.js"
+runf fix-group-check "$T/r-grp" fix check --folder plans/p --code M1+M2 --reported src/a.js src/b.js "${FX[@]}"
+runf fix-group-revert "$T/r-grp" fix revert --folder plans/p --code M1+M2 --reported src/a.js src/b.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c '^### Attempt 1 — FAIL' "$T/r-grp/plans/p/M1-a.md" "$T/r-grp/plans/p/M2-b.md" | sed 's#.*/##' >> "$OUT/fix-group-revert.out"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

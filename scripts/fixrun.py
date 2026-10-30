@@ -157,10 +157,14 @@ def run_verify(root, cmd):
 
 
 def write_set(ctx, folder, code):
+    """An item's write-set; `M1+M2` (a Step 3 group, one implementer pass) is the union of its members'."""
     ws = ctx["write_sets"](os.path.join(ctx["root"], folder))
-    if code not in ws:
-        die("no instruction for %s in %s" % (code, folder))
-    return ws[code]
+    out = []
+    for c in code.split("+"):
+        if c not in ws:
+            die("no instruction for %s in %s" % (c, folder))
+        out += [p for p in ws[c] if p not in out]
+    return out
 
 
 def in_flight_paths(ctx, folder, codes):
@@ -373,7 +377,8 @@ def cmd_revert(a, ctx, folder):
         done = restore(git, root, st, p)
         if done:
             print("%s %s" % (done, p))
-    print("attempt %d recorded" % record_attempt(instruction_file(root, folder, a.code), reviewer, a.plan_change))
+    n = [record_attempt(instruction_file(root, folder, c), reviewer, a.plan_change) for c in a.code.split("+")]
+    print("attempt %d recorded" % max(n))
     left = sorted(changed(git, root, st, ws))
     print("revert %s: %s" % (a.code, "dirty — %s" % " ".join(left) if left else "clean"))
 

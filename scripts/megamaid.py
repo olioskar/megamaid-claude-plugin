@@ -103,7 +103,8 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     is git's top level, never the cwd. Paths are repo-relative; --folder resolves against the cwd. The
     run's own paths are the folder and paths.reviews. State: .megamaid/fix/<folder slug>.json under the
     repo root (keys folder, head, d0, verify {cmd, exit, failing} | null, commits, finished {path: blob |
-    "absent"}), overwritten by the next `fix start` on that folder.
+    "absent"}), overwritten by the next `fix start` on that folder. A `--code` or listed code may be a Step 3
+    group, `M1+M2`: its write-set is the members' union, and `fix revert` records the attempt in each file.
     fix preflight                 `preflight: clean` or `dirty <path>` per line: git status minus the run's own paths.
     fix start --verify "<cmd>"|none --commits on|off
                                   runs the verification (shell, repo root, stdout and stderr together), then
