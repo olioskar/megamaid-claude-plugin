@@ -123,6 +123,13 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   (<old> → <new>)` (batch); `<paths> changed but not reported`, `<paths> reported
                                   but unchanged` (item); `<path> reported outside ## Where` (item; batch inside an
                                   in-flight write-set); `<paths> changed outside every in-flight write-set (<codes>)` (batch).
+    fix revert --code C --reported [<paths>…] [--in-flight <codes>…] --reviewer-file <path> [--plan-change "<text>"]
+                                  Step 4f FAIL 1-2: each reported path back to HEAD (`restored <p>`; `deleted <p>`
+                                  when HEAD lacks it), never one inside another in-flight write-set (`skipped <p> —
+                                  in <code>'s write-set`); appends `### Attempt <n> — FAIL` with `**Reviewer:**` (the
+                                  file's text) and `**Plan change:**` (default none) under `## Attempts` (created on the
+                                  first): `attempt <n> recorded`; then `revert C: clean` or `revert C: dirty — <paths>`
+                                  (C's write-set still changed).
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
                                   keeping the finished list: `head:`, `d0:` as for start.
@@ -1050,6 +1057,12 @@ def main(argv=None):
     t.add_argument("--code", required=True)
     t.add_argument("--reported", nargs="*", required=True, help="the implementer's reported files; may be empty")
     t.add_argument("--in-flight", nargs="*", default=[])
+    t = fsub.add_parser("revert", parents=[fcommon], help="Step 4f FAIL 1-2: restore the reported files and record the attempt")
+    t.add_argument("--code", required=True)
+    t.add_argument("--reported", nargs="*", required=True)
+    t.add_argument("--in-flight", nargs="*", default=[])
+    t.add_argument("--reviewer-file", required=True, help="a file holding the reviewer's FAIL text")
+    t.add_argument("--plan-change", default="none")
     t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
     t.add_argument("--in-flight", nargs="*", default=[])
     s.set_defaults(fn=cmd_fix)

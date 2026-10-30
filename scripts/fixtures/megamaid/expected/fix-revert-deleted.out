@@ -1,0 +1,12 @@
+restored src/a.js
+attempt 1 recorded
+revert M1: clean
+exit=0
+--- attempts
+## Attempts
+
+### Attempt 1 — FAIL
+**Reviewer:** FAIL: the loop still runs twice
+**Plan change:** none
+--- status
+ M plans/p/M1-a.md

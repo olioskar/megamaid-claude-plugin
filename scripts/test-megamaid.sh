@@ -219,6 +219,23 @@ mkrepo r-cks; fstart r-cks; echo e >> "$T/r-cks/src/a.js"; echo r > "$T/r-cks/do
 runf fix-check-sweep "$T/r-cks" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
 mkrepo r-ckn
 runf fix-check-nostate "$T/r-ckn" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+# fix revert: restore the reported files, never a batch-mate's, and record the attempt in the instruction
+printf 'FAIL: the loop still runs twice\n' > "$T/rev1.txt"; printf 'FAIL: off by one\nat src/a.js:1\n' > "$T/rev2.txt"
+attempts() { { echo "--- attempts"; sed -n '/^## Attempts/,$p' "$T/$1/plans/p/$2"; echo "--- status"; (cd "$T/$1" && git status --porcelain); } >> "$OUT/$3.out"; }
+mkrepo r-rv; fstart r-rv; echo e >> "$T/r-rv/src/a.js"; echo n > "$T/r-rv/src/new.js"
+runf fix-revert "$T/r-rv" fix revert --folder plans/p --code M1 --reported src/a.js src/new.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rv M1-a.md fix-revert
+mkrepo r-rvb; fstart r-rvb; echo e >> "$T/r-rvb/src/a.js"; echo e >> "$T/r-rvb/src/b.js"
+runf fix-revert-batchmate "$T/r-rvb" fix revert --folder plans/p --code M1 --reported src/a.js src/b.js --in-flight M2 --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rvb M1-a.md fix-revert-batchmate
+mkrepo r-rvd; fstart r-rvd; rm "$T/r-rvd/src/a.js"
+runf fix-revert-deleted "$T/r-rvd" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rvd M1-a.md fix-revert-deleted
+mkrepo r-rv2; fstart r-rv2; echo e >> "$T/r-rv2/src/a.js"
+(cd "$T/r-rv2" && python3 -I "$S" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev1.txt" "${FX[@]}" > /dev/null 2>&1)
+echo e2 >> "$T/r-rv2/src/a.js"
+runf fix-revert-second "$T/r-rv2" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev2.txt" --plan-change "How now loops once" "${FX[@]}"
+attempts r-rv2 M1-a.md fix-revert-second
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

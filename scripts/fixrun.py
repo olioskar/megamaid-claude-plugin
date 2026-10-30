@@ -197,6 +197,45 @@ def allowed(ctx, folder, st, code, flight):
             + write_set(ctx, folder, code) + in_flight_paths(ctx, folder, flight))
 
 
+def at_head(git, root, path):
+    return git_run(git, root, "cat-file", "-e", "HEAD:%s" % path, check=False).returncode == 0
+
+
+def restore(git, root, st, path):
+    """Put a path back as HEAD has it: checked out when tracked, deleted when absent. → restored|deleted|None."""
+    if at_head(git, root, path):
+        git_run(git, root, "checkout", "HEAD", "--", path)
+        return "restored"
+    full = os.path.join(root, path)
+    git_run(git, root, "rm", "-q", "--cached", "--ignore-unmatch", "--", path)
+    if os.path.lexists(full) and not os.path.isdir(full):
+        os.remove(full)
+        return "deleted"
+    return None
+
+
+def instruction_file(root, folder, code):
+    d = os.path.join(root, folder)
+    for n in sorted(os.listdir(d)):
+        if n.endswith(".md") and (n.startswith(code + "-") or n == code + ".md"):
+            return os.path.join(d, n)
+    die("no instruction for %s in %s" % (code, folder))
+
+
+def record_attempt(path, reviewer, plan_change):
+    """Append `### Attempt <n> — FAIL` under `## Attempts` (created on the first); returns n."""
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    n = len(re.findall(r"^### Attempt \d+", text, re.M)) + 1
+    add = "" if text.endswith("\n") else "\n"
+    if not re.search(r"^## Attempts[ \t]*$", text, re.M):
+        add += "\n## Attempts\n"
+    add += "\n### Attempt %d — FAIL\n**Reviewer:** %s\n**Plan change:** %s\n" % (n, reviewer.strip(), plan_change.strip() or "none")
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(add)
+    return n
+
+
 def print_head_d0(st):
     print("head: %s" % st["head"])
     print("d0: %s" % (" ".join(st["d0"]) if st["d0"] else "none"))
@@ -284,7 +323,30 @@ def cmd_check(a, ctx, folder):
             print("reason %s" % f[1])
 
 
-COMMANDS = {"check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
+def cmd_revert(a, ctx, folder):
+    st = load_state(ctx, folder)
+    git, root = ctx["git"], ctx["root"]
+    try:
+        with open(a.reviewer_file, encoding="utf-8", errors="replace") as f:
+            reviewer = f.read()
+    except OSError as ex:
+        die("%s: %s" % (a.reviewer_file, ex.strerror))
+    ws = write_set(ctx, folder, a.code)
+    mates = {c: write_set(ctx, folder, c) for c in a.in_flight if c != a.code}
+    for p in reported_paths(root, a.reported):
+        owner = next((c for c, w in mates.items() if under(p, w)), None)
+        if owner:
+            print("skipped %s — in %s's write-set" % (p, owner))
+            continue
+        done = restore(git, root, st, p)
+        if done:
+            print("%s %s" % (done, p))
+    print("attempt %d recorded" % record_attempt(instruction_file(root, folder, a.code), reviewer, a.plan_change))
+    left = sorted(changed(git, root, st, ws))
+    print("revert %s: %s" % (a.code, "dirty — %s" % " ".join(left) if left else "clean"))
+
+
+COMMANDS = {"revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
 
 
 def run(a, ctx):
