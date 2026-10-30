@@ -119,6 +119,7 @@ All items:
   - ...
 
 Not reproduced (skipped): {codes, or none}
+Overrides: {fix's `override …` lines, one each (fix 4a) | none}
 ```
 
 Then ask **"Want to run the sequence again?"** with an explicit recommendation that quotes this round's severity counts:

@@ -103,6 +103,7 @@ for skill in review plan fix; do
   grep -Fq 'megamaid.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py brief"; fail=1; }
 done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
+grep -Fq 'megamaid.py" fix ' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py fix"; fail=1; }
 grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
 grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
 # The hooks module repeats report-name's file shape (hooks/ledger.ts REPORT_NAME) to find the review

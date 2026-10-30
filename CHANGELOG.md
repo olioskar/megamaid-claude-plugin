@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`megamaid.py fix` commands do a fix round's mechanical steps.** `fix preflight` (the dirty-tree list), `fix start` (the run baseline: verification, `D0`, `HEAD`, and the items not to dispatch), `fix gate`, `fix check` (the three checks after an implementer returns), `fix revert` (with the `## Attempts` entry), `fix verify` (against the baseline, a new failure attributed to an item), `fix commit` and `fix resync`. Each step had one right answer that the orchestrator used to work out from prose, command by command; now each is exact and pinned by a fixture test. The commands find a runnable git themselves and exit 2 when none runs.
+- **A plan can name `**Depends on:**`.** The planner writes the codes of findings whose fix its `## How` assumes is already in, and `batches` runs the item in a later batch than each of them; a code a group consolidated stands for the group.
+
+### Changed
+
+- **Fix and vacu-suck call the `fix` commands instead of spelling out git.** A command reports a verdict and never decides the next step: the orchestrator acts on it, or acts otherwise with a reason, and every such override (and any git step outside the commands, followed by `fix resync`) is listed under `Overrides:` in the end-of-run summary and in every halt's status list.
+- **Execution order is `batches`' order** in fix and vacu-suck: severity, then an item after the ones it depends on.
+
+### Fixed
+
+- **An item planned against another item's change no longer runs first** (MM-047). The 2026-10-28 baseline's D1 assumed G1's change; severity order put D1 first, and only the orchestrator's own reorder saved the run.
+- **With per-item commits off, a later item on the same file runs.** A finished item's paths used to join the user's dirty baseline, so a later item on the same file was not dispatched. Now they are recorded with their content: the later item's checks count only what it changed, and its revert keeps the earlier item's edit.
+
 ## [0.5.0] — 2026-10-29
 
 The hooks module now enforces at call time the rules megamaid's agents used to keep from prose alone, and sets each briefed agent's model from config. The free gates (88 module tests), smoke and the eval suite ran; the suite's three misses were a judge auth error, a known flake (MM-043) and a grader too literal for a correct refusal, each re-run or replayed green.
