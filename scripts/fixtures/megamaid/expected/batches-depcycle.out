@@ -1,0 +1,7 @@
+shape: per-finding
+write-set M1: src/a.ts
+write-set M2: src/b.ts
+not-reproduced: none
+warning: dependency cycle M1 M2
+batch 1: M1 M2
+exit=0

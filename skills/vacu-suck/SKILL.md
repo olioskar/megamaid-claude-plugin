@@ -100,7 +100,7 @@ Moving to fix →
 
 ## Step 5: Run fix
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: Critical → High → Medium → Low → Test gaps → Deferred → Discovered. Track progress as `/megamaid:fix` does; when all items complete, present the full summary.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: the `batches` order (fix Step 2.5): Critical → High → Medium → Low → Test gaps → Deferred → Discovered, an item after those its plan names on `**Depends on:**`. Track progress as `/megamaid:fix` does; when all items complete, present the full summary.
 
 ## After completion
 

@@ -87,6 +87,10 @@ run batches-latin1       batches --folder "$R/plans/latin1"
 run batches-tworevise    batches --folder "$R/plans/tworevise"
 run batches-dupcode      batches --folder "$R/plans/dupcode"
 run batches-slash        batches --folder "$R/plans/slash"
+# batches: a plan's **Depends on:** puts the item in a batch after its dependency; a grouped code maps to its group
+run batches-deps         batches --folder "$R/plans/deps"
+run batches-depgroup     batches --folder "$R/plans/depgroup"
+run batches-depcycle     batches --folder "$R/plans/depcycle"
 # write-set: one instruction's write-set, the same rules batches prints per item
 run writeset-where       write-set --file "$R/plans/code/M1-a.md"
 run writeset-files       write-set --file "$R/plans/writeset/H2-files-only.md"

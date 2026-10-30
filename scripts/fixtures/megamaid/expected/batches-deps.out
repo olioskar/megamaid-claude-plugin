@@ -1,0 +1,12 @@
+shape: per-finding
+write-set H1: src/a.ts
+write-set H2: src/e.ts
+write-set L1: src/c.ts
+write-set L2: src/f.ts
+write-set M1: src/a.ts
+not-reproduced: L2
+warning: L1 depends on Z9, which is not queued
+warning: L1 depends on L2, which is not queued
+batch 1: M1 L1
+batch 2: H1 H2
+exit=0

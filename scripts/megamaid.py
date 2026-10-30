@@ -67,13 +67,17 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             write-set <code>: <path> … | (none)       one per item, folder (filename) order
             not-reproduced: <codes> | none
             batch <n>: <codes>                         severity order C H M L T D X G, then number
+    stderr: `warning: <code> depends on <dep>, which is not queued` (not in the folder, or not reproduced;
+            ignored) and `warning: dependency cycle <codes>` (those items fall back to severity order).
     A write-set is the file paths named in `## Where` (backticked spans split on whitespace, or
     bare tokens, with a `/` or a 2-5 letter extension; `:12`/`:L12`/`#L12` dropped; `./a` and
     trailing `/` normalised; a token with no letter or digit, a bare `/` or `//` from prose, dropped), else those in `**File(s):**`; a revise
     doc's is its `**Target spec:**`. Items whose `**Finding status:**` starts with
     `not reproduced` are listed and left out of the batches. A batch holds at most three items
     with pairwise-disjoint write-sets (a directory covers everything under it); an item with no
-    write-set runs alone. Batches are a ceiling: the skill may split one, never merge two.
+    write-set runs alone. An item runs in a batch after every item its `**Depends on:**` names (codes split on
+    `,` or `+`; a code a group's `**Consolidates:**` lists stands for the group), never with or before one.
+    Batches are a ceiling: the skill may split one, never merge two.
     exit 2: missing or unreadable folder; a folder mixing per-finding files and revise-*.md; two files
     with the same code; more than one revise-*.md.
 
@@ -634,27 +638,102 @@ def severity_key(code):
     return (SEVERITY_ORDER.find(m.group(1)), int(m.group(2)), code)
 
 
-def make_batches(items):
+def depends_of(text):
+    """Codes named on `**Depends on:**` (split on `,` or `+`; `none` or absent → [])."""
+    return codes_on(header_value(text, "Depends on"))
+
+
+def consolidates_of(text):
+    """Codes a group covers, from `**Consolidates:**` (same rule)."""
+    return codes_on(header_value(text, "Consolidates"))
+
+
+def codes_on(value):
+    return [c for c in (x.strip(" `") for x in re.split(r"[,+]", value)) if re.match(r"^[A-Z]\d+$", c)]
+
+
+def cycles(deps):
+    """Strongly connected components of the dependency graph that are cycles (Tarjan)."""
+    index, low, stack, on, out = {}, {}, [], set(), []
+
+    def visit(v):
+        index[v] = low[v] = len(index)
+        stack.append(v)
+        on.add(v)
+        for w in deps.get(v, []):
+            if w not in index:
+                visit(w)
+                low[v] = min(low[v], low[w])
+            elif w in on:
+                low[v] = min(low[v], index[w])
+        if low[v] == index[v]:
+            comp = []
+            while True:
+                w = stack.pop()
+                on.discard(w)
+                comp.append(w)
+                if w == v:
+                    break
+            if len(comp) > 1 or v in deps.get(v, []):
+                out.append(sorted(comp, key=severity_key))
+
+    for v in sorted(deps, key=severity_key):
+        if v not in index:
+            visit(v)
+    return out
+
+
+def make_batches(items, deps=None):
     """items: [(code, write_set)] in severity order → [[code, …], …]; ≤ BATCH_MAX per batch,
-    pairwise-disjoint write-sets, an item with no write-set alone."""
+    pairwise-disjoint write-sets, an item with no write-set alone. deps: code → resolved codes;
+    an item is placed only when every dependency sits in an earlier batch."""
+    deps = deps or {}
     pending = list(items)
-    batches = []
+    batches, done = [], set()
     while pending:
-        code, ws = pending.pop(0)
+        ready = [i for i, (c, _) in enumerate(pending) if all(d in done for d in deps.get(c, []))]
+        code, ws = pending.pop(ready[0] if ready else 0)
         if not ws:
             batches.append([code])
+            done.add(code)
             continue
         batch, taken = [(code, ws)], []
         for i, (c2, ws2) in enumerate(pending):
             if len(batch) >= BATCH_MAX:
                 break
-            if ws2 and not any(overlap(ws2, w) for _, w in batch):
+            if ws2 and all(d in done for d in deps.get(c2, [])) and not any(overlap(ws2, w) for _, w in batch):
                 batch.append((c2, ws2))
                 taken.append(i)
         for i in reversed(taken):
             pending.pop(i)
         batches.append([c for c, _ in batch])
+        done.update(c for c, _ in batch)
     return batches
+
+
+def resolve_deps(parsed, texts):
+    """code → queued codes it depends on. A consolidated code maps to its group; a code not
+    queued warns and is dropped; a cycle warns and its items fall back to severity order."""
+    sys.stdout.flush()  # warnings follow the lines already printed
+    queued = [c for c, _ in parsed]
+    group = {}
+    for c in queued:
+        for m in consolidates_of(texts[c]):
+            group.setdefault(m, c)
+    deps = {}
+    for c in queued:
+        for d in depends_of(texts[c]):
+            r = d if d in queued else group.get(d)
+            if r is None:
+                sys.stderr.write("warning: %s depends on %s, which is not queued\n" % (c, d))
+            elif r != c and r not in deps.setdefault(c, []):
+                deps[c].append(r)
+    for comp in cycles(deps):
+        sys.stderr.write("warning: dependency cycle %s\n" % " ".join(comp))
+        for c in comp:
+            deps[c] = [d for d in deps.get(c, []) if d not in comp]
+    sys.stderr.flush()
+    return deps
 
 
 def cmd_batches(a):
@@ -702,20 +781,21 @@ def cmd_batches(a):
         if len(files) > 1:
             die("%s: code %s appears in %s; one file per code" % (folder, code, " and ".join(files)))
     print("shape: per-finding")
-    parsed, not_repro = [], []
+    parsed, not_repro, texts = [], [], {}
     for n in items:
         m = ITEM_FILE.match(n)
         code = m.group(1) + m.group(2)
         text = read(n)
         ws = item_write_set(n, text)
         print("write-set %s: %s" % (code, " ".join(ws) if ws else "(none)"))
+        texts[code] = text
         if header_value(text, "Finding status").lower().startswith("not reproduced"):
             not_repro.append(code)
         else:
             parsed.append((code, ws))
     print("not-reproduced: %s" % (" ".join(not_repro) if not_repro else "none"))
     parsed.sort(key=lambda it: severity_key(it[0]))
-    for i, b in enumerate(make_batches(parsed), 1):
+    for i, b in enumerate(make_batches(parsed, resolve_deps(parsed, texts)), 1):
         print("batch %d: %s" % (i, " ".join(b)))
 
 

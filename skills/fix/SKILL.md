@@ -21,7 +21,7 @@ You're a team lead working through a stack of fix instructions. For each: hand i
 ## Inputs
 
 1. **Folder of instruction documents** — from `/megamaid:plan` or any structured fix instructions. User specifies, or default to most recent under `<paths.plans>`.
-2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or derive from filenames/categories (Critical → High → Medium → Low → Test gaps). Confirm with user. Exclude items the user marks deferred or out-of-scope.
+2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or the `batches` order (Step 2.5): Critical → High → Medium → Low → Test gaps, an item after those its plan names on `**Depends on:**`. Confirm with user. Exclude items the user marks deferred or out-of-scope.
 3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
