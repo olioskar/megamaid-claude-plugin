@@ -186,9 +186,19 @@ def reported_paths(root, paths):
     return out
 
 
+def blob_of(git, root, path, write=False):
+    """The path's content as a git blob id, or "absent"; `write` stores the object in .git/objects."""
+    if not os.path.isfile(os.path.join(root, path)):
+        return "absent"
+    return git_run(git, root, "hash-object", *(["-w"] if write else []), "--", path).stdout.strip()
+
+
 def changed(git, root, st, prefixes):
-    """Paths under `prefixes` that differ from HEAD."""
-    return {p for p in dirty(git, root) if under(p, prefixes)}
+    """Paths under `prefixes` that differ from HEAD, or for a finished path (commits off) from its snapshot."""
+    fin = st.get("finished", {})
+    out = {p for p in dirty(git, root) if under(p, prefixes) and p not in fin}
+    out |= {p for p, b in fin.items() if under(p, prefixes) and blob_of(git, root, p) != b}
+    return out
 
 
 def allowed(ctx, folder, st, code, flight):
@@ -202,8 +212,19 @@ def at_head(git, root, path):
 
 
 def restore(git, root, st, path):
-    """Put a path back as HEAD has it: checked out when tracked, deleted when absent. → restored|deleted|None."""
-    if at_head(git, root, path):
+    """Put a path back as its snapshot (a finished path, commits off) or HEAD has it: written or checked out
+    when present there, deleted when absent. → restored|deleted|None."""
+    snap = st.get("finished", {}).get(path)
+    if snap and snap != "absent":
+        data = subprocess.run([git, "-C", root, "cat-file", "blob", snap], capture_output=True)
+        if data.returncode != 0:
+            die("git cat-file blob %s: the snapshot of %s is gone" % (snap, path))
+        full = os.path.join(root, path)
+        os.makedirs(os.path.dirname(full) or root, exist_ok=True)
+        with open(full, "wb") as f:
+            f.write(data.stdout)
+        return "restored"
+    if snap is None and at_head(git, root, path):
         git_run(git, root, "checkout", "HEAD", "--", path)
         return "restored"
     full = os.path.join(root, path)
@@ -384,7 +405,42 @@ def cmd_verify(a, ctx, folder):
         print("line %s" % line)
 
 
-COMMANDS = {"verify": cmd_verify, "revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
+def commit_message(code, title):
+    if code.startswith("revise-"):
+        return "revise %s: apply review revisions" % code[len("revise-"):]
+    return "%s: %s" % (code, title)
+
+
+def cmd_commit(a, ctx, folder):
+    st = load_state(ctx, folder)
+    git, root = ctx["git"], ctx["root"]
+    paths = reported_paths(root, a.reported)
+    if not paths:
+        print("commit %s: skipped (no changes)" % a.code)
+        return
+    if st["commits"] == "off":
+        for p in paths:
+            st["finished"][p] = blob_of(git, root, p, write=True)
+        save_state(ctx, folder, st)
+        print("commit %s: skipped (commits off)" % a.code)
+        return
+    for args in (["add", "-A", "--"] + paths, ["commit", "-q", "-m", commit_message(a.code, a.title), "--"] + paths):
+        p = git_run(git, root, *args, check=False)
+        if p.returncode != 0:
+            lines = [l for l in p.stderr.splitlines() if l.strip()]
+            print("commit %s: failed — %s" % (a.code, lines[0].strip() if lines else "git %s exited %d" % (args[0], p.returncode)))
+            return
+    st["head"] = head(git, root)
+    save_state(ctx, folder, st)
+    print("commit %s: %s" % (a.code, st["head"]))
+    flight = [c for c in a.in_flight if c != a.code]
+    ok = list(st["d0"]) + own_paths(root, folder, ctx["cfg"]) + list(st["finished"]) + in_flight_paths(ctx, folder, flight)
+    left = [p for p in dirty(git, root) if not under(p, ok)]
+    if left:
+        print("commit %s: tree not clean — %s" % (a.code, " ".join(left)))
+
+
+COMMANDS = {"commit": cmd_commit, "verify": cmd_verify, "revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
 
 
 def run(a, ctx):

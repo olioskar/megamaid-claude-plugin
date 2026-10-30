@@ -137,6 +137,15 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   <first new failing line>` then `line <text>` per further one. A new line naming a
                                   path inside a waiting or reviewing item's write-set fails that item; one naming none
                                   fails every waiting item and no reviewing one (`fail none` when none is waiting).
+    fix commit --code C --title "<t>" --reported [<paths>…] [--in-flight <codes>…]
+                                  Step 4f.1. Commits on: `git add -A` and `git commit -- <reported>` with `C: <t>`
+                                  (`revise <stem>: apply review revisions` for revise-<stem>), the recorded head
+                                  advanced: `commit C: <full sha>`, then `commit C: tree not clean — <paths>` when a
+                                  path is left outside the allowed set; `commit C: failed — <git's first stderr line |
+                                  git <cmd> exited <n>>`. Commits off: each reported path's content is stored with
+                                  `git hash-object -w` (or "absent") as finished: `commit C: skipped (commits off)`; for
+                                  a finished path, check and revert compare with and restore that snapshot, not HEAD.
+                                  An empty list: `commit C: skipped (no changes)`.
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
                                   keeping the finished list: `head:`, `d0:` as for start.
@@ -1073,6 +1082,11 @@ def main(argv=None):
     t = fsub.add_parser("verify", parents=[fcommon], help="Step 4f.0: the recorded verification against the run baseline")
     t.add_argument("--waiting", nargs="*", default=[], help="PASSed items waiting to commit")
     t.add_argument("--reviewing", nargs="*", default=[], help="items still under review")
+    t = fsub.add_parser("commit", parents=[fcommon], help="Step 4f.1: commit the reported files, or snapshot them when commits are off")
+    t.add_argument("--code", required=True)
+    t.add_argument("--title", required=True)
+    t.add_argument("--reported", nargs="*", required=True)
+    t.add_argument("--in-flight", nargs="*", default=[])
     t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
     t.add_argument("--in-flight", nargs="*", default=[])
     s.set_defaults(fn=cmd_fix)

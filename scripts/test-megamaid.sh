@@ -250,6 +250,36 @@ vs sil 'exit 0'; mkrepo r-vs; fstart r-vs "sh $T/vs/sil.sh"; vs sil 'echo oops; 
 runf fix-verify-silent-red "$T/r-vs" fix verify --folder plans/p --waiting M1 "${FX[@]}"
 mkrepo r-v0; fstart r-v0
 runf fix-verify-none "$T/r-v0" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+# fix commit: stage and commit the reported files; with commits off, snapshot them as finished
+m3() { sed 's/^# M1 — Fix a/# M3 — Fix a again/' "$T/$1/plans/p/M1-a.md" > "$T/$1/plans/p/M3-c.md"; }
+fx() { dir=$1; shift; (cd "$T/$dir" && python3 -I "$S" fix "$@" --folder plans/p "${FX[@]}" > /dev/null 2>&1); }
+mkrepo r-cm; fstart r-cm; echo e >> "$T/r-cm/src/a.js"
+runf fix-commit "$T/r-cm" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+runf fix-commit-then-check "$T/r-cm" fix check --folder plans/p --code M2 --reported "${FX[@]}"
+(cd "$T/r-cm" && git log -1 --format=%s; git status --porcelain) >> "$OUT/fix-commit.out"
+mkrepo r-cme; fstart r-cme
+runf fix-commit-empty "$T/r-cme" fix commit --folder plans/p --code M1 --title "Fix a" --reported "${FX[@]}"
+mkrepo r-cmh; (cd "$T/r-cmh" && git config core.hooksPath .git/hooks && printf '#!/bin/sh\necho rejected >&2\nexit 1\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit); fstart r-cmh; echo e >> "$T/r-cmh/src/a.js"
+runf fix-commit-hook "$T/r-cmh" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+mkrepo r-cmr; mkdir -p "$T/r-cmr/plans/r"; echo '# Spec' > "$T/r-cmr/docs/spec.md"
+printf '# Revise spec\n\n**Target spec:** `docs/spec.md`\n' > "$T/r-cmr/plans/r/revise-spec.md"
+(cd "$T/r-cmr" && git add -A && git commit -qm setup && python3 -I "$S" fix start --folder plans/r --verify none --commits on "${FX[@]}" > /dev/null 2>&1); echo more >> "$T/r-cmr/docs/spec.md"
+runf fix-commit-revise "$T/r-cmr" fix commit --folder plans/r --code revise-spec --title "ignored" --reported docs/spec.md "${FX[@]}"
+(cd "$T/r-cmr" && git log -1 --format=%s) >> "$OUT/fix-commit-revise.out"
+mkrepo r-off; fstart r-off none off; echo m1 >> "$T/r-off/src/a.js"
+runf fix-commit-off "$T/r-off" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+m3 r-off
+runf fix-check-off-later-none "$T/r-off" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+echo m3 >> "$T/r-off/src/a.js"
+runf fix-check-off-later "$T/r-off" fix check --folder plans/p --code M3 --reported src/a.js "${FX[@]}"
+runf fix-check-off-later-unreported "$T/r-off" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+printf 'FAIL\n' > "$T/rev3.txt"
+runf fix-revert-off-later "$T/r-off" fix revert --folder plans/p --code M3 --reported src/a.js --reviewer-file "$T/rev3.txt" "${FX[@]}"
+cat "$T/r-off/src/a.js" >> "$OUT/fix-revert-off-later.out"
+mkrepo r-rso; fstart r-rso none off; echo m1 >> "$T/r-rso/src/a.js"; fx r-rso commit --code M1 --title "Fix a" --reported src/a.js; m3 r-rso
+(cd "$T/r-rso" && echo hand >> src/b.js && git commit -qm hand -- src/b.js)
+runf fix-resync-off "$T/r-rso" fix resync --folder plans/p "${FX[@]}"
+runf fix-resync-off-check "$T/r-rso" fix check --folder plans/p --code M3 --reported "${FX[@]}"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

@@ -1,6 +1,6 @@
 # Config
 
-Source of truth: `config/defaults.json` (keys and types), `scripts/megamaid.py:161-224` (merge and validation), `scripts/migrate.py` (migration). Every skill but help reads the merged result through `megamaid.py config` ([scripts.md](scripts.md)).
+Source of truth: `config/defaults.json` (keys and types), `scripts/megamaid.py:235-298` (merge and validation), `scripts/migrate.py` (migration). Every skill but help reads the merged result through `megamaid.py config` ([scripts.md](scripts.md)).
 
 ## Layers and merge
 
@@ -10,9 +10,9 @@ Source of truth: `config/defaults.json` (keys and types), `scripts/megamaid.py:1
 | 2 global | `~/.claude/megamaid.config.json` | no |
 | 3 project | `<git toplevel, else cwd>/.claude/megamaid.config.json` | no |
 
-Later layers win (`megamaid.py:191-204`). Dicts deep-merge; lists and scalars replace; a `null` value deletes the key at any depth (`megamaid.py:161-172`). A layer may start with a BOM; invalid JSON, non-UTF-8 text (`invalid JSON in <path>: not UTF-8 text`), or a top level that is not an object exits 2 at the first bad layer.
+Later layers win (`megamaid.py:265-278`). Dicts deep-merge; lists and scalars replace; a `null` value deletes the key at any depth (`megamaid.py:235-246`). A layer may start with a BOM; invalid JSON, non-UTF-8 text (`invalid JSON in <path>: not UTF-8 text`), or a top level that is not an object exits 2 at the first bad layer.
 
-After the merge (`megamaid.py:205-223`): a non-object `agents` is replaced by `{}`, with a warning unless it is absent; `directives.include_plugin_defaults` that is not a boolean is coerced with a warning; a role that is not an object with string `subagent_type` and `when_to_use` is dropped with `warning: agents.<role> dropped — missing <keys>`. `warning: directives.user_path <p> is not a directory; no user directives` is printed by `directives` and `brief` (`megamaid.py:348`), not by `config`. Warnings go to stderr; the exit code stays 0.
+After the merge (`megamaid.py:279-297`): a non-object `agents` is replaced by `{}`, with a warning unless it is absent; `directives.include_plugin_defaults` that is not a boolean is coerced with a warning; a role that is not an object with string `subagent_type` and `when_to_use` is dropped with `warning: agents.<role> dropped — missing <keys>`. `warning: directives.user_path <p> is not a directory; no user directives` is printed by `directives` and `brief` (`megamaid.py:422`), not by `config`. Warnings go to stderr; the exit code stays 0.
 
 ## Keys in `config/defaults.json`
 
@@ -45,11 +45,11 @@ The nine default roles: `code-reviewer`, `simplifier`, `silent-failure-hunter`, 
 | `agents.<role>.model` | `sonnet`, `opus`, `haiku`, `fable` | per-role model |
 | `agents.<role>.effort` | the five effort values | per-role effort |
 
-Model values are the Agent call's enum (`skills/configure/SKILL.md:79`); the scripts pass any string through. Effort is validated at `resolve`: a sixth value exits 2 (`megamaid.py:116,319-320`).
+Model values are the Agent call's enum (`skills/configure/SKILL.md:79`); the scripts pass any string through. Effort is validated at `resolve`: a sixth value exits 2 (`megamaid.py:177,393-394`).
 
-Resolution (`megamaid.py:296-322`): per-role beats lane. Model: `agents.<role>.model`, else `models.vacu_suck` under `--coerce vacu_suck`, else `models.<lane>`. Effort: `agents.<role>.effort`, else `effort.vacu_suck` under coercion when set, else `effort.<lane>`, else `unset`.
+Resolution (`megamaid.py:370-396`): per-role beats lane. Model: `agents.<role>.model`, else `models.vacu_suck` under `--coerce vacu_suck`, else `models.<lane>`. Effort: `agents.<role>.effort`, else `effort.vacu_suck` under coercion when set, else `effort.<lane>`, else `unset`.
 
-Roles: `agents.<role>: null` removes a role (merge semantics). A new role needs `subagent_type` and `when_to_use`; one with `subagent_type` other than `megamaid:` + a shipped agent name is foreign and gets the authority sentence and a `Your lens:` line from `when_to_use` in its run brief (`megamaid.py:476-480`). Removing `planner` or `implementer` makes plan and fix fail at `resolve` with exit 2.
+Roles: `agents.<role>: null` removes a role (merge semantics). A new role needs `subagent_type` and `when_to_use`; one with `subagent_type` other than `megamaid:` + a shipped agent name is foreign and gets the authority sentence and a `Your lens:` line from `when_to_use` in its run brief (`megamaid.py:551-555`). Removing `planner` or `implementer` makes plan and fix fail at `resolve` with exit 2.
 
 ## Migration from the earlier plugin
 
