@@ -1,6 +1,6 @@
 # Fix mechanics in code (MM-028 step 1), with plan-order batches (MM-047)
 
-Status: builder check done (2026-10-30); contract review settled (log below); for the maintainer's go. Branch `feat/fix-mechanics`. The maintainer's measure (2026-10-28): "we need to make sure megamaid does a perfect job"; on this spec (2026-10-29): "we need the orchestrator to be flexible still".
+Status: the maintainer's go, 2026-10-30 ("go, write the plan"); builder check and contract review settled (log below). Plan: [2026-10-29-fix-mechanics-plan.md](2026-10-29-fix-mechanics-plan.md). Branch `feat/fix-mechanics`. The maintainer's measure (2026-10-28): "we need to make sure megamaid does a perfect job"; on this spec (2026-10-29): "we need the orchestrator to be flexible still".
 
 ## Why
 
