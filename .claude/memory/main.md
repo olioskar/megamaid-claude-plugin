@@ -10,7 +10,7 @@ Short and current: what this session learned that the docs do not carry. Rewrite
 - An interactive `claude --plugin-dir .` can be driven from a session under `expect` (spawn, wait, send `/exit`) to lay the engine types; `claude -p` does not lay them.
 - In the eval sandbox the orchestrator may hold the script path in a variable (`M=…/megamaid.py; python3 -I $M fix start`): graders match the subcommand, never the path. The reviewers' own `git` fails there (xcrun cache); they read .git objects with node.
 - Live runs happen in the maintainer's other sessions (2026-10-28: "overseer" ran the baseline in ~/Development/hardware/parts-bin). Ask that session by SendMessage for the ledger and debug lines, then check them against the files on disk; they are local and readable.
-- State at the last save (2026-10-30): MM-028 step 1 built on `feat/fix-mechanics` (unpushed), reviewed, fix pass in; two fix evals run; next is the all-findings fix pass (handover Now).
+- State at the last save (2026-10-30): MM-028 step 1 on `feat/fix-mechanics` (unpushed): built, reviewed, every finding fixed; next the fix-reviewer-diff-scope re-run and the suite (handover Now).
 - A docstring change in `scripts/megamaid.py` shifts every `megamaid.py:<line>` citation in docs/api/{scripts,config,working-paths}.md; re-map them by matching the old file's lines against the new one (git show HEAD:…).
 - On MM-028 (2026-10-29): "we need the orchestrator to be flexible still"; verdicts can be overridden, overrides listed in the summary. Order agreed: MM-025 first, then MM-028.
 - A scratch probe plugin under the session scratchpad (`claude -p --plugin-dir <probe> --model haiku --max-budget-usd 0.10`) tests engine facts for under a cent; validate on it is free.
