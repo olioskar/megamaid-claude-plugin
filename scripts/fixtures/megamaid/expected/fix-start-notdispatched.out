@@ -1,0 +1,6 @@
+head: SHA
+d0: src/a.js
+verification: none configured
+commits: on
+not-dispatched M1: src/a.js
+exit=0

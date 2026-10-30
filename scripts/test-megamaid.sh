@@ -178,6 +178,32 @@ chmod 755 "$L/readonly/project/docs/"*
 lay linked;              run2 manifest-linked     migrate manifest --move "${LAY[@]}"
 { ls "$L/linked/shared"; cat "$L/linked/project/docs/megamaid/PATTERNS.md"; } > "$OUT2/manifest-linked-shared.out" 2>&1
 
+# fix: a fix round's mechanical steps, on temporary git repos copied from fixtures/megamaid/fixrepo.
+# Fix commands take the project root from git, so they pass only the plugin root and home; SHAs print as SHA.
+FX=(--plugin-root "$P" --home "$H")
+mkrepo() { rm -rf "$T/$1"; cp -R "$F/fixrepo" "$T/$1"; (cd "$T/$1" && git init -q -b main && git config user.email fixture@example.com && git config user.name Fixture && git add -A && git commit -q -m init); }
+runf() { name=$1; dir=$2; shift 2; (cd "$dir" && python3 -I "$S" "$@" 2>&1) | norm | sed -E 's/[0-9a-f]{40}/SHA/g' > "$OUT/$name.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/$name.out"; }
+fstart() { (cd "$T/$1" && python3 -I "$S" fix start --folder plans/p --verify "${2:-none}" --commits "${3:-on}" "${FX[@]}" > /dev/null 2>&1); }
+PY=$(python3 -c 'import sys; print(sys.executable)'); mkdir -p "$T/nobin"
+(cd "$T" && PATH="$T/nobin" MEGAMAID_GIT_CANDIDATES=/nonexistent "$PY" -I "$S" fix preflight --folder plans/p "${FX[@]}" 2>&1) | norm > "$OUT/fix-nogit.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/fix-nogit.out"
+mkrepo r-pre; echo x >> "$T/r-pre/plans/p/M1-a.md"; echo n > "$T/r-pre/plans/p/notes.md"; echo r > "$T/r-pre/docs/megamaid/reviews/pr-1-round1-report.md"
+runf fix-preflight-clean "$T/r-pre" fix preflight --folder plans/p "${FX[@]}"
+mkrepo r-odd; mkdir -p "$T/r-odd/notes"; echo x > "$T/r-odd/notes/x y.txt"; (cd "$T/r-odd" && git mv src/b.js src/b2.js)
+runf fix-preflight-oddpaths "$T/r-odd" fix preflight --folder plans/p "${FX[@]}"
+mkrepo r-start
+runf fix-start "$T/r-start" fix start --folder plans/p --verify "sh -c 'echo built > out.txt'" --commits on "${FX[@]}"
+mkrepo r-nd; echo edit >> "$T/r-nd/src/a.js"
+runf fix-start-notdispatched "$T/r-nd" fix start --folder plans/p --verify none --commits on "${FX[@]}"
+mkrepo r-sub
+runf fix-start-subdir "$T/r-sub/src" fix start --folder ../plans/p --verify none --commits off "${FX[@]}"
+runf fix-start-subdir-gate "$T/r-sub" fix gate --folder plans/p --code M2 "${FX[@]}"
+mkrepo r-gate; echo edit >> "$T/r-gate/src/a.js"; fstart r-gate
+runf fix-gate-ok "$T/r-gate" fix gate --folder plans/p --code M2 "${FX[@]}"
+runf fix-gate-not "$T/r-gate" fix gate --folder plans/p --code M1 "${FX[@]}"
+mkrepo r-rs; fstart r-rs; (cd "$T/r-rs" && echo hand >> src/b.js && git commit -qam hand)
+runf fix-resync "$T/r-rs" fix resync --folder plans/p "${FX[@]}"
+(cd "$T/r-rs" && grep -q "\"head\": \"$(git rev-parse HEAD)\"" .megamaid/fix/plans-p.json && echo "state head: HEAD" || echo "state head: stale") >> "$OUT/fix-resync.out"
+
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale
   for x in "$2"/*; do

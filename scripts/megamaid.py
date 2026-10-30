@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""megamaid resolver: config, resolve, directives, brief, report-name, batches, write-set, findings, migrate.
+"""megamaid resolver: config, resolve, directives, brief, report-name, batches, write-set, findings, fix, migrate.
 
 Deterministic resolution of what every megamaid skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
@@ -95,6 +95,30 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     without a `**Verified:**` line (a report that predates the field) is returned with `verified: ""`.
     Anything else is count 0, shape unknown — never a traceback.
 
+  megamaid.py fix <cmd> --folder <instruction folder> [--plugin-root P] [--home H]
+    A fix round's mechanical steps, in scripts/fixrun.py (skills/fix/SKILL.md). Every input comes on the
+    call; no command reads an earlier verdict; the orchestrator may act against any verdict. git is the
+    first of `git` on PATH, /opt/homebrew/bin/git, /usr/local/bin/git whose `--version` exits 0
+    (`MEGAMAID_GIT_CANDIDATES`, colon-separated, replaces the two fallbacks; tests only). The project root
+    is git's top level, never the cwd. Paths are repo-relative; --folder resolves against the cwd. The
+    run's own paths are the folder and paths.reviews. State: .megamaid/fix/<folder slug>.json under the
+    repo root (keys folder, head, d0, verify {cmd, exit, failing} | null, commits, finished {path: blob |
+    "absent"}), overwritten by the next `fix start` on that folder.
+    fix preflight                 `preflight: clean` or `dirty <path>` per line: git status minus the run's own paths.
+    fix start --verify "<cmd>"|none --commits on|off
+                                  runs the verification (shell, repo root, stdout and stderr together), then
+                                  records HEAD and D0 (the dirty tree minus the run's own paths): `head: <sha>`,
+                                  `d0: <paths>|none`, `verification: green|red (<n> failing lines)|none configured`,
+                                  `commits: on|off`, then `not-dispatched <code>: <paths>` per item whose write-set meets D0.
+                                  Failing lines: exit 0 is green; else lines matching fail|failed|failing|error|not ok
+                                  or starting ✗, or every non-empty line when none does.
+    fix gate --code C             `gate C: ok` or `gate C: not-dispatched — <paths>` (C queued after start).
+    fix resync [--in-flight <codes>…]
+                                  re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
+                                  keeping the finished list: `head:`, `d0:` as for start.
+    exit 2: `no runnable git (tried: …)`, not a repository, --folder missing or outside the repository,
+    `no fix state for <folder>; run megamaid.py fix start first`, `no instruction for <code> in <folder>`.
+
   megamaid.py migrate config --layer home|project [config flags]
     stdout: that layer's earlier-install config translated to megamaid's keys, JSON indent 2, input order.
     stderr: `dropped: <dotted.key>` per key megamaid has no use for. Rules: scripts/migrate.py translate().
@@ -153,6 +177,19 @@ def load_migrate():
         return mod
     except Exception as ex:
         die("cannot load scripts/migrate.py: %s" % ex)
+
+
+def load_fixrun():
+    """scripts/fixrun.py, loaded the way load_migrate loads migrate.py."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixrun.py")
+    try:
+        spec = importlib.util.spec_from_file_location("megamaid_fixrun", path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.dont_write_bytecode = True
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as ex:
+        die("cannot load scripts/fixrun.py: %s" % ex)
 
 
 def patterns_value(cfg):
@@ -445,9 +482,10 @@ REVIEW_FOCUS_FRAMING = ("Findings matching this focus are highest priority. Surf
 SKILLS = ("review", "plan", "fix", "patterns")
 
 
-def state_dir():
-    d = os.path.join(os.getcwd(), ".megamaid")
-    ex = os.path.join(d, "excerpts")
+def state_dir(sub="excerpts", base=None):
+    """<base>/.megamaid/<sub> (base: the cwd), created with .megamaid/.gitignore; the one writer of it."""
+    d = os.path.join(base or os.getcwd(), ".megamaid")
+    ex = os.path.join(d, sub)
     os.makedirs(ex, exist_ok=True)
     gi = os.path.join(d, ".gitignore")
     if not os.path.exists(gi):
@@ -799,6 +837,36 @@ def cmd_batches(a):
         print("batch %d: %s" % (i, " ".join(b)))
 
 
+def folder_write_sets(folder):
+    """code → write-set for every instruction in a folder, in filename order (`revise-<stem>` for a revise doc)."""
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError as ex:
+        die("%s: %s" % (folder, ex.strerror))
+    out = {}
+    for n in names:
+        m = ITEM_FILE.match(n)
+        if not m and not REVISE_FILE.match(n):
+            continue
+        path = os.path.join(folder, n)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError as ex:
+            die("%s: %s" % (path, ex.strerror))
+        out[m.group(1) + m.group(2) if m else n[:-3]] = item_write_set(n, text)
+    return out
+
+
+def cmd_fix(a):
+    fx = load_fixrun()
+    git = fx.find_git()
+    a.project_root = fx.repo_root(git)
+    ctx = {"cfg": merged_config(a), "write_sets": folder_write_sets, "state_dir": state_dir,
+           "slugify": slugify, "git": git, "root": a.project_root}
+    fx.run(a, ctx)
+
+
 def cmd_write_set(a):
     path = os.path.abspath(a.file)
     try:
@@ -955,6 +1023,22 @@ def main(argv=None):
     g.add_argument("--move", action="store_true")
     g.add_argument("--copy", action="store_true")
     t.set_defaults(fn=cmd_migrate_manifest)
+
+    s = sub.add_parser("fix", help="a fix round's mechanical steps (scripts/fixrun.py)")
+    fsub = s.add_subparsers(dest="fix_cmd", required=True)
+    fcommon = argparse.ArgumentParser(add_help=False)
+    fcommon.add_argument("--plugin-root", default=plugin_root_default())
+    fcommon.add_argument("--home", default=os.path.expanduser("~"))
+    fcommon.add_argument("--folder", required=True)
+    fsub.add_parser("preflight", parents=[fcommon], help="Step 1.5: the dirty tree minus the run's own paths")
+    t = fsub.add_parser("start", parents=[fcommon], help="Step 1.6: record the run baseline; list items not dispatched")
+    t.add_argument("--verify", required=True, help="the verification command, or none")
+    t.add_argument("--commits", required=True, choices=["on", "off"])
+    t = fsub.add_parser("gate", parents=[fcommon], help="the not-dispatched rule for one item queued after start")
+    t.add_argument("--code", required=True)
+    t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
+    t.add_argument("--in-flight", nargs="*", default=[])
+    s.set_defaults(fn=cmd_fix)
 
     a = p.parse_args(argv)
     if getattr(a, "project_root", "") is None:

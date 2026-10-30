@@ -1,0 +1,5 @@
+head: SHA
+d0: out.txt
+verification: green
+commits: on
+exit=0
