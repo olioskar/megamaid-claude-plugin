@@ -104,6 +104,10 @@ for skill in review plan fix; do
 done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
 grep -Fq 'megamaid.py" fix ' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py fix"; fail=1; }
+# The end-of-run summary always carries the Overrides: line (two live runs wrote "no overrides" in prose instead).
+for f in skills/fix/SKILL.md skills/vacu-suck/SKILL.md; do
+  grep -Fq '`Overrides: none` included' "$f" || { echo "FAIL: $f does not require the Overrides: line with \`Overrides: none\` included"; fail=1; }
+done
 # With commits off a later item on a finished file is dispatched; its reviewer is told whose edits share the diff.
 for f in skills/fix/SKILL.md shared/fix-reviewer-brief.md; do
   grep -Fq 'Finished earlier on these files:' "$f" || { echo "FAIL: $f does not carry the 'Finished earlier on these files:' line"; fail=1; }

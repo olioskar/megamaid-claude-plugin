@@ -108,7 +108,7 @@ Run:
 python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" batches --folder <instruction folder>
 ```
 
-Its `shape:` line is the folder shape below; its `write-set` lines are the items' write-sets (Step 4a); its `not-reproduced:` line is the list below; its `batch` lines are the ceiling Step 4a launches from — a batch may be split, never merged. The shapes:
+Its `shape:` line is the folder shape below; its `write-set` lines are the items' write-sets (Step 4a); its `not-reproduced:` line is the list below; its `batch` lines are the ceiling Step 4a launches from — a batch may be split, never merged. Its `warning:` lines (a dependency on an item not queued, a `**Depends on:**` that names no code or the item itself, a dependency cycle) go to the user with the queue; in `/megamaid:vacu-suck` they are logged. Each means the batch order may not be the order the plans assume. The shapes:
 
 - **Per-finding folder** — multiple files matching the per-finding naming pattern (`{C|H|M|L|T|D|X}{n}-*.md`, optionally also `G{n}-*.md` for groups). This is the historical default. Use Steps 3–4 below as today.
 - **Single revise-doc folder** — the folder contains exactly one file matching `revise-*.md` (and no per-finding files). This means the upstream `/megamaid:plan` ran against a non-code review report. Use the single-revise flow described in Step 4 below.
@@ -175,12 +175,12 @@ An item's **write-set** is what `megamaid.py batches` (Step 2.5) prints for it: 
 
 Three terms the git checks use:
 
-- An item is **in flight** from its implementer dispatch until its commit lands (4f.1) or, after a stop, until the user resolves it. Implementer stage, reviewer stage, PASS awaiting verification, and stopped all count; a committed item does not. When the run makes no commits, an item leaves flight when `fix commit` reports `skipped (commits off)`; its reported paths become **finished paths**, recorded with their content. A later item on the same file is dispatched as usual and checked against the tree the earlier item left.
+- An item is **in flight** from its implementer dispatch until its commit lands (4f.1) or, after a stop, until the user resolves it. Implementer stage, reviewer stage, PASS awaiting verification, and stopped all count; a committed item does not, nor one `fix commit` reported `skipped (no changes)`. When the run makes no commits, an item leaves flight when `fix commit` reports `skipped (commits off)`; its reported paths become **finished paths**, recorded with their content. A later item on the same file is dispatched as usual and checked against the tree the earlier item left.
 - The **allowed set** is `D0` ∪ the run's own paths ∪ the finished paths ∪ the write-sets of every in-flight item (Step 1.6 for the first two). It is what the working tree may contain at any moment.
 - **Changed** means different from `HEAD`, or, for a finished path, from its recorded content; a revert restores the same.
 - **Stop the item** means dispatch no further stage for it and leave its edits in place; its write-set stays in the allowed set until the user resolves it. **Stop the batch** means dispatch nothing further for any item in the batch, let the implementers already running return, print the per-item status list from 4f.1 for the batch, and hand the tree to the user. A HEAD stop (4d.1 check 1) stops the batch: `HEAD_expected` is stale for every batch-mate until the user resolves it. The orchestrator cannot interrupt a running agent; a stop is a promise about what it will not start.
 
-**Verdicts and overrides.** The `fix` commands below report a verdict; they never decide the next step. Act on the verdict by default. When you have a reason to act otherwise (a verdict built on a wrong input, a hole in this skill), do so, and log one line: `override <step> <code>: <verdict> → <what was done> — <why>`. Any git step of your own or the user's that these commands did not make (keeping an implementer's commit, a hand commit, a stash) is an override too: log it, then run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix resync --folder <instruction folder> --in-flight <in-flight codes>`, which re-reads `HEAD_expected` and `D0`, keeps the finished paths, and lists `not-dispatched <code>: <paths>` for every item whose write-set now meets `D0` (do not dispatch those); without it every later check reads stale facts. Every override lands in the `Overrides:` list (Step 5). A group from Step 3 is passed as one code, `L1+L2+L3`.
+**Verdicts and overrides.** The `fix` commands below report a verdict; they never decide the next step. Act on the verdict by default. When you have a reason to act otherwise (a verdict built on a wrong input, a hole in this skill), do so, and log one line: `override <step> <code>: <verdict> → <what was done> — <why>`. After `fix start`, any git step of your own or the user's that these commands did not make (keeping an implementer's commit, a hand commit, a stash) is an override too; the commit or stash chosen at Step 1.5, and restoring that stash at the end of the run, are not: log it, then run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix resync --folder <instruction folder> --in-flight <in-flight codes>`, which re-reads `HEAD_expected` and `D0`, keeps the finished paths, and lists `not-dispatched <code>: <paths>` for every item whose write-set now meets `D0` (do not dispatch those); without it every later check reads stale facts. Every override lands in the `Overrides:` list (Step 5). A group from Step 3 is passed as one code, `L1+L2+L3`.
 
 Launch a parallel batch per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`) — one Agent call per item, batched in a single assistant message.
 
@@ -371,7 +371,7 @@ python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix commit --folder <inst
 The orchestrator runs the commit, not the implementer subagent. The command:
 
 - **Stages and commits only the reported list**, never a path in `D0` (`skipped`), as `<code>: <title>` (`revise {spec-stem}: apply review revisions` for the revise doc). Step 4d.1 check 2 confirmed the list equals the item's changed footprint inside `## Where`, so it is complete for this item. It prints `commit {code}: {sha}` and advances `HEAD_expected`.
-- **Checks the tree after the commit:** the tree minus the allowed set (4a; this item is no longer in flight) must be empty. `commit {code}: tree not clean — {paths}` → stop the run and surface `tree not clean after {code}'s commit: {paths}` (a hook that rewrites files, or an edit nobody reported).
+- **Checks the tree after the commit:** the tree minus the allowed set (4a; this item is no longer in flight) must be empty. `commit {code}: tree not clean — {paths}` → stop the run and surface `tree not clean after {code}'s commit: {paths}` (a hook that rewrites files, or an edit nobody reported), then print the per-item status list below, as for a failed commit.
 - **Reports a failed commit** as `commit {code}: failed — {git's message}` (pre-commit hook reject, signing failure, conflict, anything non-zero): abort the run and surface the error, then print the per-item status list so nothing is lost (the same list a batch stop prints, 4a):
   ```
   {code} — committed
@@ -381,7 +381,7 @@ The orchestrator runs the commit, not the implementer subagent. The command:
   Overrides: {one per line} | none
   ```
   Do not retry blindly. The user investigates.
-- `commit {code}: skipped (no changes)` → the item produced no change; nothing to commit.
+- `commit {code}: skipped (no changes)` → the item produced no change; nothing to commit, and the item leaves flight as a committed one does.
 - `commit {code}: skipped (commits off)` → commits are off for this run (Step 1.6); the reported paths are recorded as finished (4a) and changes accumulate in the working tree.
 
 ## Step 5: Progress tracking
@@ -427,6 +427,8 @@ All {N} items complete:
 
 Overrides: {one `override …` line each, as logged (4a) | none}
 ```
+
+The summary always ends with the `Overrides:` line written as shown, `Overrides: none` included when nothing was overridden. It is the one place a departure from a verdict is reported; a sentence such as "I made no overrides" does not replace it.
 
 **Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 

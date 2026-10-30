@@ -1,0 +1,2 @@
+verify: fail none (exit 1) — FAIL test/x.test.js
+exit=0

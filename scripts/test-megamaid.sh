@@ -91,6 +91,7 @@ run batches-slash        batches --folder "$R/plans/slash"
 run batches-deps         batches --folder "$R/plans/deps"
 run batches-depgroup     batches --folder "$R/plans/depgroup"
 run batches-depcycle     batches --folder "$R/plans/depcycle"
+run batches-depwarn      batches --folder "$R/plans/depwarn"
 # write-set: one instruction's write-set, the same rules batches prints per item
 run writeset-where       write-set --file "$R/plans/code/M1-a.md"
 run writeset-files       write-set --file "$R/plans/writeset/H2-files-only.md"
@@ -316,6 +317,28 @@ vs tm 'echo "FAILED tests/test_x.py::test_a"; echo "==== 1 failed, 3 passed in 1
 runf fix-verify-timing "$T/r-vt" fix verify --folder plans/p --waiting M1 "${FX[@]}"
 vs many 'exit 0'; mkrepo r-vm; fstart r-vm "sh $T/vs/many.sh"; vs many 'i=1; while [ $i -le 60 ]; do echo "error $i"; i=$((i+1)); done; exit 1'
 runf fix-verify-many "$T/r-vm" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+# second review pass: edge cases pinned
+python3 -I lone/megamaid.py fix preflight --folder plans/p "${FX[@]}" 2>&1 | norm > "$OUT/fix-lone.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/fix-lone.out"
+mkrepo r-bad; fstart r-bad; printf '{"folder": "plans/p"}\n' > "$T/r-bad/.megamaid/fix/plans-p.json"
+runf fix-state-incomplete "$T/r-bad" fix commit --folder plans/p --code M1 --title t --reported src/a.js "${FX[@]}"
+rm -rf "$T/r-new"; cp -R "$F/fixrepo" "$T/r-new"; (cd "$T/r-new" && git init -q -b main)
+runf fix-start-nocommits "$T/r-new" fix start --folder plans/p --verify "sh -c 'echo ran > ran.txt'" --commits on "${FX[@]}"
+[ -e "$T/r-new/ran.txt" ] && echo "verification ran" >> "$OUT/fix-start-nocommits.out" || echo "verification not run" >> "$OUT/fix-start-nocommits.out"
+mkrepo r-sp; mkdir -p "$T/r-sp/notes"; echo x > "$T/r-sp/notes/x y.txt"
+runf fix-start-spaces "$T/r-sp" fix start --folder plans/p --verify none --commits on "${FX[@]}"
+mkrepo r-tnc; (cd "$T/r-tnc" && git config core.hooksPath .git/hooks && printf '#!/bin/sh\necho h > hook-out.txt\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit); fstart r-tnc; echo e >> "$T/r-tnc/src/a.js"
+runf fix-commit-tree-not-clean "$T/r-tnc" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+mkrepo r-rvx; fstart r-rvx; echo e >> "$T/r-rvx/src/a.js"
+runf fix-revert-dirty "$T/r-rvx" fix revert --folder plans/p --code M1 --reported --reviewer-file "$T/rev1.txt" "${FX[@]}"
+vs fn 'exit 0'; mkrepo r-vfn; fstart r-vfn "sh $T/vs/fn.sh"; vs fn 'echo "FAIL test/x.test.js"; exit 1'
+runf fix-verify-fail-none "$T/r-vfn" fix verify --folder plans/p --reviewing M1 "${FX[@]}"
+mkrepo r-unk; fstart r-unk
+runf fix-gate-unknown "$T/r-unk" fix gate --folder plans/p --code Z9 "${FX[@]}"
+runf fix-folder-outside "$T/r-unk" fix preflight --folder .. "${FX[@]}"
+runf fix-folder-missing "$T/r-unk" fix preflight --folder plans/nope "${FX[@]}"
+mkrepo r-stg; echo user >> "$T/r-stg/src/b.js"; (cd "$T/r-stg" && git add src/b.js); fstart r-stg; echo e >> "$T/r-stg/src/a.js"
+runf fix-commit-staged-stays "$T/r-stg" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+(cd "$T/r-stg" && git show --name-only --format=%s HEAD; git status --porcelain) >> "$OUT/fix-commit-staged-stays.out"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

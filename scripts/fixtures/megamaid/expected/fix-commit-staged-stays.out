@@ -1,0 +1,6 @@
+commit M1: SHA
+exit=0
+M1: Fix a
+
+src/a.js
+M  src/b.js

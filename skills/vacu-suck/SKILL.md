@@ -122,6 +122,8 @@ Not reproduced (skipped): {codes, or none}
 Overrides: {fix's `override …` lines, one each (fix 4a) | none}
 ```
 
+The `Overrides:` line lists the verdicts fix acted against (fix 4a), not this skill's `## Overrides` rules above, and is always written, `Overrides: none` included.
+
 Then ask **"Want to run the sequence again?"** with an explicit recommendation that quotes this round's severity counts:
 
 - Critical / High findings present → yes, run again; the fixes warrant a follow-up sweep to verify no regressions.

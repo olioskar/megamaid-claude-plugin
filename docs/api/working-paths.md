@@ -4,7 +4,7 @@ Every path the plugin writes in a user's project. `<paths.*>` are config keys ([
 
 | Path | Writer | Removed |
 |---|---|---|
-| `.megamaid/.gitignore` (one line, `*`) | `megamaid.py:524-533` and `manifest.py:77-84` on first use; `hooks/usage.ts:73` before a ledger under `.megamaid/` | never; keeps everything under `.megamaid/` out of git |
+| `.megamaid/.gitignore` (one line, `*`) | `megamaid.py:530-539` and `manifest.py:77-84` on first use; `hooks/usage.ts:73` before a ledger under `.megamaid/` | never; keeps everything under `.megamaid/` out of git |
 | `.megamaid/excerpts/<run stem>.<skill>.<role>.brief.md` | `megamaid.py brief` | `manifest.py clean --run <run stem>` at the end of the run |
 | `.megamaid/excerpts/<run stem>.md` (manifest excerpt) | `manifest.py excerpt` | same |
 | `.megamaid/excerpts/<run stem>.index.json`, `<run stem>.edits-<n>.json`, `<run stem>.passing.json`, `<run stem>.final.json` | `manifest.py index`; the pattern shavers; `manifest.py verify`; `manifest.py filter` (patterns `--shave`) | same |
@@ -20,7 +20,7 @@ Every path the plugin writes in a user's project. `<paths.*>` are config keys ([
 | `<paths.patterns>` (`docs/megamaid/PATTERNS.md`) | patterns; `migrate manifest` | never |
 | `~/.claude/megamaid.config.json`, `<project>/.claude/megamaid.config.json` | configure, after the user confirms the diff | never |
 
-Names: `<run stem>` is `<skill>-<epoch seconds>-<4 hex>` (`megamaid.py:536-537`). `<report prefix>` is `pr-<N>` or `branch-<slug>`, `<R>` 1 + the highest round among matching filenames in `<paths.reviews>` (`megamaid.py:625-642`). `<report basename>` is the report's filename without `.md`, so `docs/megamaid/reviews/pr-123-round1-report.md` plans into `docs/megamaid/plans/plan-for-pr-123-round1-report/`. Which rounds of a sweep share one ledger is [../features/usage-ledger.md](../features/usage-ledger.md).
+Names: `<run stem>` is `<skill>-<epoch seconds>-<4 hex>` (`megamaid.py:542-543`). `<report prefix>` is `pr-<N>` or `branch-<slug>`, `<R>` 1 + the highest round among matching filenames in `<paths.reviews>` (`megamaid.py:631-648`). `<report basename>` is the report's filename without `.md`, so `docs/megamaid/reviews/pr-123-round1-report.md` plans into `docs/megamaid/plans/plan-for-pr-123-round1-report/`. Which rounds of a sweep share one ledger is [../features/usage-ledger.md](../features/usage-ledger.md).
 
 ## Usage ledger format
 

@@ -137,7 +137,13 @@ def load_state(ctx, folder):
         st = None
     if not isinstance(st, dict) or st.get("folder") != folder:
         die("no fix state for %s; run megamaid.py fix start first" % folder)
+    missing = sorted(k for k in STATE_KEYS if k not in st)
+    if missing:
+        die("the fix state for %s is incomplete (no %s); run megamaid.py fix start again" % (folder, ", ".join(missing)))
     return st
+
+
+STATE_KEYS = ("commits", "d0", "finished", "head", "verify")
 
 
 def save_state(ctx, folder, st):
@@ -297,16 +303,21 @@ def named_paths(root, line):
     return out
 
 
+def show(paths):
+    """Paths for one output line: a path holding whitespace or a quote is double-quoted, so the line splits back."""
+    return " ".join(json.dumps(p, ensure_ascii=False) if re.search(r'[\s"]', p) else p for p in paths)
+
+
 def print_head_d0(st):
     print("head: %s" % st["head"])
-    print("d0: %s" % (" ".join(st["d0"]) if st["d0"] else "none"))
+    print("d0: %s" % (show(st["d0"]) if st["d0"] else "none"))
 
 
 def print_not_dispatched(ctx, folder, st):
     for code, ws in ctx["write_sets"](os.path.join(ctx["root"], folder)).items():
         hit = meets(st["d0"], ws)
         if hit:
-            print("not-dispatched %s: %s" % (code, " ".join(hit)))
+            print("not-dispatched %s: %s" % (code, show(hit)))
 
 
 # ---------------------------------------------------------------- commands
@@ -321,6 +332,8 @@ def cmd_preflight(a, ctx, folder):
 
 
 def cmd_start(a, ctx, folder):
+    if git_run(ctx["git"], ctx["root"], "rev-parse", "--verify", "-q", "HEAD", check=False).returncode != 0:
+        die("the repository has no commits yet; commit once before megamaid.py fix start")
     verify = None if a.verify == "none" else run_verify(ctx["root"], a.verify)
     st = {"folder": folder, "head": head(ctx["git"], ctx["root"]), "commits": a.commits,
           "verify": verify, "finished": {}}
@@ -340,7 +353,7 @@ def cmd_start(a, ctx, folder):
 def cmd_gate(a, ctx, folder):
     st = load_state(ctx, folder)
     hit = meets(st["d0"], write_set(ctx, folder, a.code))
-    print("gate %s: %s" % (a.code, "not-dispatched — %s" % " ".join(hit) if hit else "ok"))
+    print("gate %s: %s" % (a.code, "not-dispatched — %s" % show(hit) if hit else "ok"))
 
 
 def cmd_resync(a, ctx, folder):
@@ -364,24 +377,24 @@ def cmd_check(a, ctx, folder):
         fails.append((2, "HEAD moved during implementer (%s → %s)" % (st["head"], now)))
     users = meets(st["d0"], ws)
     if users:
-        fails.append((1, "%s %s" % (" ".join(users), USERS)))
+        fails.append((1, "%s %s" % (show(users), USERS)))
     inside = [p for p in rep_ if under(p, ws)]
     got = changed(git, root, st, ws)
     missed = sorted(got - set(inside))
     if missed:
-        fails.append((1, "%s changed but not reported" % " ".join(missed)))
+        fails.append((1, "%s changed but not reported" % show(missed)))
     stale = [p for p in inside if p not in got]
     if stale:
-        fails.append((1, "%s reported but unchanged" % " ".join(stale)))
+        fails.append((1, "%s reported but unchanged" % show(stale)))
     mates = in_flight_paths(ctx, folder, flight)
     for p in rep_:
         if p not in inside:
-            fails.append((2 if under(p, mates) else 1, "%s reported outside ## Where" % p))
+            fails.append((2 if under(p, mates) else 1, "%s reported outside ## Where" % show([p])))
     ok = allowed(ctx, folder, st, a.code, flight)
     out = [p for p in dirty(git, root) if not under(p, ok)]
     if out:
         fails.append((2, "%s changed outside every in-flight write-set (%s)"
-                      % (" ".join(out), " ".join([a.code] + flight))))
+                      % (show(out), " ".join([a.code] + flight))))
     if not fails:
         print("check %s: ok" % a.code)
         return
@@ -416,7 +429,7 @@ def cmd_revert(a, ctx, folder):
     n = [record_attempt(instruction_file(root, folder, c), reviewer, a.plan_change) for c in a.code.split("+")]
     print("attempt %d recorded" % max(n))
     left = sorted(p for p in changed(git, root, st, ws) if not under(p, st["d0"]))
-    print("revert %s: %s" % (a.code, "dirty — %s" % " ".join(left) if left else "clean"))
+    print("revert %s: %s" % (a.code, "dirty — %s" % show(left) if left else "clean"))
 
 
 def cmd_verify(a, ctx, folder):
@@ -488,7 +501,7 @@ def cmd_commit(a, ctx, folder):
     ok = list(st["d0"]) + own_paths(root, folder, ctx["cfg"]) + list(st["finished"]) + in_flight_paths(ctx, folder, flight)
     left = [p for p in dirty(git, root) if not under(p, ok)]
     if left:
-        print("commit %s: tree not clean — %s" % (a.code, " ".join(left)))
+        print("commit %s: tree not clean — %s" % (a.code, show(left)))
 
 
 COMMANDS = {"commit": cmd_commit, "verify": cmd_verify, "revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}

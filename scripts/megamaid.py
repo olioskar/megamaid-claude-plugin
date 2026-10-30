@@ -68,7 +68,8 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             not-reproduced: <codes> | none
             batch <n>: <codes>                         severity order C H M L T D X G, then number
     stderr: `warning: <code> depends on <dep>, which is not queued` (not in the folder, or not reproduced;
-            ignored) and `warning: dependency cycle <codes>` (those items fall back to severity order).
+            ignored), `warning: dependency cycle <codes>` (those items fall back to severity order),
+            `warning: <code> Depends on names no code: <value>` and `warning: <code> depends on itself; ignored`.
     A write-set is the file paths named in `## Where` (backticked spans split on whitespace, or
     bare tokens, with a `/` or a 2-5 letter extension; `:12`/`:L12`/`#L12` dropped; `./a` and
     trailing `/` normalised; a token with no letter or digit, a bare `/` or `//` from prose, dropped), else those in `**File(s):**`; a revise
@@ -155,8 +156,13 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
                                   keeping the finished list: `head:`, `d0:` and `not-dispatched` lines as for start.
-    exit 2: `no runnable git (tried: …)`, not a repository, --folder missing or outside the repository,
-    `no fix state for <folder>; run megamaid.py fix start first`, `no instruction for <code> in <folder>`.
+    A path list on one line (`d0:`, `not-dispatched`, `gate`, reasons, `dirty —`, `tree not clean —`) double-quotes a
+    path holding whitespace or a quote, so the line splits back into paths.
+    exit 2: `no runnable git (tried: …)`, not a repository, `the repository has no commits yet; commit once before
+    megamaid.py fix start` (before the verification runs), --folder missing or outside the repository, `no fix state
+    for <folder>; run megamaid.py fix start first`, `the fix state for <folder> is incomplete (no <keys>); run
+    megamaid.py fix start again`, `no instruction for <code> in <folder>`, and `cannot load scripts/fixrun.py: <error>`
+    when scripts/fixrun.py is not beside this script.
 
   megamaid.py migrate config --layer home|project [config flags]
     stdout: that layer's earlier-install config translated to megamaid's keys, JSON indent 2, input order.
@@ -752,7 +758,7 @@ def cycles(deps):
                 comp.append(w)
                 if w == v:
                     break
-            if len(comp) > 1 or v in deps.get(v, []):
+            if len(comp) > 1:
                 out.append(sorted(comp, key=severity_key))
 
     for v in sorted(deps, key=severity_key):
@@ -800,9 +806,14 @@ def resolve_deps(parsed, texts):
             group.setdefault(m, c)
     deps = {}
     for c in queued:
+        raw = header_value(texts[c], "Depends on")
+        if raw and raw.lower() != "none" and not depends_of(texts[c]):
+            sys.stderr.write("warning: %s Depends on names no code: %s\n" % (c, raw))
         for d in depends_of(texts[c]):
             r = d if d in queued else group.get(d)
-            if r is None:
+            if r == c:
+                sys.stderr.write("warning: %s depends on itself; ignored\n" % c)
+            elif r is None:
                 sys.stderr.write("warning: %s depends on %s, which is not queued\n" % (c, d))
             elif r != c and r not in deps.setdefault(c, []):
                 deps[c].append(r)

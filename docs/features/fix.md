@@ -8,7 +8,7 @@
 
 The run's mechanical steps are `megamaid.py fix` commands ([scripts.md](../api/scripts.md)); each reports a verdict and the orchestrator acts on it (none ever reverts or stages a path among your uncommitted changes), or acts otherwise with a reason it logs as an override. With `commit_per_item` on, `fix preflight` lists uncommitted changes other than the run's own (the instruction folder, and the review reports under `paths.reviews`); any left ask once: commit now, stash and restore at the end, proceed without per-item commits for this run, or abort. After the answer, `fix start` records the baseline whether or not that question ran: the project's verification command (named in `CLAUDE.md`, else the build manifest; `none configured` otherwise) run once, the dirty paths (never touched by the run; an item whose `## Where` overlaps them is not dispatched), and `HEAD`, in `.megamaid/fix/`. A verification that is already red asks once: proceed or abort.
 
-`megamaid.py batches` reads the folder: per-finding files (`C1-…`, `G1-…`, `X1-…`) or a single `revise-*.md` from a non-code report. Items whose `Finding status` is `not reproduced` are listed and not queued (`queue M7` runs one). Order: Critical → High → Medium → Low → Test gaps, an item after the ones its plan names on `Depends on`, confirmed with you; grouping of trivial same-file items is offered once.
+`megamaid.py batches` reads the folder: per-finding files (`C1-…`, `G1-…`, `X1-…`) or a single `revise-*.md` from a non-code report. Items whose `Finding status` is `not reproduced` are listed and not queued (`queue M7` runs one). Order: Critical → High → Medium → Low → Test gaps, an item after the ones its plan names on `Depends on`, confirmed with you (a dependency on an item not queued, one that names no code, or a cycle is shown to you as a warning); grouping of trivial same-file items is offered once.
 
 ## Batches
 
@@ -46,7 +46,7 @@ A reviewer that spots a real problem outside its item reports it under `DISCOVER
 
 ## Summary
 
-`<code> — PASS (<n>/<total> complete)` after each item, with `after 1 retry`, `(plan adjusted)`, `trivial implementer`, `verification: none configured`, or `(partial verification: …)` as they apply; at the end every item, the deferred, the discovered, the not-reproduced, and `Overrides:`, one line per verdict the orchestrator acted against and per git step it or you made outside the commands, or `none`. A halt (a batch stop, three FAILs, a failed commit) prints the per-item status list with the same `Overrides:` line. The `PATTERNS excerpt:` line and any staleness note follow; the ledger is at `.megamaid/usage/fix-<start>.md` ([usage-ledger.md](usage-ledger.md)).
+`<code> — PASS (<n>/<total> complete)` after each item, with `after 1 retry`, `(plan adjusted)`, `trivial implementer`, `verification: none configured`, or `(partial verification: …)` as they apply; at the end every item, the deferred, the discovered, the not-reproduced, and `Overrides:`, one line per verdict the orchestrator acted against and per git step it or you made outside the commands, or `none`. The line is always there, `Overrides: none` when nothing was overridden; the commit or stash you choose at pre-flight is not an override. A halt (a batch stop, three FAILs, a failed commit, a tree left unclean by a commit) prints the per-item status list with the same `Overrides:` line. The `PATTERNS excerpt:` line and any staleness note follow; the ledger is at `.megamaid/usage/fix-<start>.md` ([usage-ledger.md](usage-ledger.md)).
 
 ## /megamaid:vacu-suck
 

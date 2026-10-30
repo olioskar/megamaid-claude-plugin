@@ -1,0 +1,2 @@
+megamaid.py: the fix state for plans/p is incomplete (no commits, d0, finished, head, verify); run megamaid.py fix start again
+exit=2

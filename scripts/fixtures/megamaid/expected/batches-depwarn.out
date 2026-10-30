@@ -1,0 +1,9 @@
+shape: per-finding
+write-set H1: src/a.ts
+write-set M1: src/a.ts
+not-reproduced: none
+warning: H1 Depends on names no code: the parser change
+warning: M1 depends on itself; ignored
+batch 1: H1
+batch 2: M1
+exit=0
