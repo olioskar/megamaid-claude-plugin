@@ -236,6 +236,20 @@ mkrepo r-rv2; fstart r-rv2; echo e >> "$T/r-rv2/src/a.js"
 echo e2 >> "$T/r-rv2/src/a.js"
 runf fix-revert-second "$T/r-rv2" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev2.txt" --plan-change "How now loops once" "${FX[@]}"
 attempts r-rv2 M1-a.md fix-revert-second
+# fix verify: the recorded command against the start baseline; a new failure attributed to a write-set
+mkdir -p "$T/vs"; vs() { printf '%s\n' "$2" > "$T/vs/$1.sh"; }
+vs green 'exit 0'; mkrepo r-vg; fstart r-vg "sh $T/vs/green.sh"
+runf fix-verify-green "$T/r-vg" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs red 'echo "FAIL test/x.test.js"; exit 1'; mkrepo r-vu; fstart r-vu "sh $T/vs/red.sh"
+runf fix-verify-unchanged "$T/r-vu" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs att 'exit 0'; mkrepo r-va; fstart r-va "sh $T/vs/att.sh"; vs att 'echo "FAIL src/a.js:3 expected 1"; exit 1'
+runf fix-verify-attributed "$T/r-va" fix verify --folder plans/p --waiting M2 --reviewing M1 "${FX[@]}"
+vs una 'exit 0'; mkrepo r-vn; fstart r-vn "sh $T/vs/una.sh"; vs una 'echo "FAIL test/x.test.js"; echo "1 failing"; exit 1'
+runf fix-verify-unattributed "$T/r-vn" fix verify --folder plans/p --waiting M1 --reviewing M2 "${FX[@]}"
+vs sil 'exit 0'; mkrepo r-vs; fstart r-vs "sh $T/vs/sil.sh"; vs sil 'echo oops; exit 1'
+runf fix-verify-silent-red "$T/r-vs" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+mkrepo r-v0; fstart r-v0
+runf fix-verify-none "$T/r-v0" fix verify --folder plans/p --waiting M1 "${FX[@]}"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

@@ -236,6 +236,17 @@ def record_attempt(path, reviewer, plan_change):
     return n
 
 
+def named_paths(root, line):
+    """Path-like tokens in an output line, repo-relative (`:12` line parts fall away with the token rule)."""
+    out = []
+    for tok in re.findall(r"[\w./@+-]+", line):
+        if "/" not in tok and not re.search(r"\.[A-Za-z]{1,5}$", tok):
+            continue
+        tok = os.path.relpath(tok, root) if os.path.isabs(tok) else os.path.normpath(tok)
+        out.append(tok)
+    return out
+
+
 def print_head_d0(st):
     print("head: %s" % st["head"])
     print("d0: %s" % (" ".join(st["d0"]) if st["d0"] else "none"))
@@ -346,7 +357,34 @@ def cmd_revert(a, ctx, folder):
     print("revert %s: %s" % (a.code, "dirty — %s" % " ".join(left) if left else "clean"))
 
 
-COMMANDS = {"revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
+def cmd_verify(a, ctx, folder):
+    st = load_state(ctx, folder)
+    base = st.get("verify")
+    if base is None:
+        print("verify: none configured")
+        return
+    now = run_verify(ctx["root"], base["cmd"])
+    if now["exit"] == 0:
+        print("verify: green")
+        return
+    new = [l for l in now["failing"] if l not in base["failing"]]
+    if not new:
+        print("verify: red before the run (unchanged)")
+        return
+    sets = {c: write_set(ctx, folder, c) for c in a.waiting + a.reviewing}
+    failed = []
+    for line in new:
+        hit = [c for c, ws in sets.items() if any(under(p, ws) for p in named_paths(ctx["root"], line))]
+        for c in hit or a.waiting:
+            if c not in failed:
+                failed.append(c)
+    order = [c for c in a.waiting + a.reviewing if c in failed]
+    print("verify: fail %s (exit %d) — %s" % (" ".join(order) or "none", now["exit"], new[0]))
+    for line in new[1:]:
+        print("line %s" % line)
+
+
+COMMANDS = {"verify": cmd_verify, "revert": cmd_revert, "check": cmd_check, "preflight": cmd_preflight, "start": cmd_start, "gate": cmd_gate, "resync": cmd_resync}
 
 
 def run(a, ctx):

@@ -130,6 +130,13 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
                                   file's text) and `**Plan change:**` (default none) under `## Attempts` (created on the
                                   first): `attempt <n> recorded`; then `revert C: clean` or `revert C: dirty — <paths>`
                                   (C's write-set still changed).
+    fix verify [--waiting <codes>…] [--reviewing <codes>…]
+                                  Step 4f.0: runs the command `fix start` recorded and compares its failing lines with
+                                  the baseline's: `verify: green` (exit 0), `verify: red before the run (unchanged)` (no
+                                  new failing line), `verify: none configured`, or `verify: fail <codes> (exit <n>) —
+                                  <first new failing line>` then `line <text>` per further one. A new line naming a
+                                  path inside a waiting or reviewing item's write-set fails that item; one naming none
+                                  fails every waiting item and no reviewing one (`fail none` when none is waiting).
     fix resync [--in-flight <codes>…]
                                   re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
                                   keeping the finished list: `head:`, `d0:` as for start.
@@ -1063,6 +1070,9 @@ def main(argv=None):
     t.add_argument("--in-flight", nargs="*", default=[])
     t.add_argument("--reviewer-file", required=True, help="a file holding the reviewer's FAIL text")
     t.add_argument("--plan-change", default="none")
+    t = fsub.add_parser("verify", parents=[fcommon], help="Step 4f.0: the recorded verification against the run baseline")
+    t.add_argument("--waiting", nargs="*", default=[], help="PASSed items waiting to commit")
+    t.add_argument("--reviewing", nargs="*", default=[], help="items still under review")
     t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
     t.add_argument("--in-flight", nargs="*", default=[])
     s.set_defaults(fn=cmd_fix)
