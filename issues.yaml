@@ -261,8 +261,10 @@ issues:
       kept at /private/tmp/e-qYe1vL). No trace of either miss (suite runs without --keep-temp). Third miss:
       evals/results/2026-10-30T15-28-13-614Z (feat/fix-mechanics), kept at /private/tmp/e-J48Fnt: after cutting the
       excerpt and writing both briefs, the orchestrator ran `cat -n docs/megamaid/PATTERNS.md` beside the changed
-      files and the directive headings, to read the code itself. Three misses in seven runs; the prompt fix is the
-      maintainer's call.
+      files and the directive headings, to read the code itself. Three misses in seven runs. The trace shows the
+      cause: the read came in Step 7's verification gate, which names a check for anchors, counts, fixes and
+      directive citations but none for a convention claim; the never-read rule sat in Step 2 only. Fix on
+      feat/fix-mechanics: Step 7 item 6, convention claims checked against the excerpt or a banner line range.
 
   - id: MM-047
     type: improvement

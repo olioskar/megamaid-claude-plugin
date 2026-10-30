@@ -104,6 +104,9 @@ for skill in review plan fix; do
 done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
 grep -Fq 'megamaid.py" fix ' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py fix"; fail=1; }
+# Review's verification gate checks a convention claim without reading the whole manifest (MM-043: three misses,
+# each while verifying a finding).
+grep -Fq '**Convention claims.**' skills/review/SKILL.md || { echo "FAIL: skills/review Step 7 has no Convention claims rule (MM-043)"; fail=1; }
 # The end-of-run summary always carries the Overrides: line (two live runs wrote "no overrides" in prose instead).
 for f in skills/fix/SKILL.md skills/vacu-suck/SKILL.md; do
   grep -Fq '`Overrides: none` included' "$f" || { echo "FAIL: $f does not require the Overrides: line with \`Overrides: none\` included"; fail=1; }
