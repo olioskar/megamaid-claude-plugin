@@ -141,7 +141,7 @@ The process is in [docs/process/dev-flow.md](docs/process/dev-flow.md). Two free
 
 ## Status
 
-v0.5.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
+v0.6.0. See [CHANGELOG.md](CHANGELOG.md); earlier history is linked from its 0.1.0 entry.
 
 ## License
 
