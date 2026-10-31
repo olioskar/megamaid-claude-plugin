@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-31
+
+A fix round's mechanical steps (the git checks after an implementer, the revert, verification against the baseline, the commit) are `megamaid.py fix` commands; the orchestrator still drives the loop and may act against a verdict with a logged reason. Plans name the items they depend on, and `batches` orders by it. The free gates (test-megamaid 187), smoke, the two fix cases and the suite ran; the suite's one miss (MM-043) is fixed, and its case ran four times after: the orchestrator read the manifest by line range each time, and the one grader miss, a subagent's allowed ranged Read, was fixed in the grader and replayed.
+
 ### Added
 
 - **`megamaid.py fix` commands do a fix round's mechanical steps.** `fix preflight` (the dirty-tree list), `fix start` (the run baseline: verification, `D0`, `HEAD`, and the items not to dispatch), `fix gate`, `fix check` (the three checks after an implementer returns), `fix revert` (with the `## Attempts` entry), `fix verify` (against the baseline, a new failure attributed to an item), `fix commit` and `fix resync`. Each step had one right answer that the orchestrator used to work out from prose, command by command; now each is exact and pinned by a fixture test. The commands find a runnable git themselves and exit 2 when none runs.
@@ -20,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **An item planned against another item's change no longer runs first** (MM-047). The 2026-10-28 baseline's D1 assumed G1's change; severity order put D1 first, and only the orchestrator's own reorder saved the run.
+- **The review orchestrator checks a convention claim against its excerpt, never the whole PATTERNS manifest** (MM-043). Step 7's verification gate named checks for anchors, counts, fixes and directive citations but none for a finding that rests on a project convention, so in three of seven suite runs the orchestrator read the manifest whole to verify one. It now reads the excerpt, or for a section the excerpt omits, only the line range its banner gives. `manifest-slice`'s Read grader no longer counts a subagent's ranged Read, which the rules allow.
 - **With per-item commits off, a later item on the same file runs.** A finished item's paths used to join the user's dirty baseline, so a later item on the same file was not dispatched. Now they are recorded with their content: the later item's checks count only what it changed, and its revert keeps the earlier item's edit.
 
 ## [0.5.0] — 2026-10-29
