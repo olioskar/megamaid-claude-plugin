@@ -1,0 +1,2 @@
+check M2: stop-item — src/b.js in D0, the user's uncommitted changes
+exit=0

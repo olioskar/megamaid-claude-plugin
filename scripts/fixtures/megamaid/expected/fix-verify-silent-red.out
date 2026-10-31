@@ -1,0 +1,2 @@
+verify: fail M1 (exit 1) — oops
+exit=0

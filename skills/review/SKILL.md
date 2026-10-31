@@ -234,6 +234,7 @@ Monitor agent completion. Don't consolidate until all agents report back. If one
 3. **Suggested fixes.** A fix shape you have not traced is a proposal, not a recommendation. Trace it, or mark it unverified. Never promote an agent's untraced fix shape into the report's voice.
 4. **Your own syntheses.** A merged description, a cross-agent count, or a combined severity rationale is new content that no agent wrote. It gets the same treatment.
 5. **Directive citations.** For each `file.md §N` or `§N.N` a finding cites, confirm the file is among the loaded directives and has a heading numbered `N`. Correct or drop a citation that does not resolve; `/megamaid:plan` copies these into `## Directive citations` as policy.
+6. **Convention claims.** For a finding that rests on a project convention, check it against this run's excerpt; for a section the excerpt omits, read only the line range its banner gives (`sed -n '<from>,<to>p' <paths.patterns>`). Never read the manifest whole, here or anywhere in the run: the excerpt is the run's view of it.
 
 Carry each agent's `Confidence` line forward. Where an agent reported `Unverified` and you did not close the gap yourself, the report says so. An agent that omitted the field confirmed nothing you can rely on — treat its particulars as unconfirmed until you check them.
 

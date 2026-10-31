@@ -1,0 +1,2 @@
+verify: fail M1 (exit 1) — FAIL src/a.js:3 expected 1
+exit=0

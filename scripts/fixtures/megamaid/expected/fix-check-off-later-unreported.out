@@ -1,0 +1,2 @@
+check M3: stop-item — src/a.js changed but not reported
+exit=0

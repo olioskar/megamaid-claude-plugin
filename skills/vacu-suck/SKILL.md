@@ -100,7 +100,7 @@ Moving to fix →
 
 ## Step 5: Run fix
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: Critical → High → Medium → Low → Test gaps → Deferred → Discovered. Track progress as `/megamaid:fix` does; when all items complete, present the full summary.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/fix/SKILL.md` and execute it under the Overrides (same mechanism as Step 3). The reviewer for each item follows fix Step 4e (role from the plan file's `**Specialty:**` header). Execution order: the `batches` order (fix Step 2.5): Critical → High → Medium → Low → Test gaps → Deferred → Discovered, an item after those its plan names on `**Depends on:**`. Track progress as `/megamaid:fix` does; when all items complete, present the full summary.
 
 ## After completion
 
@@ -119,7 +119,10 @@ All items:
   - ...
 
 Not reproduced (skipped): {codes, or none}
+Overrides: {fix's `override …` lines, one each (fix 4a) | none}
 ```
+
+The `Overrides:` line lists the verdicts fix acted against (fix 4a), not this skill's `## Overrides` rules above, and is always written, `Overrides: none` included.
 
 Then ask **"Want to run the sequence again?"** with an explicit recommendation that quotes this round's severity counts:
 

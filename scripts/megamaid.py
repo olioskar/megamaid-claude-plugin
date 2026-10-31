@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""megamaid resolver: config, resolve, directives, brief, report-name, batches, write-set, findings, migrate.
+"""megamaid resolver: config, resolve, directives, brief, report-name, batches, write-set, findings, fix, migrate.
 
 Deterministic resolution of what every megamaid skill used to re-derive in prose per
 run: the three-layer config merge, role and model resolution, directive matching,
@@ -67,13 +67,18 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
             write-set <code>: <path> … | (none)       one per item, folder (filename) order
             not-reproduced: <codes> | none
             batch <n>: <codes>                         severity order C H M L T D X G, then number
+    stderr: `warning: <code> depends on <dep>, which is not queued` (not in the folder, or not reproduced;
+            ignored), `warning: dependency cycle <codes>` (those items fall back to severity order),
+            `warning: <code> Depends on names no code: <value>` and `warning: <code> depends on itself; ignored`.
     A write-set is the file paths named in `## Where` (backticked spans split on whitespace, or
     bare tokens, with a `/` or a 2-5 letter extension; `:12`/`:L12`/`#L12` dropped; `./a` and
     trailing `/` normalised; a token with no letter or digit, a bare `/` or `//` from prose, dropped), else those in `**File(s):**`; a revise
     doc's is its `**Target spec:**`. Items whose `**Finding status:**` starts with
     `not reproduced` are listed and left out of the batches. A batch holds at most three items
     with pairwise-disjoint write-sets (a directory covers everything under it); an item with no
-    write-set runs alone. Batches are a ceiling: the skill may split one, never merge two.
+    write-set runs alone. An item runs in a batch after every item its `**Depends on:**` names (every `<letter><digits>`
+    token; a code a group's `**Consolidates:**` lists stands for the group), never with or before one.
+    Batches are a ceiling: the skill may split one, never merge two.
     exit 2: missing or unreadable folder; a folder mixing per-finding files and revise-*.md; two files
     with the same code; more than one revise-*.md.
 
@@ -90,6 +95,74 @@ CLI (output is fixed-format; scripts/test-megamaid.sh diffs it):
     A report whose entries carry labels instead of codes is `non-code` with empty codes. A finding
     without a `**Verified:**` line (a report that predates the field) is returned with `verified: ""`.
     Anything else is count 0, shape unknown — never a traceback.
+
+  megamaid.py fix <cmd> --folder <instruction folder> [--plugin-root P] [--home H]
+    A fix round's mechanical steps, in scripts/fixrun.py (skills/fix/SKILL.md). Every input comes on the
+    call; no command reads an earlier verdict; the orchestrator may act against any verdict. git is the
+    first of `git` on PATH, /opt/homebrew/bin/git, /usr/local/bin/git whose `--version` exits 0
+    (`MEGAMAID_GIT_CANDIDATES`, colon-separated, replaces the two fallbacks; tests only). The project root
+    is git's top level, never the cwd; git takes every path literally (GIT_LITERAL_PATHSPECS).
+    Paths are repo-relative; --folder resolves against the cwd. The
+    run's own paths are the folder and paths.reviews. State: .megamaid/fix/<folder slug>.json under the
+    repo root (keys folder, head, d0, verify {cmd, exit, failing} | null, commits, finished {path: blob |
+    "absent"}), overwritten by the next `fix start` on that folder. A `--code` or listed code may be a Step 3
+    group, `M1+M2`: its write-set is the members' union, and `fix revert` records the attempt in each file.
+    fix preflight                 `preflight: clean` or `dirty <path>` per line: git status minus the run's own paths.
+    fix start --verify "<cmd>"|none --commits on|off
+                                  runs the verification (shell, repo root, stdout and stderr together), then
+                                  records HEAD and D0 (the dirty tree minus the run's own paths): `head: <sha>`,
+                                  `d0: <paths>|none`, `verification: green|red (<n> failing lines)|none configured`,
+                                  `commits: on|off`, then `not-dispatched <code>: <paths>` per item whose write-set meets D0.
+                                  Failing lines: exit 0 is green; else lines matching fail|failed|failing|error|not ok
+                                  or starting ✗, or every non-empty line when none does.
+    fix gate --code C             `gate C: ok` or `gate C: not-dispatched — <paths>` (C queued after start).
+    fix check --code C --reported [<paths>…] [--in-flight <codes>…]
+                                  Step 4d.1's three checks, all run: HEAD equals the recorded head; the reported
+                                  paths inside C's write-set equal the changed ones there; every changed path is in
+                                  the allowed set (D0, the run's own paths, the finished paths, C's and the
+                                  in-flight write-sets). First line `check C: ok`, or the strongest verdict with its
+                                  reason, `check C: stop-batch — <why>` beating `check C: stop-item — <why>`; then
+                                  `reason <why>` per further failure. Reasons: `HEAD moved during implementer
+                                  (<old> → <new>)` (batch); `<paths> in D0, the user's uncommitted changes` (item); `<paths> changed but not reported`, `<paths> reported
+                                  but unchanged` (item); `<path> reported outside ## Where` (item; batch inside an
+                                  in-flight write-set); `<paths> changed outside every in-flight write-set (<codes>)` (batch).
+    fix revert --code C --reported [<paths>…] [--in-flight <codes>…] --reviewer-file <path> [--plan-change "<text>"]
+                                  Step 4f FAIL 1-2: each reported path back to HEAD (`restored <p>`; `deleted <p>`
+                                  when HEAD lacks it), never one inside another in-flight write-set (`skipped <p> —
+                                  in <code>'s write-set`, or a directory holding one; `skipped <p> — in D0, the user's uncommitted changes`); appends `### Attempt <n> — FAIL` with `**Reviewer:**` (the
+                                  file's text) and `**Plan change:**` (default none) under `## Attempts` (created on the
+                                  first): `attempt <n> recorded`; then `revert C: clean` or `revert C: dirty — <paths>`
+                                  (C's write-set still changed outside D0). A reported path outside the repository exits 2
+                                  before any is touched (every command; an absolute one is resolved through symlinks).
+    fix verify [--waiting <codes>…] [--reviewing <codes>…]
+                                  Step 4f.0: runs the command `fix start` recorded and compares its failing lines with
+                                  the baseline's: `verify: green` (exit 0), `verify: red before the run (unchanged)` (no
+                                  new failing line), `verify: none configured`, or `verify: fail <codes> (exit <n>) —
+                                  <first new failing line>` then `line <text>` per further one (50 shown, then `line …
+                                  <n> more`). Durations (`0.87s`, `12 ms`) are ignored in the comparison; an exit code
+                                  that differs from the baseline's with no new line is the line `exit <n>, was <m> before
+                                  the run`; a red run with no output, `(exit <n>, no output)`. stdin is /dev/null. A new line naming a
+                                  path inside a waiting or reviewing item's write-set fails that item; one naming none
+                                  fails every waiting item and no reviewing one (`fail none` when none is waiting).
+    fix commit --code C --title "<t>" --reported [<paths>…] [--in-flight <codes>…]
+                                  Step 4f.1. A D0 path is skipped (`skipped <p> — in D0, …`). Commits on: `git add -A`, `git commit -- <reported>`, with `C: <t>`
+                                  (`revise <stem>: apply review revisions` for revise-<stem>), the recorded head
+                                  advanced: `commit C: <full sha>`, then `commit C: tree not clean — <paths>` when a
+                                  path is left outside the allowed set; `commit C: failed — <git's first stderr line |
+                                  git <cmd> exited <n>>`. Commits off: each reported path's content is stored with
+                                  `git hash-object -w` (or "absent") as finished: `commit C: skipped (commits off)`; for
+                                  a finished path, check and revert compare with and restore that snapshot, not HEAD.
+                                  An empty list: `commit C: skipped (no changes)`.
+    fix resync [--in-flight <codes>…]
+                                  re-reads HEAD and D0 (minus the finished paths and the in-flight write-sets),
+                                  keeping the finished list: `head:`, `d0:` and `not-dispatched` lines as for start.
+    A path list on one line (`d0:`, `not-dispatched`, `gate`, reasons, `dirty —`, `tree not clean —`) double-quotes a
+    path holding whitespace or a quote, so the line splits back into paths.
+    exit 2: `no runnable git (tried: …)`, not a repository, `the repository has no commits yet; commit once before
+    megamaid.py fix start` (before the verification runs), --folder missing or outside the repository, `no fix state
+    for <folder>; run megamaid.py fix start first`, `the fix state for <folder> is incomplete (no <keys>); run
+    megamaid.py fix start again`, `no instruction for <code> in <folder>`, and `cannot load scripts/fixrun.py: <error>`
+    when scripts/fixrun.py is not beside this script.
 
   megamaid.py migrate config --layer home|project [config flags]
     stdout: that layer's earlier-install config translated to megamaid's keys, JSON indent 2, input order.
@@ -149,6 +222,19 @@ def load_migrate():
         return mod
     except Exception as ex:
         die("cannot load scripts/migrate.py: %s" % ex)
+
+
+def load_fixrun():
+    """scripts/fixrun.py, loaded the way load_migrate loads migrate.py."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixrun.py")
+    try:
+        spec = importlib.util.spec_from_file_location("megamaid_fixrun", path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.dont_write_bytecode = True
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as ex:
+        die("cannot load scripts/fixrun.py: %s" % ex)
 
 
 def patterns_value(cfg):
@@ -441,9 +527,10 @@ REVIEW_FOCUS_FRAMING = ("Findings matching this focus are highest priority. Surf
 SKILLS = ("review", "plan", "fix", "patterns")
 
 
-def state_dir():
-    d = os.path.join(os.getcwd(), ".megamaid")
-    ex = os.path.join(d, "excerpts")
+def state_dir(sub="excerpts", base=None):
+    """<base>/.megamaid/<sub> (base: the cwd), created with .megamaid/.gitignore; the one writer of it."""
+    d = os.path.join(base or os.getcwd(), ".megamaid")
+    ex = os.path.join(d, sub)
     os.makedirs(ex, exist_ok=True)
     gi = os.path.join(d, ".gitignore")
     if not os.path.exists(gi):
@@ -634,27 +721,108 @@ def severity_key(code):
     return (SEVERITY_ORDER.find(m.group(1)), int(m.group(2)), code)
 
 
-def make_batches(items):
+def depends_of(text):
+    """Codes named on `**Depends on:**` (every `<letter><digits>` token, so `M1 (its helper)` reads M1;
+    `none` or absent → [])."""
+    return codes_on(header_value(text, "Depends on"))
+
+
+def consolidates_of(text):
+    """Codes a group covers, from `**Consolidates:**` (same rule)."""
+    return codes_on(header_value(text, "Consolidates"))
+
+
+def codes_on(value):
+    return re.findall(r"\b[A-Z]\d+\b", value)
+
+
+def cycles(deps):
+    """Strongly connected components of the dependency graph that are cycles (Tarjan)."""
+    index, low, stack, on, out = {}, {}, [], set(), []
+
+    def visit(v):
+        index[v] = low[v] = len(index)
+        stack.append(v)
+        on.add(v)
+        for w in deps.get(v, []):
+            if w not in index:
+                visit(w)
+                low[v] = min(low[v], low[w])
+            elif w in on:
+                low[v] = min(low[v], index[w])
+        if low[v] == index[v]:
+            comp = []
+            while True:
+                w = stack.pop()
+                on.discard(w)
+                comp.append(w)
+                if w == v:
+                    break
+            if len(comp) > 1:
+                out.append(sorted(comp, key=severity_key))
+
+    for v in sorted(deps, key=severity_key):
+        if v not in index:
+            visit(v)
+    return out
+
+
+def make_batches(items, deps=None):
     """items: [(code, write_set)] in severity order → [[code, …], …]; ≤ BATCH_MAX per batch,
-    pairwise-disjoint write-sets, an item with no write-set alone."""
+    pairwise-disjoint write-sets, an item with no write-set alone. deps: code → resolved codes;
+    an item is placed only when every dependency sits in an earlier batch."""
+    deps = deps or {}
     pending = list(items)
-    batches = []
+    batches, done = [], set()
     while pending:
-        code, ws = pending.pop(0)
+        ready = [i for i, (c, _) in enumerate(pending) if all(d in done for d in deps.get(c, []))]
+        code, ws = pending.pop(ready[0] if ready else 0)
         if not ws:
             batches.append([code])
+            done.add(code)
             continue
         batch, taken = [(code, ws)], []
         for i, (c2, ws2) in enumerate(pending):
             if len(batch) >= BATCH_MAX:
                 break
-            if ws2 and not any(overlap(ws2, w) for _, w in batch):
+            if ws2 and all(d in done for d in deps.get(c2, [])) and not any(overlap(ws2, w) for _, w in batch):
                 batch.append((c2, ws2))
                 taken.append(i)
         for i in reversed(taken):
             pending.pop(i)
         batches.append([c for c, _ in batch])
+        done.update(c for c, _ in batch)
     return batches
+
+
+def resolve_deps(parsed, texts):
+    """code → queued codes it depends on. A consolidated code maps to its group; a code not
+    queued warns and is dropped; a cycle warns and its items fall back to severity order."""
+    sys.stdout.flush()  # warnings follow the lines already printed
+    queued = [c for c, _ in parsed]
+    group = {}
+    for c in queued:
+        for m in consolidates_of(texts[c]):
+            group.setdefault(m, c)
+    deps = {}
+    for c in queued:
+        raw = header_value(texts[c], "Depends on")
+        if raw and raw.lower() != "none" and not depends_of(texts[c]):
+            sys.stderr.write("warning: %s Depends on names no code: %s\n" % (c, raw))
+        for d in depends_of(texts[c]):
+            r = d if d in queued else group.get(d)
+            if r == c:
+                sys.stderr.write("warning: %s depends on itself; ignored\n" % c)
+            elif r is None:
+                sys.stderr.write("warning: %s depends on %s, which is not queued\n" % (c, d))
+            elif r != c and r not in deps.setdefault(c, []):
+                deps[c].append(r)
+    for comp in cycles(deps):
+        sys.stderr.write("warning: dependency cycle %s\n" % " ".join(comp))
+        for c in comp:
+            deps[c] = [d for d in deps.get(c, []) if d not in comp]
+    sys.stderr.flush()
+    return deps
 
 
 def cmd_batches(a):
@@ -702,21 +870,52 @@ def cmd_batches(a):
         if len(files) > 1:
             die("%s: code %s appears in %s; one file per code" % (folder, code, " and ".join(files)))
     print("shape: per-finding")
-    parsed, not_repro = [], []
+    parsed, not_repro, texts = [], [], {}
     for n in items:
         m = ITEM_FILE.match(n)
         code = m.group(1) + m.group(2)
         text = read(n)
         ws = item_write_set(n, text)
         print("write-set %s: %s" % (code, " ".join(ws) if ws else "(none)"))
+        texts[code] = text
         if header_value(text, "Finding status").lower().startswith("not reproduced"):
             not_repro.append(code)
         else:
             parsed.append((code, ws))
     print("not-reproduced: %s" % (" ".join(not_repro) if not_repro else "none"))
     parsed.sort(key=lambda it: severity_key(it[0]))
-    for i, b in enumerate(make_batches(parsed), 1):
+    for i, b in enumerate(make_batches(parsed, resolve_deps(parsed, texts)), 1):
         print("batch %d: %s" % (i, " ".join(b)))
+
+
+def folder_write_sets(folder):
+    """code → write-set for every instruction in a folder, in filename order (`revise-<stem>` for a revise doc)."""
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError as ex:
+        die("%s: %s" % (folder, ex.strerror))
+    out = {}
+    for n in names:
+        m = ITEM_FILE.match(n)
+        if not m and not REVISE_FILE.match(n):
+            continue
+        path = os.path.join(folder, n)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError as ex:
+            die("%s: %s" % (path, ex.strerror))
+        out[m.group(1) + m.group(2) if m else n[:-3]] = item_write_set(n, text)
+    return out
+
+
+def cmd_fix(a):
+    fx = load_fixrun()
+    git = fx.find_git()
+    a.project_root = fx.repo_root(git)
+    ctx = {"cfg": merged_config(a), "write_sets": folder_write_sets, "state_dir": state_dir,
+           "slugify": slugify, "git": git, "root": a.project_root}
+    fx.run(a, ctx)
 
 
 def cmd_write_set(a):
@@ -875,6 +1074,40 @@ def main(argv=None):
     g.add_argument("--move", action="store_true")
     g.add_argument("--copy", action="store_true")
     t.set_defaults(fn=cmd_migrate_manifest)
+
+    s = sub.add_parser("fix", help="a fix round's mechanical steps (scripts/fixrun.py)")
+    fsub = s.add_subparsers(dest="fix_cmd", required=True)
+    fcommon = argparse.ArgumentParser(add_help=False)
+    fcommon.add_argument("--plugin-root", default=plugin_root_default())
+    fcommon.add_argument("--home", default=os.path.expanduser("~"))
+    fcommon.add_argument("--folder", required=True)
+    fsub.add_parser("preflight", parents=[fcommon], help="Step 1.5: the dirty tree minus the run's own paths")
+    t = fsub.add_parser("start", parents=[fcommon], help="Step 1.6: record the run baseline; list items not dispatched")
+    t.add_argument("--verify", required=True, help="the verification command, or none")
+    t.add_argument("--commits", required=True, choices=["on", "off"])
+    t = fsub.add_parser("gate", parents=[fcommon], help="the not-dispatched rule for one item queued after start")
+    t.add_argument("--code", required=True)
+    t = fsub.add_parser("check", parents=[fcommon], help="Step 4d.1: the three git checks after an implementer returns")
+    t.add_argument("--code", required=True)
+    t.add_argument("--reported", nargs="*", required=True, help="the implementer's reported files; may be empty")
+    t.add_argument("--in-flight", nargs="*", default=[])
+    t = fsub.add_parser("revert", parents=[fcommon], help="Step 4f FAIL 1-2: restore the reported files and record the attempt")
+    t.add_argument("--code", required=True)
+    t.add_argument("--reported", nargs="*", required=True)
+    t.add_argument("--in-flight", nargs="*", default=[])
+    t.add_argument("--reviewer-file", required=True, help="a file holding the reviewer's FAIL text")
+    t.add_argument("--plan-change", default="none")
+    t = fsub.add_parser("verify", parents=[fcommon], help="Step 4f.0: the recorded verification against the run baseline")
+    t.add_argument("--waiting", nargs="*", default=[], help="PASSed items waiting to commit")
+    t.add_argument("--reviewing", nargs="*", default=[], help="items still under review")
+    t = fsub.add_parser("commit", parents=[fcommon], help="Step 4f.1: commit the reported files, or snapshot them when commits are off")
+    t.add_argument("--code", required=True)
+    t.add_argument("--title", required=True)
+    t.add_argument("--reported", nargs="*", required=True)
+    t.add_argument("--in-flight", nargs="*", default=[])
+    t = fsub.add_parser("resync", parents=[fcommon], help="re-read HEAD and D0 after a git step of the orchestrator's or the user's")
+    t.add_argument("--in-flight", nargs="*", default=[])
+    s.set_defaults(fn=cmd_fix)
 
     a = p.parse_args(argv)
     if getattr(a, "project_root", "") is None:

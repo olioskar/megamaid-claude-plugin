@@ -1,0 +1,2 @@
+verify: fail M1 (exit 2) — exit 2, was 1 before the run
+exit=0

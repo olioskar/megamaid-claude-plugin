@@ -87,6 +87,11 @@ run batches-latin1       batches --folder "$R/plans/latin1"
 run batches-tworevise    batches --folder "$R/plans/tworevise"
 run batches-dupcode      batches --folder "$R/plans/dupcode"
 run batches-slash        batches --folder "$R/plans/slash"
+# batches: a plan's **Depends on:** puts the item in a batch after its dependency; a grouped code maps to its group
+run batches-deps         batches --folder "$R/plans/deps"
+run batches-depgroup     batches --folder "$R/plans/depgroup"
+run batches-depcycle     batches --folder "$R/plans/depcycle"
+run batches-depwarn      batches --folder "$R/plans/depwarn"
 # write-set: one instruction's write-set, the same rules batches prints per item
 run writeset-where       write-set --file "$R/plans/code/M1-a.md"
 run writeset-files       write-set --file "$R/plans/writeset/H2-files-only.md"
@@ -173,6 +178,167 @@ chmod 755 "$L/readonly/project/docs/"*
 # a symlinked manifest: --move moves the manifest, never the shared file the link points to
 lay linked;              run2 manifest-linked     migrate manifest --move "${LAY[@]}"
 { ls "$L/linked/shared"; cat "$L/linked/project/docs/megamaid/PATTERNS.md"; } > "$OUT2/manifest-linked-shared.out" 2>&1
+
+# fix: a fix round's mechanical steps, on temporary git repos copied from fixtures/megamaid/fixrepo.
+# Fix commands take the project root from git, so they pass only the plugin root and home; SHAs print as SHA.
+FX=(--plugin-root "$P" --home "$H")
+mkrepo() { rm -rf "$T/$1"; cp -R "$F/fixrepo" "$T/$1"; (cd "$T/$1" && git init -q -b main && git config user.email fixture@example.com && git config user.name Fixture && git add -A && git commit -q -m init); }
+runf() { name=$1; dir=$2; shift 2; (cd "$dir" && python3 -I "$S" "$@" 2>&1) | norm | sed -E 's/[0-9a-f]{40}/SHA/g' > "$OUT/$name.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/$name.out"; }
+fstart() { (cd "$T/$1" && python3 -I "$S" fix start --folder plans/p --verify "${2:-none}" --commits "${3:-on}" "${FX[@]}" > /dev/null 2>&1); }
+PY=$(python3 -c 'import sys; print(sys.executable)'); mkdir -p "$T/nobin"
+(cd "$T" && PATH="$T/nobin" MEGAMAID_GIT_CANDIDATES=/nonexistent "$PY" -I "$S" fix preflight --folder plans/p "${FX[@]}" 2>&1) | norm > "$OUT/fix-nogit.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/fix-nogit.out"
+mkrepo r-pre; echo x >> "$T/r-pre/plans/p/M1-a.md"; echo n > "$T/r-pre/plans/p/notes.md"; echo r > "$T/r-pre/docs/megamaid/reviews/pr-1-round1-report.md"
+runf fix-preflight-clean "$T/r-pre" fix preflight --folder plans/p "${FX[@]}"
+mkrepo r-odd; mkdir -p "$T/r-odd/notes"; echo x > "$T/r-odd/notes/x y.txt"; (cd "$T/r-odd" && git mv src/b.js src/b2.js)
+runf fix-preflight-oddpaths "$T/r-odd" fix preflight --folder plans/p "${FX[@]}"
+mkrepo r-start
+runf fix-start "$T/r-start" fix start --folder plans/p --verify "sh -c 'echo built > out.txt'" --commits on "${FX[@]}"
+mkrepo r-nd; echo edit >> "$T/r-nd/src/a.js"
+runf fix-start-notdispatched "$T/r-nd" fix start --folder plans/p --verify none --commits on "${FX[@]}"
+mkrepo r-sub
+runf fix-start-subdir "$T/r-sub/src" fix start --folder ../plans/p --verify none --commits off "${FX[@]}"
+runf fix-start-subdir-gate "$T/r-sub" fix gate --folder plans/p --code M2 "${FX[@]}"
+mkrepo r-gate; echo edit >> "$T/r-gate/src/a.js"; fstart r-gate
+runf fix-gate-ok "$T/r-gate" fix gate --folder plans/p --code M2 "${FX[@]}"
+runf fix-gate-not "$T/r-gate" fix gate --folder plans/p --code M1 "${FX[@]}"
+mkrepo r-rs; fstart r-rs; (cd "$T/r-rs" && echo hand >> src/b.js && git commit -qam hand)
+runf fix-resync "$T/r-rs" fix resync --folder plans/p "${FX[@]}"
+(cd "$T/r-rs" && grep -q "\"head\": \"$(git rev-parse HEAD)\"" .megamaid/fix/plans-p.json && echo "state head: HEAD" || echo "state head: stale") >> "$OUT/fix-resync.out"
+# fix check: the three checks after an implementer returns (HEAD, reported list, allowed set)
+mkrepo r-ck; fstart r-ck; echo e >> "$T/r-ck/src/a.js"
+runf fix-check-ok "$T/r-ck" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-ckh; fstart r-ckh; (cd "$T/r-ckh" && echo e >> src/a.js && git commit -qam implementer)
+runf fix-check-head "$T/r-ckh" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-cku; fstart r-cku; echo e >> "$T/r-cku/src/a.js"
+runf fix-check-unreported "$T/r-cku" fix check --folder plans/p --code M1 --reported "${FX[@]}"
+mkrepo r-ckw; fstart r-ckw; echo e >> "$T/r-ckw/src/a.js"; echo e >> "$T/r-ckw/src/b.js"
+runf fix-check-outside-where "$T/r-ckw" fix check --folder plans/p --code M1 --reported src/a.js src/b.js "${FX[@]}"
+runf fix-check-batchmate "$T/r-ckw" fix check --folder plans/p --code M1 --reported src/a.js src/b.js --in-flight M2 "${FX[@]}"
+mkrepo r-cka; fstart r-cka; echo e >> "$T/r-cka/src/a.js"; echo n > "$T/r-cka/src/c.js"
+runf fix-check-outside-allowed "$T/r-cka" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-cks; fstart r-cks; echo e >> "$T/r-cks/src/a.js"; echo r > "$T/r-cks/docs/megamaid/reviews/pr-1-round2-report.md"; echo a >> "$T/r-cks/plans/p/M1-a.md"
+runf fix-check-sweep "$T/r-cks" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+mkrepo r-ckn
+runf fix-check-nostate "$T/r-ckn" fix check --folder plans/p --code M1 --reported src/a.js "${FX[@]}"
+# fix revert: restore the reported files, never a batch-mate's, and record the attempt in the instruction
+printf 'FAIL: the loop still runs twice\n' > "$T/rev1.txt"; printf 'FAIL: off by one\nat src/a.js:1\n' > "$T/rev2.txt"
+attempts() { { echo "--- attempts"; sed -n '/^## Attempts/,$p' "$T/$1/plans/p/$2"; echo "--- status"; (cd "$T/$1" && git status --porcelain); } >> "$OUT/$3.out"; }
+mkrepo r-rv; fstart r-rv; echo e >> "$T/r-rv/src/a.js"; echo n > "$T/r-rv/src/new.js"
+runf fix-revert "$T/r-rv" fix revert --folder plans/p --code M1 --reported src/a.js src/new.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rv M1-a.md fix-revert
+mkrepo r-rvb; fstart r-rvb; echo e >> "$T/r-rvb/src/a.js"; echo e >> "$T/r-rvb/src/b.js"
+runf fix-revert-batchmate "$T/r-rvb" fix revert --folder plans/p --code M1 --reported src/a.js src/b.js --in-flight M2 --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rvb M1-a.md fix-revert-batchmate
+mkrepo r-rvd; fstart r-rvd; rm "$T/r-rvd/src/a.js"
+runf fix-revert-deleted "$T/r-rvd" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+attempts r-rvd M1-a.md fix-revert-deleted
+mkrepo r-rv2; fstart r-rv2; echo e >> "$T/r-rv2/src/a.js"
+(cd "$T/r-rv2" && python3 -I "$S" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev1.txt" "${FX[@]}" > /dev/null 2>&1)
+echo e2 >> "$T/r-rv2/src/a.js"
+runf fix-revert-second "$T/r-rv2" fix revert --folder plans/p --code M1 --reported src/a.js --reviewer-file "$T/rev2.txt" --plan-change "How now loops once" "${FX[@]}"
+attempts r-rv2 M1-a.md fix-revert-second
+# fix verify: the recorded command against the start baseline; a new failure attributed to a write-set
+mkdir -p "$T/vs"; vs() { printf '%s\n' "$2" > "$T/vs/$1.sh"; }
+vs green 'exit 0'; mkrepo r-vg; fstart r-vg "sh $T/vs/green.sh"
+runf fix-verify-green "$T/r-vg" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs red 'echo "FAIL test/x.test.js"; exit 1'; mkrepo r-vu; fstart r-vu "sh $T/vs/red.sh"
+runf fix-verify-unchanged "$T/r-vu" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs att 'exit 0'; mkrepo r-va; fstart r-va "sh $T/vs/att.sh"; vs att 'echo "FAIL src/a.js:3 expected 1"; exit 1'
+runf fix-verify-attributed "$T/r-va" fix verify --folder plans/p --waiting M2 --reviewing M1 "${FX[@]}"
+vs una 'exit 0'; mkrepo r-vn; fstart r-vn "sh $T/vs/una.sh"; vs una 'echo "FAIL test/x.test.js"; echo "1 failing"; exit 1'
+runf fix-verify-unattributed "$T/r-vn" fix verify --folder plans/p --waiting M1 --reviewing M2 "${FX[@]}"
+vs sil 'exit 0'; mkrepo r-vs; fstart r-vs "sh $T/vs/sil.sh"; vs sil 'echo oops; exit 1'
+runf fix-verify-silent-red "$T/r-vs" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+mkrepo r-v0; fstart r-v0
+runf fix-verify-none "$T/r-v0" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+# fix commit: stage and commit the reported files; with commits off, snapshot them as finished
+m3() { sed 's/^# M1 — Fix a/# M3 — Fix a again/' "$T/$1/plans/p/M1-a.md" > "$T/$1/plans/p/M3-c.md"; }
+fx() { dir=$1; shift; (cd "$T/$dir" && python3 -I "$S" fix "$@" --folder plans/p "${FX[@]}" > /dev/null 2>&1); }
+mkrepo r-cm; fstart r-cm; echo e >> "$T/r-cm/src/a.js"
+runf fix-commit "$T/r-cm" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+runf fix-commit-then-check "$T/r-cm" fix check --folder plans/p --code M2 --reported "${FX[@]}"
+(cd "$T/r-cm" && git log -1 --format=%s; git status --porcelain) >> "$OUT/fix-commit.out"
+mkrepo r-cme; fstart r-cme
+runf fix-commit-empty "$T/r-cme" fix commit --folder plans/p --code M1 --title "Fix a" --reported "${FX[@]}"
+mkrepo r-cmh; (cd "$T/r-cmh" && git config core.hooksPath .git/hooks && printf '#!/bin/sh\necho rejected >&2\nexit 1\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit); fstart r-cmh; echo e >> "$T/r-cmh/src/a.js"
+runf fix-commit-hook "$T/r-cmh" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+mkrepo r-cmr; mkdir -p "$T/r-cmr/plans/r"; echo '# Spec' > "$T/r-cmr/docs/spec.md"
+printf '# Revise spec\n\n**Target spec:** `docs/spec.md`\n' > "$T/r-cmr/plans/r/revise-spec.md"
+(cd "$T/r-cmr" && git add -A && git commit -qm setup && python3 -I "$S" fix start --folder plans/r --verify none --commits on "${FX[@]}" > /dev/null 2>&1); echo more >> "$T/r-cmr/docs/spec.md"
+runf fix-commit-revise "$T/r-cmr" fix commit --folder plans/r --code revise-spec --title "ignored" --reported docs/spec.md "${FX[@]}"
+(cd "$T/r-cmr" && git log -1 --format=%s) >> "$OUT/fix-commit-revise.out"
+mkrepo r-off; fstart r-off none off; echo m1 >> "$T/r-off/src/a.js"
+runf fix-commit-off "$T/r-off" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+m3 r-off
+runf fix-check-off-later-none "$T/r-off" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+echo m3 >> "$T/r-off/src/a.js"
+runf fix-check-off-later "$T/r-off" fix check --folder plans/p --code M3 --reported src/a.js "${FX[@]}"
+runf fix-check-off-later-unreported "$T/r-off" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+printf 'FAIL\n' > "$T/rev3.txt"
+runf fix-revert-off-later "$T/r-off" fix revert --folder plans/p --code M3 --reported src/a.js --reviewer-file "$T/rev3.txt" "${FX[@]}"
+cat "$T/r-off/src/a.js" >> "$OUT/fix-revert-off-later.out"
+mkrepo r-rso; fstart r-rso none off; echo m1 >> "$T/r-rso/src/a.js"; fx r-rso commit --code M1 --title "Fix a" --reported src/a.js; m3 r-rso
+(cd "$T/r-rso" && echo hand >> src/b.js && git commit -qm hand -- src/b.js)
+runf fix-resync-off "$T/r-rso" fix resync --folder plans/p "${FX[@]}"
+runf fix-resync-off-check "$T/r-rso" fix check --folder plans/p --code M3 --reported "${FX[@]}"
+# a Step 3 group runs as one item: --code M1+M2 is the union of their write-sets; the attempt lands in each file
+mkrepo r-grp; fstart r-grp; echo e >> "$T/r-grp/src/a.js"; echo e >> "$T/r-grp/src/b.js"
+runf fix-group-check "$T/r-grp" fix check --folder plans/p --code M1+M2 --reported src/a.js src/b.js "${FX[@]}"
+runf fix-group-revert "$T/r-grp" fix revert --folder plans/p --code M1+M2 --reported src/a.js src/b.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c '^### Attempt 1 — FAIL' "$T/r-grp/plans/p/M1-a.md" "$T/r-grp/plans/p/M2-b.md" | sed 's#.*/##' >> "$OUT/fix-group-revert.out"
+# review fixes: literal pathspecs, the user's D0 never touched, symlinked absolute paths, verify's edge cases
+mkrepo r-br; mkdir -p "$T/r-br/app/[id]" "$T/r-br/app/d"; echo p > "$T/r-br/app/[id]/page.tsx"; echo p > "$T/r-br/app/d/page.tsx"
+sed 's#src/a.js#app/[id]/page.tsx#g; s/^# M1 — Fix a/# M3 — Bracketed route/' "$T/r-br/plans/p/M1-a.md" > "$T/r-br/plans/p/M3-r.md"
+(cd "$T/r-br" && git add -A && git commit -qm routes); echo user >> "$T/r-br/app/d/page.tsx"; fstart r-br; echo m3 >> "$T/r-br/app/[id]/page.tsx"
+cp -R "$T/r-br" "$T/r-br2"
+runf fix-bracket-revert "$T/r-br" fix revert --folder plans/p --code M3 --reported "app/[id]/page.tsx" --reviewer-file "$T/rev1.txt" "${FX[@]}"
+(cd "$T/r-br" && git status --porcelain -- app) >> "$OUT/fix-bracket-revert.out"
+runf fix-bracket-commit "$T/r-br2" fix commit --folder plans/p --code M3 --title "Route" --reported "app/[id]/page.tsx" "${FX[@]}"
+(cd "$T/r-br2" && git show --name-only --format=%s HEAD; git status --porcelain -- app) >> "$OUT/fix-bracket-commit.out"
+mkrepo r-d0; fstart r-d0; (cd "$T/r-d0" && echo hand >> src/a.js && git commit -qam hand); echo wip >> "$T/r-d0/src/b.js"
+runf fix-resync-notdispatched "$T/r-d0" fix resync --folder plans/p "${FX[@]}"
+runf fix-check-d0 "$T/r-d0" fix check --folder plans/p --code M2 --reported src/b.js "${FX[@]}"
+runf fix-revert-d0 "$T/r-d0" fix revert --folder plans/p --code M2 --reported src/b.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c wip "$T/r-d0/src/b.js" >> "$OUT/fix-revert-d0.out"
+runf fix-commit-d0 "$T/r-d0" fix commit --folder plans/p --code M2 --title "Fix b" --reported src/b.js "${FX[@]}"
+mkrepo r-dir; fstart r-dir; echo e >> "$T/r-dir/src/a.js"; echo e >> "$T/r-dir/src/b.js"
+runf fix-revert-dir-mate "$T/r-dir" fix revert --folder plans/p --code M1 --reported src --in-flight M2 --reviewer-file "$T/rev1.txt" "${FX[@]}"
+(cd "$T/r-dir" && git status --porcelain -- src) >> "$OUT/fix-revert-dir-mate.out"
+mkrepo r-abs; fstart r-abs; echo e >> "$T/r-abs/src/a.js"
+runf fix-check-abs "$T/r-abs" fix check --folder plans/p --code M1 --reported "$TL/r-abs/src/a.js" "${FX[@]}"
+runf fix-revert-outside "$T/r-abs" fix revert --folder plans/p --code M1 --reported src/a.js ../outside.js --reviewer-file "$T/rev1.txt" "${FX[@]}"
+grep -c e "$T/r-abs/src/a.js" >> "$OUT/fix-revert-outside.out"
+vs emp 'exit 0'; mkrepo r-ve; fstart r-ve "sh $T/vs/emp.sh"; vs emp 'exit 1'
+runf fix-verify-silent-empty "$T/r-ve" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs ex 'echo "FAIL test/x.test.js"; exit 1'; mkrepo r-vx; fstart r-vx "sh $T/vs/ex.sh"; vs ex 'echo "FAIL test/x.test.js"; exit 2'
+runf fix-verify-exit-changed "$T/r-vx" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs tm 'echo "FAILED tests/test_x.py::test_a"; echo "==== 1 failed, 3 passed in 0.87s ===="; exit 1'; mkrepo r-vt; fstart r-vt "sh $T/vs/tm.sh"
+vs tm 'echo "FAILED tests/test_x.py::test_a"; echo "==== 1 failed, 3 passed in 1.02s ===="; exit 1'
+runf fix-verify-timing "$T/r-vt" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+vs many 'exit 0'; mkrepo r-vm; fstart r-vm "sh $T/vs/many.sh"; vs many 'i=1; while [ $i -le 60 ]; do echo "error $i"; i=$((i+1)); done; exit 1'
+runf fix-verify-many "$T/r-vm" fix verify --folder plans/p --waiting M1 "${FX[@]}"
+# second review pass: edge cases pinned
+python3 -I lone/megamaid.py fix preflight --folder plans/p "${FX[@]}" 2>&1 | norm > "$OUT/fix-lone.out"; echo "exit=${PIPESTATUS[0]}" >> "$OUT/fix-lone.out"
+mkrepo r-bad; fstart r-bad; printf '{"folder": "plans/p"}\n' > "$T/r-bad/.megamaid/fix/plans-p.json"
+runf fix-state-incomplete "$T/r-bad" fix commit --folder plans/p --code M1 --title t --reported src/a.js "${FX[@]}"
+rm -rf "$T/r-new"; cp -R "$F/fixrepo" "$T/r-new"; (cd "$T/r-new" && git init -q -b main)
+runf fix-start-nocommits "$T/r-new" fix start --folder plans/p --verify "sh -c 'echo ran > ran.txt'" --commits on "${FX[@]}"
+[ -e "$T/r-new/ran.txt" ] && echo "verification ran" >> "$OUT/fix-start-nocommits.out" || echo "verification not run" >> "$OUT/fix-start-nocommits.out"
+mkrepo r-sp; mkdir -p "$T/r-sp/notes"; echo x > "$T/r-sp/notes/x y.txt"
+runf fix-start-spaces "$T/r-sp" fix start --folder plans/p --verify none --commits on "${FX[@]}"
+mkrepo r-tnc; (cd "$T/r-tnc" && git config core.hooksPath .git/hooks && printf '#!/bin/sh\necho h > hook-out.txt\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit); fstart r-tnc; echo e >> "$T/r-tnc/src/a.js"
+runf fix-commit-tree-not-clean "$T/r-tnc" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+mkrepo r-rvx; fstart r-rvx; echo e >> "$T/r-rvx/src/a.js"
+runf fix-revert-dirty "$T/r-rvx" fix revert --folder plans/p --code M1 --reported --reviewer-file "$T/rev1.txt" "${FX[@]}"
+vs fn 'exit 0'; mkrepo r-vfn; fstart r-vfn "sh $T/vs/fn.sh"; vs fn 'echo "FAIL test/x.test.js"; exit 1'
+runf fix-verify-fail-none "$T/r-vfn" fix verify --folder plans/p --reviewing M1 "${FX[@]}"
+mkrepo r-unk; fstart r-unk
+runf fix-gate-unknown "$T/r-unk" fix gate --folder plans/p --code Z9 "${FX[@]}"
+runf fix-folder-outside "$T/r-unk" fix preflight --folder .. "${FX[@]}"
+runf fix-folder-missing "$T/r-unk" fix preflight --folder plans/nope "${FX[@]}"
+mkrepo r-stg; echo user >> "$T/r-stg/src/b.js"; (cd "$T/r-stg" && git add src/b.js); fstart r-stg; echo e >> "$T/r-stg/src/a.js"
+runf fix-commit-staged-stays "$T/r-stg" fix commit --folder plans/p --code M1 --title "Fix a" --reported src/a.js "${FX[@]}"
+(cd "$T/r-stg" && git show --name-only --format=%s HEAD; git status --porcelain) >> "$OUT/fix-commit-staged-stays.out"
 
 fail=0
 check() {  # $1 output dir, $2 expected dir; an expected file with no output is stale

@@ -21,7 +21,7 @@ You're a team lead working through a stack of fix instructions. For each: hand i
 ## Inputs
 
 1. **Folder of instruction documents** — from `/megamaid:plan` or any structured fix instructions. User specifies, or default to most recent under `<paths.plans>`.
-2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or derive from filenames/categories (Critical → High → Medium → Low → Test gaps). Confirm with user. Exclude items the user marks deferred or out-of-scope.
+2. **Execution order** — user specifies (e.g., "C1 → H1-H3 → M1-M10"), or the `batches` order (Step 2.5): Critical → High → Medium → Low → Test gaps, an item after those its plan names on `**Depends on:**`. Confirm with user. Exclude items the user marks deferred or out-of-scope.
 3. **Focus brief** — `$ARGUMENTS` — carries through from review when invoked via `/megamaid:vacu-suck`.
 
 ## Step 1: Load config
@@ -49,13 +49,19 @@ From it:
 
 Skip this entire step if `fix.commit_per_item` is `false` in merged config.
 
-Run `git status --porcelain` and drop the run's own paths (Step 1.6) and anything under `paths.reviews`: in `/megamaid:vacu-suck` the round's report and plans are always there and are not the user's work. If nothing is left, the tree is clean — proceed.
+Run:
 
-If non-empty, surface a one-shot question with these options:
+```
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix preflight --folder <instruction folder>
+```
+
+It lists the dirty tree minus the run's own paths (Step 1.6): in `/megamaid:vacu-suck` the round's report and plans are always there and are not the user's work. `preflight: clean` → proceed.
+
+On `dirty <path>` lines, surface a one-shot question with these options:
 
 ```
 Working tree has uncommitted changes before /megamaid:fix starts:
-  <the remaining git status --porcelain lines>
+  <the dirty paths>
 
 Pick one:
   (a) Commit existing changes now (suggest a message)
@@ -64,17 +70,25 @@ Pick one:
   (d) Abort
 ```
 
-Honor the user's choice and proceed. In `/megamaid:vacu-suck`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
+Honor the user's choice (commit or stash it yourself), then proceed to Step 1.6. In `/megamaid:vacu-suck`, this question is the third allowed question (alongside scope-at-start and run-again-at-end), and only fires when the tree is dirty.
 
 ## Step 1.6: Record the run baseline
 
-Three facts, recorded once here and compared against by Steps 4d.1, 4f.0, and 4f.1. Record them whether or not Step 1.5 ran.
+Three facts, recorded once here, after Step 1.5's answer, and compared against by Steps 4d.1, 4f.0, and 4f.1. Record them whether or not Step 1.5 ran. Choose the verification command the way `/megamaid:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); `none` when neither names one. Commits are `off` when `fix.commit_per_item` is `false` or the Step 1.5 answer was (c), else `on`. Then run:
 
-- **Verification baseline** — run the project's verification once, chosen the way `/megamaid:review` Step 5 chooses it: commands named in `CLAUDE.md`, else the project's build or package manifest(s); pipe stderr with `2>&1`. Record the exit code and the failing lines. When neither names a command, record `verification: none configured` and 4f.0 skips. When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/megamaid:vacu-suck` this is logged, not asked; the sweep proceeds.
-- **Dirty baseline `D0`** — `git status --porcelain` as the tree stands after that run (so artefacts the verification wrote are in it). Paths in `D0` are the user's and are never re-examined by this run's checks. An item whose write-set intersects `D0` is not dispatched: announce `{code} — not dispatched: ## Where overlaps uncommitted changes ({paths}); commit or stash them first` and move on, so the revert and the stage never touch a user's edit.
-- **`HEAD_expected`** — `git rev-parse HEAD`. Every commit this run makes (4f.1) advances it; any other movement is an implementer committing.
+```
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix start --folder <instruction folder> --verify "<command>" --commits on|off
+```
 
-The **run's own paths** are everything under the instruction folder: `## Attempts` appends and X-item files land there. They are never counted by a check.
+It runs the verification first, then records:
+
+- **Verification baseline** — its exit code and failing lines (`verification: green`, `red (<n> failing lines)`, or `none configured`, after which 4f.0 skips). When it is red before any item runs, ask once: proceed (a 4f.0 failure whose failing lines are these is not the item's) or abort. In `/megamaid:vacu-suck` this is logged, not asked; the sweep proceeds.
+- **Dirty baseline `D0`** (`d0:`) — the dirty tree as it stands after that run (so artefacts the verification wrote are in it), minus the run's own paths. Paths in `D0` are the user's and are never re-examined by this run's checks. An item whose write-set meets `D0` is listed `not-dispatched <code>: <paths>`: do not dispatch it; announce `{code} — not dispatched: ## Where overlaps uncommitted changes ({paths}); commit or stash them first` and move on, so the revert and the stage never touch a user's edit.
+- **`HEAD_expected`** (`head:`) — every commit this run makes (4f.1) advances it; any other movement is an implementer committing.
+
+The **run's own paths** are the instruction folder (`## Attempts` appends and X-item files land there) and `paths.reviews` (the review reports). They are never counted by a check.
+
+The facts live in `.megamaid/fix/`, one state file per instruction folder; every later `fix` command reads them, and you pass it the rest on each call (codes, reported files, which items are in flight).
 
 ## Step 2: Surface relevant directives
 
@@ -94,7 +108,7 @@ Run:
 python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" batches --folder <instruction folder>
 ```
 
-Its `shape:` line is the folder shape below; its `write-set` lines are the items' write-sets (Step 4a); its `not-reproduced:` line is the list below; its `batch` lines are the ceiling Step 4a launches from — a batch may be split, never merged. The shapes:
+Its `shape:` line is the folder shape below; its `write-set` lines are the items' write-sets (Step 4a); its `not-reproduced:` line is the list below; its `batch` lines are the ceiling Step 4a launches from — a batch may be split, never merged. Its `warning:` lines (a dependency on an item not queued, a `**Depends on:**` that names no code or the item itself, a dependency cycle) go to the user with the queue; in `/megamaid:vacu-suck` they are logged. Each means the batch order may not be the order the plans assume. The shapes:
 
 - **Per-finding folder** — multiple files matching the per-finding naming pattern (`{C|H|M|L|T|D|X}{n}-*.md`, optionally also `G{n}-*.md` for groups). This is the historical default. Use Steps 3–4 below as today.
 - **Single revise-doc folder** — the folder contains exactly one file matching `revise-*.md` (and no per-finding files). This means the upstream `/megamaid:plan` ran against a non-code review report. Use the single-revise flow described in Step 4 below.
@@ -161,9 +175,12 @@ An item's **write-set** is what `megamaid.py batches` (Step 2.5) prints for it: 
 
 Three terms the git checks use:
 
-- An item is **in flight** from its implementer dispatch until its commit lands (4f.1) or, after a stop, until the user resolves it. Implementer stage, reviewer stage, PASS awaiting verification, and stopped all count; a committed item does not. When the run makes no commits (`commit_per_item` off, or option (c) at Step 1.5), an item leaves flight when it is announced complete, and its reported paths join `D0` at that moment.
-- The **allowed set** is `D0` ∪ the run's own paths ∪ the write-sets of every in-flight item (Step 1.6 for the first two). It is what the working tree may contain at any moment.
+- An item is **in flight** from its implementer dispatch until its commit lands (4f.1) or, after a stop, until the user resolves it. Implementer stage, reviewer stage, PASS awaiting verification, and stopped all count; a committed item does not, nor one `fix commit` reported `skipped (no changes)`. When the run makes no commits, an item leaves flight when `fix commit` reports `skipped (commits off)`; its reported paths become **finished paths**, recorded with their content. A later item on the same file is dispatched as usual and checked against the tree the earlier item left.
+- The **allowed set** is `D0` ∪ the run's own paths ∪ the finished paths ∪ the write-sets of every in-flight item (Step 1.6 for the first two). It is what the working tree may contain at any moment.
+- **Changed** means different from `HEAD`, or, for a finished path, from its recorded content; a revert restores the same.
 - **Stop the item** means dispatch no further stage for it and leave its edits in place; its write-set stays in the allowed set until the user resolves it. **Stop the batch** means dispatch nothing further for any item in the batch, let the implementers already running return, print the per-item status list from 4f.1 for the batch, and hand the tree to the user. A HEAD stop (4d.1 check 1) stops the batch: `HEAD_expected` is stale for every batch-mate until the user resolves it. The orchestrator cannot interrupt a running agent; a stop is a promise about what it will not start.
+
+**Verdicts and overrides.** The `fix` commands below report a verdict; they never decide the next step. Act on the verdict by default. When you have a reason to act otherwise (a verdict built on a wrong input, a hole in this skill), do so, and log one line: `override <step> <code>: <verdict> → <what was done> — <why>`. After `fix start`, any git step of your own or the user's that these commands did not make (keeping an implementer's commit, a hand commit, a stash) is an override too; the commit or stash chosen at Step 1.5, and restoring that stash at the end of the run, are not: log it, then run `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix resync --folder <instruction folder> --in-flight <in-flight codes>`, which re-reads `HEAD_expected` and `D0`, keeps the finished paths, and lists `not-dispatched <code>: <paths>` for every item whose write-set now meets `D0` (do not dispatch those); without it every later check reads stale facts. Every override lands in the `Overrides:` list (Step 5). A group from Step 3 is passed as one code, `L1+L2+L3`.
 
 Launch a parallel batch per the delivery contract (`${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`) — one Agent call per item, batched in a single assistant message.
 
@@ -216,7 +233,7 @@ For trivial items: announce "(trivial — implementer `{resolved models.fix.impl
   Omit `--excerpt` and `--manifest` when no manifest resolved and `--brief` when the focus brief is empty. `<run>` is the stem the Step 2.5 excerpt printed. When no excerpt was cut this run, omit `--run` on the first `brief` call, record the `run:` it prints, and pass that stem as `--run` to every later `brief` call and to the final `clean`. Echo the four lines it prints; its `brief:` path goes into the prompt.
 - **Delivery contract:** `${CLAUDE_PLUGIN_ROOT}/shared/dispatch-delivery.md`.
 - **Fresh agent per item** — no accumulated state.
-- **HEAD is tracked per run, not per item:** `HEAD_expected` (Step 1.6) is what 4d.1 compares against when the implementer returns; this run's own commits advance it, so a batch-mate's commit is not mistaken for the implementer's.
+- **HEAD is tracked per run, not per item:** `HEAD_expected` (Step 1.6) is what 4d.1 compares against when the implementer returns; `fix commit` advances it for this run's own commits, so a batch-mate's commit is not mistaken for the implementer's.
 
 **Implementer dispatch prompt (shared context + briefs):**
 
@@ -238,9 +255,16 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-implementer-brief.m
 
 Three git checks, before any reviewer is dispatched:
 
-1. **HEAD unchanged.** `git rev-parse HEAD` equals `HEAD_expected` (Step 1.6, advanced only by this run's 4f.1 commits). If not, the implementer committed. Stop the batch (4a), do not revert (a commit is not the orchestrator's to undo), and surface: `{code} — stopped: HEAD moved during implementer ({HEAD_expected} → {new}); resolve by hand before continuing`.
-2. **Reported list equals the tree inside the write-set.** `git status --porcelain -- <paths in ## Where>`, read as a set of paths, must equal the reported list. A dirty path inside `## Where` that was not reported, or a reported path that is not dirty → stop the item and surface which. A reported path outside `## Where` → stop the item; if that path lies inside a batch-mate's write-set → stop the batch. The reported list is what the reviewer scopes, the revert deletes, and the commit stages, so it must be exact; write-sets are disjoint within a batch, so attribution inside `## Where` is exact too.
-3. **Tree inside the allowed set.** Every path in `git status --porcelain` must be in the allowed set (4a). A path outside → stop the batch and surface: `batch stopped: {paths} changed outside every in-flight write-set ({codes})`. Do not guess which item did it.
+```
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix check --folder <instruction folder> --code <code> --reported <files the implementer reported> --in-flight <the other in-flight codes>
+```
+
+1. **HEAD unchanged** — equals `HEAD_expected`. If not, the implementer committed: `stop-batch — HEAD moved during implementer ({HEAD_expected} → {new})`. Do not revert (a commit is not the orchestrator's to undo); surface `{code} — stopped: HEAD moved during implementer ({HEAD_expected} → {new}); resolve by hand before continuing`.
+2. **Reported list equals the changed paths inside the write-set.** A changed path inside `## Where` that was not reported, or a reported path that is not changed → `stop-item`, naming which. A reported path outside `## Where` → `stop-item`, or `stop-batch` when it lies inside a batch-mate's write-set. The reported list is what the reviewer scopes, the revert restores, and the commit stages, so it must be exact; write-sets are disjoint within a batch, so attribution inside `## Where` is exact too.
+   The user's `D0` paths inside the write-set (a resync can add them) → `stop-item — {paths} in D0, the user's uncommitted changes`.
+3. **Tree inside the allowed set** (4a). A path outside → `stop-batch — {paths} changed outside every in-flight write-set ({codes})`. Do not guess which item did it.
+
+`check {code}: ok` → dispatch the reviewer. Otherwise the first line is the strongest verdict and its reason, and each `reason` line after it is another failed check; stop the item or the batch (4a) and surface them.
 
 Bound: these checks compare paths and one SHA. They do not read diffs; the reviewer does. A write inside a batch-mate's `## Where` by the wrong implementer is indistinguishable by path from the batch-mate's own work; the batch-mate's reviewer sees it as a stray hunk, and its `Batch-mates' write-sets:` line is what lets it report a possible spill from `{code}` instead of failing on sight.
 
@@ -282,6 +306,7 @@ Branch: {branch}
 Item: {reference_code} — {title}
 Instruction file: {instruction-path}
 Batch-mates' write-sets: {for each other in-flight item: "{code}: {paths}"; or "none — this item runs alone"}
+Finished earlier on these files: {with commits off, each finished item whose reported paths meet this item's write-set: "{code}: {paths}"; or "none"}
 
 Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, {run brief path printed by `megamaid.py brief` (skill fix, role = the picked reviewer role)}
 
@@ -294,18 +319,22 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, 
 
 - **PASS** — proceed to **Step 4f.0** (verify), then **4f.1** (commit), then announce complete and move on. When the reviewer's `Unverified:` line names anything other than `nothing`, announce the item as `{code} — PASS (partial verification: {what the reviewer could not check})` and carry that note into the end-of-run summary. This is a log line, not a gate: it does not block the commit and asks the user nothing.
 - **FAIL** — in this order:
-  1. **Revert the attempt.** The reported list equals the item's dirty footprint inside `## Where` (4d.1 check 2), so: `git checkout -- <reported files>`; delete every reported path that `git status --porcelain -- <reported files>` marks `??`; confirm `git status --porcelain -- <paths in ## Where>` prints nothing. Never touch a path inside another in-flight item's write-set. A retry starts from the tree the first attempt started from — "fresh agent" is only true when the tree is fresh too.
-  2. **Record the attempt.** Append to the instruction file (create the section on the first FAIL):
+  1. **Revert the attempt and record it.** Write the reviewer's FAIL text (verbatim or trimmed to its specifics) to a file under `.megamaid/`, then:
+     ```
+     python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix revert --folder <instruction folder> --code <code> --reported <reported files> --in-flight <the other in-flight codes> --reviewer-file <that file> --plan-change "<what you changed in ## How and why | none>"
+     ```
+     It restores each reported path (deleting one the item created), never touches a path inside another in-flight item's write-set or in `D0` (`skipped`), and appends to the instruction file, creating the section on the first FAIL:
      ```markdown
      ## Attempts
 
      ### Attempt {n} — FAIL
-     **Reviewer:** {the FAIL text, verbatim or trimmed to its specifics}
+     **Reviewer:** {the FAIL text}
      **Plan change:** {what you changed in `## How` and why | none}
      ```
-     The section is append-only. If the instruction is wrong, change `## How` and say so here; the next reviewer verifies against the changed How and can see it changed.
+     `revert {code}: clean` → the write-set is as the attempt found it. `dirty — {paths}` → stop the item and surface them. A retry starts from the tree the first attempt started from — "fresh agent" is only true when the tree is fresh too.
+  2. **The section is append-only.** If the instruction is wrong, change `## How` before the revert and say so in `--plan-change`; the next reviewer verifies against the changed How and can see it changed.
   3. **Retry.** Send a new implementer (Step 4d), then review again (4e). **After three FAILs on one item, stop and ask the user** — trivial or standard alike — printing the per-item status list from 4f.1 first, so the other in-flight items are not lost in the question. Three failures mean the instruction or the classification is wrong, and that is the user's call. A 4f.0 verification FAIL counts as one of the three.
-- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/megamaid:plan` Step 6 does for one finding. Resolve the planner with `megamaid.py resolve --role planner --lane plan` (its `effort:` and model as in 4d), write a planner run brief with `megamaid.py brief --skill plan --role planner --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other). Announce:
+- **DISCOVERED** — the reviewer found an issue outside this fix. The orchestrator does not write the instruction: it dispatches a planner for it, exactly as `/megamaid:plan` Step 6 does for one finding. Resolve the planner with `megamaid.py resolve --role planner --lane plan` (its `effort:` and model as in 4d), write a planner run brief with `megamaid.py brief --skill plan --role planner --run <run> …` (same excerpt and manifest flags as 4d), and send a plan-shaped prompt: `## 1. Shared context` with `Repository`, `Branch`, `Base: <paths.base_branch>`, `Report under planning: none — discovered during fix by {code}'s reviewer`, `Output folder: <the instruction folder>`, `Reference code: X{n}` (the next free one), `Severity: Medium` unless the block says otherwise, `Specialty source: <the reviewing role>`, `Output file: <folder>/X{n}-{title-slug}.md`, `Files referenced by the finding: <the DISCOVERED block's paths>`; then `Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/plan-brief.md, <that run brief>`; then `## Finding` holding the DISCOVERED block with `**Verified (from the review report):** none — discovered during fix`. The file it writes lands in the instruction folder, which is the run's own. The `X` prefix means "extra, found during execution" and is distinct from `D{n}` Deferred items. Add the resulting file to the end of the queue (its `Finding status` applies like any other) after `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix gate --folder <instruction folder> --code X{n}`: `gate X{n}: not-dispatched — {paths}` is Step 1.6's not-dispatched rule. Announce:
   ```
   M3 — PASS (5/15 complete)
   Discovered issue added: X1 — {title} (planned by {planner model}; queue is now 16 items)
@@ -314,17 +343,20 @@ Read these first, in order: ${CLAUDE_PLUGIN_ROOT}/shared/fix-reviewer-brief.md, 
 
 ### 4f.0. Verify before commit
 
-Run the verification command recorded at Step 1.6 (`2>&1`). When Step 1.6 recorded `none configured`, skip with the note `verification: none configured` on the item's progress line.
+```
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix verify --folder <instruction folder> --waiting <PASSed codes waiting to commit> --reviewing <codes still under review>
+```
+
+It runs the command Step 1.6 recorded and compares it with the baseline. `verify: none configured` → skip with that note on the item's progress line.
 
 **When it runs.** Only when no implementer of the batch is in flight: reviewers are read-only, so the tree is quiescent then, and the suite does not see a batch-mate's half-written file. A PASSed item waits for that point before verifying and committing; a batch whose items all PASS is verified once, which is also the cheap choice when the command is slow.
 
 **Reading the result.**
 
-- Exit zero → every waiting item proceeds to 4f.1.
-- Failing lines identical to the Step 1.6 baseline → not caused by this run; proceed as if green and carry `verification: red before the run (unchanged)` on the item's progress line.
-- Otherwise the failing lines not in the baseline are the **new failure**. One that names a path inside an in-flight item's write-set → that item's **FAIL**: a PASSed item takes the 4f FAIL path now; an item still under review takes it when its reviewer returns, whatever the reviewer said. In both cases the Attempt's `**Reviewer:**` line reads `verification: <command> exited <n>` followed by the relevant lines.
-- A new failure that names no in-flight write-set (test-file paths, or none) → every PASSed item waiting at this point takes the FAIL.
-- After the attributed item's revert (4f step 1) and before its retry is dispatched, re-run this step for the items still waiting; they commit on green. The retry then starts, and later items wait for quiescence as before.
+- `verify: green` → every waiting item proceeds to 4f.1.
+- `verify: red before the run (unchanged)` → no failing line outside the Step 1.6 baseline; not caused by this run. Proceed as if green and carry `verification: red before the run (unchanged)` on the item's progress line.
+- `verify: fail {codes} (exit {n}) — {first new line}`, then a `line` per further new line → each listed item takes the **FAIL**: a PASSed item takes the 4f FAIL path now; an item still under review takes it when its reviewer returns, whatever the reviewer said. The command lists an item when a new line names a path inside its write-set, and lists every waiting item (none under review) when a new line names no write-set (test-file paths, or none). The Attempt's reviewer text reads `verification: <command> exited <n>` followed by those lines.
+- After the attributed item's revert (4f step 1) and before its retry is dispatched, run it again for the items still waiting; they commit on green. The retry then starts, and later items wait for quiescence as before.
 
 No commit lands on red.
 
@@ -332,27 +364,25 @@ Bound: this runs the project's own command and reads its exit code and output. I
 
 ### 4f.1. Commit on PASS
 
-If `fix.commit_per_item` is `true` (default) and the item produced code changes:
-
-```bash
-git add <files reported by implementer>
-git commit -m "<finding-code>: <title>"
+```
+python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/megamaid.py" fix commit --folder <instruction folder> --code <code> --title "<title>" --reported <files reported by implementer> --in-flight <the other in-flight codes>
 ```
 
-The orchestrator runs the commit, not the implementer subagent. Three rules:
+The orchestrator runs the commit, not the implementer subagent. The command:
 
-- **Stage from the reported list.** Step 4d.1 check 2 confirmed it equals the item's dirty footprint inside `## Where`, so it is complete for this item. (When the user chose `(c) proceed without per-item commits` at Step 1.5, `commit_per_item` is effectively off for this run.)
-- **After the commit:** advance `HEAD_expected` to the new `git rev-parse HEAD`. Then `git status --porcelain` minus the allowed set (4a; this item is no longer in flight) must be empty. Anything left → stop the run and surface: `tree not clean after {code}'s commit: {paths}` (a hook that rewrites files, or an edit nobody reported).
-- **On commit failure** (pre-commit hook reject, signing failure, conflict, anything non-zero): abort the run and surface the error, then print the per-item status list so nothing is lost (the same list a batch stop prints, 4a):
+- **Stages and commits only the reported list**, never a path in `D0` (`skipped`), as `<code>: <title>` (`revise {spec-stem}: apply review revisions` for the revise doc). Step 4d.1 check 2 confirmed the list equals the item's changed footprint inside `## Where`, so it is complete for this item. It prints `commit {code}: {sha}` and advances `HEAD_expected`.
+- **Checks the tree after the commit:** the tree minus the allowed set (4a; this item is no longer in flight) must be empty. `commit {code}: tree not clean — {paths}` → stop the run and surface `tree not clean after {code}'s commit: {paths}` (a hook that rewrites files, or an edit nobody reported), then print the per-item status list below, as for a failed commit.
+- **Reports a failed commit** as `commit {code}: failed — {git's message}` (pre-commit hook reject, signing failure, conflict, anything non-zero): abort the run and surface the error, then print the per-item status list so nothing is lost (the same list a batch stop prints, 4a):
   ```
   {code} — committed
   {code} — PASS, uncommitted ({files})
   {code} — in progress ({implementer | reviewer})
   {code} — stopped ({why})
+  Overrides: {one per line} | none
   ```
   Do not retry blindly. The user investigates.
-
-If `fix.commit_per_item` is `false`, skip the commit. Implementer changes accumulate in the working tree.
+- `commit {code}: skipped (no changes)` → the item produced no change; nothing to commit, and the item leaves flight as a committed one does.
+- `commit {code}: skipped (commits off)` → commits are off for this run (Step 1.6); the reported paths are recorded as finished (4a) and changes accumulate in the working tree.
 
 ## Step 5: Progress tracking
 
@@ -394,14 +424,18 @@ All {N} items complete:
 
 {J} not reproduced by the planner (not run):
   - M7: {title} — {planner's looked-for text, one line}
+
+Overrides: {one `override …` line each, as logged (4a) | none}
 ```
+
+The summary always ends with the `Overrides:` line written as shown, `Overrides: none` included when nothing was overridden. It is the one place a departure from a verdict is reported; a sentence such as "I made no overrides" does not replace it.
 
 **Manifest notes (non-blocking).** Append the excerpt log line verbatim, then any staleness note (`stale: yes` → `PATTERNS manifest may be stale — consider re-running /megamaid:patterns.`; `unknown` → `PATTERNS staleness unknown (<detail>).`) or semantic-refresh note recorded during this run. Then, last of all: `python3 -I "${CLAUDE_PLUGIN_ROOT}/scripts/manifest.py" clean --run <run>`.
 
 ## Ground rules
 
 - **Fresh agents, fresh tree.** Each implementer and reviewer is a new subagent, and a retry starts after the failed attempt is reverted (4f). No accumulated state in either.
-- **Git is the orchestrator's.** Implementers never commit; the HEAD check (4d.1) stops an item whose implementer did.
+- **Git is the orchestrator's, through the `fix` commands.** Implementers never commit; the HEAD check (4d.1) stops an item whose implementer did. A git step outside the commands is an override (4a).
 - **The orchestrator never edits a file in a write-set**, except to revert an attempt (4f). A change, however small, goes through an implementer: a reviewer that wants one returns FAIL.
 - **The instruction is the spec.** Implementer follows it. Reviewer verifies against it. If the doc is wrong, fix the doc first, then re-implement.
 - **Scope is sacred.** Implementers don't make changes outside scope. Reviewers flag scope violations as FAIL.

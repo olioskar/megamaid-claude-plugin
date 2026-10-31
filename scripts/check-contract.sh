@@ -103,6 +103,18 @@ for skill in review plan fix; do
   grep -Fq 'megamaid.py" brief' "skills/$skill/SKILL.md" || { echo "FAIL: skills/$skill does not invoke megamaid.py brief"; fail=1; }
 done
 grep -Fq 'megamaid.py" batches' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py batches"; fail=1; }
+grep -Fq 'megamaid.py" fix ' skills/fix/SKILL.md || { echo "FAIL: skills/fix does not invoke megamaid.py fix"; fail=1; }
+# Review's verification gate checks a convention claim without reading the whole manifest (MM-043: three misses,
+# each while verifying a finding).
+grep -Fq '**Convention claims.**' skills/review/SKILL.md || { echo "FAIL: skills/review Step 7 has no Convention claims rule (MM-043)"; fail=1; }
+# The end-of-run summary always carries the Overrides: line (two live runs wrote "no overrides" in prose instead).
+for f in skills/fix/SKILL.md skills/vacu-suck/SKILL.md; do
+  grep -Fq '`Overrides: none` included' "$f" || { echo "FAIL: $f does not require the Overrides: line with \`Overrides: none\` included"; fail=1; }
+done
+# With commits off a later item on a finished file is dispatched; its reviewer is told whose edits share the diff.
+for f in skills/fix/SKILL.md shared/fix-reviewer-brief.md; do
+  grep -Fq 'Finished earlier on these files:' "$f" || { echo "FAIL: $f does not carry the 'Finished earlier on these files:' line"; fail=1; }
+done
 grep -Fq 'megamaid.py" report-name' skills/review/SKILL.md || { echo "FAIL: skills/review does not invoke megamaid.py report-name"; fail=1; }
 grep -Fq 'megamaid.py" findings' skills/plan/SKILL.md || { echo "FAIL: skills/plan does not invoke megamaid.py findings"; fail=1; }
 # The hooks module repeats report-name's file shape (hooks/ledger.ts REPORT_NAME) to find the review

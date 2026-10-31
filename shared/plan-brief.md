@@ -29,6 +29,7 @@ Your output is a single markdown file at the output file named in your shared co
 **Specialty:** {source agent(s) from the review report's `*Source: <agent>*` line — comma-separated if multiple. For grouped findings, list the union across the group's source agents. /megamaid:fix uses this to route the fix-reviewer to the matching specialty.}
 **Finding status:** {confirmed — <what you observed, with file:line> | not reproduced — <what you looked for and where>}
 {For grouped items, also: }**Consolidates:** {comma-separated finding codes the group covers}
+**Depends on:** {codes of the findings whose fix this plan's How assumes is already in | none}
 
 ---
 
@@ -67,6 +68,8 @@ ADR-style: list alternatives you considered but rejected, one bullet each, with 
 ```
 
 **`Check:` never diffs past `HEAD`.** The fix reviewer runs it while the item is still uncommitted and `HEAD` may hold a batch-mate's commit, so `HEAD~` or `HEAD^` reaches the wrong change and is refused; diff against `HEAD` itself.
+
+**Depends on.** Name a finding from `Report under planning:` only when your `## How` is written against the code as that finding's fix leaves it (it edits the same lines after them, or calls what they add); `/megamaid:fix` then runs this item in a later batch. Otherwise write `none`.
 
 **Not reproduced.** When `**Finding status:**` is `not reproduced`, `## What` states what the finding claimed and what you found instead, `## How` is the single line `No change — finding not reproduced (see Finding status).`, and `## Expected Outcome` has `Check: none — no change proposed`. `/megamaid:fix` lists such items separately and queues one only when the user asks.
 

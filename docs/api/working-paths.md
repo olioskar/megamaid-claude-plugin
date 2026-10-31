@@ -4,21 +4,23 @@ Every path the plugin writes in a user's project. `<paths.*>` are config keys ([
 
 | Path | Writer | Removed |
 |---|---|---|
-| `.megamaid/.gitignore` (one line, `*`) | `megamaid.py:444-452` and `manifest.py:77-84` on first use; `hooks/usage.ts:73` before a ledger under `.megamaid/` | never; keeps everything under `.megamaid/` out of git |
+| `.megamaid/.gitignore` (one line, `*`) | `megamaid.py:530-539` and `manifest.py:77-84` on first use; `hooks/usage.ts:73` before a ledger under `.megamaid/` | never; keeps everything under `.megamaid/` out of git |
 | `.megamaid/excerpts/<run stem>.<skill>.<role>.brief.md` | `megamaid.py brief` | `manifest.py clean --run <run stem>` at the end of the run |
 | `.megamaid/excerpts/<run stem>.md` (manifest excerpt) | `manifest.py excerpt` | same |
 | `.megamaid/excerpts/<run stem>.index.json`, `<run stem>.edits-<n>.json`, `<run stem>.passing.json`, `<run stem>.final.json` | `manifest.py index`; the pattern shavers; `manifest.py verify`; `manifest.py filter` (patterns `--shave`) | same |
 | `.megamaid/excerpts/patterns-draft.md` | the patterns orchestrator, for `manifest.py anchors` | `rm -f` by the same skill (`skills/patterns/SKILL.md:266`) |
 | `.megamaid/usage/<skill>-<startedAt>.md` | `hooks/usage.ts` for a `plan`, `fix`, `fix-auto`, `patterns`, `configure` or synthetic `none` run; `<startedAt>` is the run's `$.clock.now()` in ms | never (`clean` touches `excerpts/` only) |
+| `.megamaid/fix/<instruction folder slug>.json` (under the repo root) | `megamaid.py fix start`; `fix resync` and `fix commit` update it | never; overwritten by the next `fix start` on the same folder |
+| loose objects in the project's `.git/objects` | `megamaid.py fix commit` with commits off (`git hash-object -w`, a finished item's files) | by git's garbage collection, as unreferenced objects |
 | `<paths.reviews>/<report prefix>-round<R>-report.md` | review and vacu-suck, named by `megamaid.py report-name` | never |
 | `<paths.reviews>/<report prefix>-round<R>-usage.md` | `hooks/usage.ts` once the report's Write is seen | never; committed with the report |
-| `<paths.plans>/plan-for-<report basename>/<CODE>-<slug>.md` | plan's planner, one file per finding (`C`, `H`, `M`, `L`, `T`, `D` codes; `G<n>` for an accepted group); fix appends `## Attempts` after a reviewer FAIL (`skills/fix/SKILL.md:297`) | never |
+| `<paths.plans>/plan-for-<report basename>/<CODE>-<slug>.md` | plan's planner, one file per finding (`C`, `H`, `M`, `L`, `T`, `D` codes; `G<n>` for an accepted group); fix appends `## Attempts` after a reviewer FAIL (`skills/fix/SKILL.md:322`, `megamaid.py fix revert`) | never |
 | `<paths.plans>/plan-for-<report basename>/revise-<spec stem>.md` | plan's planner for a non-code report (one file, no per-finding files) | never |
-| `<same folder>/X<n>-<slug>.md` | fix's planner for an issue the fix reviewer discovers (`skills/fix/SKILL.md:305`) | never |
+| `<same folder>/X<n>-<slug>.md` | fix's planner for an issue the fix reviewer discovers (`skills/fix/SKILL.md:337`) | never |
 | `<paths.patterns>` (`docs/megamaid/PATTERNS.md`) | patterns; `migrate manifest` | never |
 | `~/.claude/megamaid.config.json`, `<project>/.claude/megamaid.config.json` | configure, after the user confirms the diff | never |
 
-Names: `<run stem>` is `<skill>-<epoch seconds>-<4 hex>` (`megamaid.py:455-456`). `<report prefix>` is `pr-<N>` or `branch-<slug>`, `<R>` 1 + the highest round among matching filenames in `<paths.reviews>` (`megamaid.py:544-561`). `<report basename>` is the report's filename without `.md`, so `docs/megamaid/reviews/pr-123-round1-report.md` plans into `docs/megamaid/plans/plan-for-pr-123-round1-report/`. Which rounds of a sweep share one ledger is [../features/usage-ledger.md](../features/usage-ledger.md).
+Names: `<run stem>` is `<skill>-<epoch seconds>-<4 hex>` (`megamaid.py:542-543`). `<report prefix>` is `pr-<N>` or `branch-<slug>`, `<R>` 1 + the highest round among matching filenames in `<paths.reviews>` (`megamaid.py:631-648`). `<report basename>` is the report's filename without `.md`, so `docs/megamaid/reviews/pr-123-round1-report.md` plans into `docs/megamaid/plans/plan-for-pr-123-round1-report/`. Which rounds of a sweep share one ledger is [../features/usage-ledger.md](../features/usage-ledger.md).
 
 ## Usage ledger format
 

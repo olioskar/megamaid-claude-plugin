@@ -1,0 +1,6 @@
+restored src/a.js
+attempt 1 recorded
+revert M3: clean
+exit=0
+export const a = 1;
+m1

@@ -1,0 +1,4 @@
+head: SHA
+d0: src/b.js
+not-dispatched M2: src/b.js
+exit=0

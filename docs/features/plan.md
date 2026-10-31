@@ -36,7 +36,7 @@ The planner reproduces the finding before writing: it opens the code, confirms t
 | Part | Holds |
 |---|---|
 | H1 | `<code> — <title>` |
-| Header | `Severity`, `File(s)`, `Specialty`, `Finding status`; `Consolidates` for a group |
+| Header | `Severity`, `File(s)`, `Specialty`, `Finding status`, `Depends on` (codes whose fix this plan's How assumes is in, or `none`); `Consolidates` for a group |
 | `## What`, `## Why` | the change and its cost |
 | `## Where` | exact paths and lines; the item's write-set for batching and the only place the implementer may write |
 | `## How` | before/after code blocks, precise enough to apply mechanically |

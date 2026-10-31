@@ -1,0 +1,2 @@
+preflight: clean
+exit=0

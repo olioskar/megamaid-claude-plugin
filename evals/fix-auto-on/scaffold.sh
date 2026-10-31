@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Scratch repo with one plan item and fix.model_invocation: true: a natural-language
-# "apply the fixes" runs the fix workflow. Per-item commits are off so the case does not
-# need git (blocked in the macOS eval sandbox).
+# "apply the fixes" runs the fix workflow. Per-item commits are off; the fix commands still
+# run git, finding a runnable one themselves (/usr/bin/git fails in the macOS eval sandbox).
 set -euo pipefail
 git init -q -b main .
 git config user.email eval@example.com

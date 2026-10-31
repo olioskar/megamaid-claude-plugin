@@ -1,0 +1,4 @@
+head: SHA
+d0: none
+exit=0
+state head: HEAD

@@ -209,7 +209,7 @@ What it does
   - Reviewer evaluates plan-compliance: did the implementer execute the
     plan, and are reported divergences justified?
   - Parallel batching where safe; sequential where instructions overlap
-    in scope.
+    in scope; an item runs after the items its plan says it depends on.
   - Per-item commit on PASS, with the finding code + title in the
     message. Opt out via fix.commit_per_item: false.
   - Before each commit, runs the project's typecheck/tests/lint (the
@@ -220,7 +220,9 @@ What it does
     result) and checks git against it after every implementer and
     commit: HEAD moved only by its own commits, reported files equal
     the edits inside ## Where, nothing outside the in-flight items'
-    ## Where and the plan folder, tree clean afterwards.
+    ## Where, the plan folder, the review reports and (with commits
+    off) the files earlier items finished, tree clean afterwards. It
+    never reverts or commits a file you had uncommitted.
   - Items the planner marked "not reproduced" are listed, not run.
 
 Models
